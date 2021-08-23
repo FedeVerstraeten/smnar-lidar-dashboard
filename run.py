@@ -46,7 +46,7 @@ def plot_lidar_signal():
 
   # run html template
   return render_template('lidar.html', context=context)
-  
+
 @app.route("/plotly")
 def plot_plotly_global():
   # total confirmed cases globally
@@ -86,4 +86,4 @@ def plot_country():
 
 
 if __name__ == '__main__':
-  app.run(debug=True)
+  app.run(debug=False)
