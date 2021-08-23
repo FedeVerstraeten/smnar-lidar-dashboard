@@ -9,9 +9,10 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>AdminLTE 3 | Starter</title>
+    <title>SMN | LiDAR Dashboard</title>
     <!-- Font Awesome Icons -->
     <!-- You can use href="/path/to/your/file.format", but I prefer this way to make it looks Flask-like-->
+    <link rel="shortcut icon" href="https://www.smn.gob.ar/sites/default/files/favicon.ico" type="image/vnd.microsoft.icon" />
     <link rel="stylesheet" href="{{ url_for('static', filename='plugins/fontawesome-free/css/all.min.css') }}">
     <!-- Theme style -->
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/adminlte.min.css') }}">
@@ -80,11 +81,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                         <p>Plotly</p>
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                    <p>Option 1</p>
-                                </li>
-                                <li class="nav-item">
-                                    <p>Option 2</p>
+                                <li class="nav-item" >
+                                    <a href="https://youtu.be/G1IbRujko-A">
+                                        <button type="button" class="btn btn-outline-success">START</button>
+                                    </a>
+                                    <a href="https://youtu.be/ZZ5LpwO-An4">
+                                        <button type="button" class="btn btn-outline-danger">STOP</button>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-primary">SAVE</button>
                                 </li>
                             </ul>
                         </li>

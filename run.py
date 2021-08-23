@@ -11,18 +11,42 @@ app.config.from_object('config.Config')
 
 # Loading raw data and clean it
 
-#loading data
+#loading COVID data
 total_confirmed, total_death, total_recovered, df_pop = utils.load_data()
+(grouped_total_confirmed, grouped_total_recovered, grouped_total_death, timeseries_final, country_names) = utils.preprocessed_data(total_confirmed, total_death, total_recovered)
+final_df = utils.merge_data(grouped_total_confirmed,grouped_total_recovered, grouped_total_death, df_pop)
 
-(grouped_total_confirmed, grouped_total_recovered,
- grouped_total_death, timeseries_final, country_names) = utils.preprocessed_data(total_confirmed, total_death, total_recovered)
-
-final_df = utils.merge_data(grouped_total_confirmed,
-                            grouped_total_recovered, grouped_total_death, df_pop)
-
-#for chart_js map
+# Defining routes
 
 @app.route("/")
+@app.route("/lidar")
+def plot_lidar_signal():
+
+  # load data
+  LIDAR_FILE='./analog.txt'
+  data_csv = pd.read_csv(LIDAR_FILE,sep='\n',header=None)
+
+  lidar_signal = np.array(data_csv[0])
+  number_bins = len(data_csv[0])
+
+  # LiDAR signal range correction since bin number 1000
+  BIN_RC_THRESHOLD=1000
+  height = np.arange(0, number_bins, 1)
+  lidar_bias = np.mean(lidar_signal[BIN_RC_THRESHOLD:])
+  lidar_rc = (lidar_signal - lidar_bias)*(height**2)
+
+  #ploting
+  plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar_signal)
+  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar_rc)
+
+  # load dict context
+  context = {"number_bins": number_bins,
+             "plot_lidar_signal": plot_lidar_signal,
+             "plot_lidar_range_correction": plot_lidar_range_correction}
+
+  # run html template
+  return render_template('lidar.html', context=context)
+  
 @app.route("/plotly")
 def plot_plotly_global():
   # total confirmed cases globally
