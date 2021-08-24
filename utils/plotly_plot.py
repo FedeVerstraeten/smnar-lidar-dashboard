@@ -175,6 +175,7 @@ def plotly_lidar_range_correction(lidar_rc):
   
   fig.update_xaxes(rangeslider_visible=True)
   fig.update_layout(width=1500, height=500)
+  fig.add_vrect(x0=250, x1=1500, line_width=0, fillcolor="red", opacity=0.2)
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
   
   return plot_json    
