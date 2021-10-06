@@ -22,10 +22,12 @@ put your custom script or styling here
 </div>
 
 <!-- Script to execute the Json ( we can create it also with looping) -->
-<script>
+<!-- <script>
 //Parse your Json variable here
 var graphs = {{ context.plot_selected_signal| safe }};
 Plotly.plot('plotly-selected-signal', graphs, {});
-</script>
+</script> -->
+
+<script src="{{ url_for('static', filename='js/plots.js') }}"></script>
 
 {% endblock my_content %}

@@ -44,6 +44,19 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 <li class="nav-item">
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
                 </li>
+                
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#"> 
+                        <button class="btn btn-outline-success" type="button">Alignment Mode</button>
+                        <!-- <span class="sr-only">(current)</span> -->
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <button class="btn btn-outline-secondary" type="button">Adquisition Mode</button>
+                    </a>
+                </li>
             </ul>
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
@@ -58,7 +71,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
         <!-- Main Sidebar Container -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
-            <a href="https://www.smn.gob.ar" class="logo">
+            <a href="/" class="logo">
                 <!-- mini logo for sidebar mini 50x50 pixels -->
                 <!-- <span class="logo-mini"><b>SMN</b></span> -->
                 <!-- logo for regular state and mobile devices -->
@@ -76,6 +89,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                         <!-- Add icons to the links using the .nav-icon class with font-awesome or any other icon font library -->
+                        
                         <!-- Main Menu -->
                         <li class="nav-item has-treeview menu-open">
                             <a href="#" class="nav-link ">
@@ -88,19 +102,123 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <ul class="nav nav-treeview">
                                 <!-- Control buttons -->
                                 <li class="nav-item">
-                                    <a href="https://youtu.be/G1IbRujko-A">
-                                        <button type="button" class="btn btn-outline-success">START</button>
-                                    </a>
+                                    <form>
+                                      <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                          <label class="sr-only" for="inlineFormInputGroup">Channel</label>
+                                          <div class="input-group">
+                                            <div class="input-group-prepend">
+                                              <div class="input-group-text">Ch</div>
+                                            </div>
+                                            <input type="text" class="form-control " id="inlineFormInputGroup" placeholder="Channel">
+                                          </div>
+                                        </div>
+                                        <div class="col-sm-2 my-1">
+                                          <button type="submit" class="btn btn-primary">Apply</button>
+                                        </div>
+                                      </div>
+                                      <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                          <label class="sr-only" for="inlineFormInputGroup">Adq. Time</label>
+                                          <div class="input-group">
+                                            <div class="input-group-prepend">
+                                              <div class="input-group-text">Sec</div>
+                                            </div>
+                                            <input type="text" class="form-control " id="inlineFormInputGroup" placeholder="Adq. Time">
+                                          </div>
+                                        </div>
+                                        <div class="col-sm-2 my-1">
+                                          <button type="submit" class="btn btn-primary">Apply</button>
+                                        </div>
+                                      </div>
+                                    </form> 
+                                </li>
+
+                                <li class="nav-item">
+                                    <button type="button" class="btn btn-outline-success" data-toggle="button" aria-pressed="false" id="startbtn">START</button>
                                     <a href="https://youtu.be/ZZ5LpwO-An4">
                                         <button type="button" class="btn btn-outline-danger">STOP</button>
                                     </a>
-                                    <button type="button" class="btn btn-outline-primary">SAVE</button>
+                                    <a href="https://youtu.be/G1IbRujko-A">
+                                        <button type="button" class="btn btn-outline-primary">SAVE</button>
+                                    </a>
                                 </li>
-
                                 <li class="nav-item">
                                     <a href="{{ url_for('plot_lidar_signal')}}" class="nav-link ">
                                         <p>LiDAR</p>
                                     </a>
+                                </li>
+
+                            </ul>
+                        </li>
+
+                        <!-- Load ini files -->
+                        <li class="nav-item has-treeview menu-closed">
+                            <a href="#" class="nav-link ">
+                                <i class="nav-icon fas fa-th"></i>
+                                <p>
+                                    Load INI files
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <form>
+                                      <div class="form-group">
+                                        <label for="exampleFormControlFile1">Acquis</label>
+                                        <input type="file" class="form-control-file" id="AcquisINI">
+                                      </div>
+                                      <div class="form-group">
+                                        <label for="exampleFormControlFile1">Global info</label>
+                                        <input type="file" class="form-control-file" id="AcquisINI">
+                                      </div>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Sounding Menu -->
+                        <li class="nav-item has-treeview menu-close">
+                            <a href="#" class="nav-link ">
+                                <i class="nav-icon fas fa-th"></i>
+                                <p>
+                                    Sounding controls
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <!-- Sounding controls -->
+                                <li class="nav-item">
+                                    <form>
+                                      <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                          <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
+                                          <div class="input-group">
+                                            <div class="input-group-prepend">
+                                              <div class="input-group-text">ºC</div>
+                                            </div>
+                                            <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Temperature">
+                                          </div>
+                                        </div>
+                                        <div class="col-sm-2 my-1">
+                                          <button type="submit" class="btn btn-primary">Apply</button>
+                                        </div>
+                                      </div>
+                                      <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                          <label class="sr-only" for="inlineFormInputGroup">Pressure</label>
+                                          <div class="input-group">
+                                            <div class="input-group-prepend">
+                                              <div class="input-group-text">hPa</div>
+                                            </div>
+                                            <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Pressure">
+                                          </div>
+                                        </div>
+                                        <div class="col-sm-2 my-1">
+                                          <button type="submit" class="btn btn-primary">Apply</button>
+                                        </div>
+                                      </div>
+                                    </form> 
                                 </li>
 
                             </ul>
@@ -123,19 +241,43 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                 </li>
                                 <li>
                                     <!-- /.Signal type selector -->
-
                                     <form method="POST" action="{{url_for('plot_selected_signal')}}">
                                         <select name="lidar_type_plot" id="lidar_type_plot" required="required" style="width:200px">
                                             <option value="" label="Select a signal ... " selected="selected">Select a signal... </option>
                                             <option value="raw">Raw signal</option>
                                             <option value="range">Range correction RF</option>
                                         </select>
+                                            <li>
+                                                <input type="submit" value="Submit" class="btn btn-primary"></input>
+                                            </li>
+                                    </form>
+                                </li>
 
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <div class="col-xs-3">
+                                    <label> Choose the plot type....</label>
+                                    <select class="form-control" id ='select_signal'>
+                                        <option value="raw">Raw</option>
+                                        <option value="range">Corrected</option>
+                                    </select>
+                                </div>
+                            </ul>
+                        </li>
+                        <!-- Laser controls -->
+                        <li class="nav-item has-treeview menu-closed">
+                            <a href="#" class="nav-link ">
+                                <i class="nav-icon fas fa-th"></i>
+                                <p>
+                                    Laser controls
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <button type="button" class="btn btn-outline-success" data-toggle="button" aria-pressed="false" id="startbtn">START</button>
+                                    <button type="button" class="btn btn-outline-danger">STOP</button>
                                 </li>
-                                <li>
-                                    <input type="submit" value="Submit" class="btn btn-primary"></input>
-                                </li>
-                                </form>
                             </ul>
                         </li>
                     </ul>
@@ -175,6 +317,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <!-- ./wrapper -->
     <!-- jQuery -->
     <script src="{{ url_for('static', filename='plugins/jquery/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
     <!-- Bootstrap 4 -->
     <script src="{{ url_for('static', filename='plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- AdminLTE App -->
