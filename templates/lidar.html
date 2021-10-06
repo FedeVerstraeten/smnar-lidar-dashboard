@@ -10,50 +10,21 @@ put your custom script or styling here
 <!-- Confirmed, Recovered, Deaths Card -->
 <div class="row">
     <!-- ./col -->
-    <div class="col-sm">
-        <!-- small box -->
-        <div class="small-box bg-warning">
-            <div class="inner">
-                <h3>{{context.number_bins}}</h3>
-                <p>Number of bins</p>
-            </div>
-        </div>
-    </div>
-    <!-- ./col -->
-    <div class="col-sm">
-        <!-- small box -->
-        <div class="small-box bg-success">
-            <div class="inner">
-                <h3>{{context.number_bins}}<sup style="font-size: 20px"></sup></h3>
-                <p>Number of bins</p>
-            </div>
-        </div>
-    </div>
-    <!-- ./col -->
-    <!-- ./col -->
-    <div class="col-sm">
-        <!-- small box -->
-        <div class="small-box bg-danger">
-            <div class="inner">
-                <h3>{{context.number_bins}}</h3>
-                <p>Number of bins</p>
-            </div>
-        </div>
-    </div>
+
     <!-- ./col -->
 </div>
 
 <!-- Plotly plot placeholder -->
 <div class="container-fluid">
       <div class="row">
-          <!-- LiDAR signal plot-->
-          <div class="chart" id="plotly-lidar-signal">
-          </div>
+          <!-- LiDAR signal with range correction plot-->
+          <div class="chart" id="plotly-lidar-range-correction"></div>
       </div>
       <hr>
       <div class="row">
-          <!-- LiDAR signal with range correction plot-->
-          <div id="plotly-lidar-range-correction"></div>
+          <!-- LiDAR signal plot-->
+          <div class="chart" id="plotly-lidar-signal">
+          </div>
       </div>
   </div>
 </div>

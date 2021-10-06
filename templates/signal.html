@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block script %}
+<!-- 
+put your custom script or styling here
+
+-->
+{% endblock script %}
+{% block my_content %}
+<!-- HEADER PAGE -->
+<div class="row">
+    <!-- ./col -->
+
+    <!-- ./col -->
+</div>
+
+<!-- Plotly plot placeholder -->
+<div class="container-fluid">
+      <div class="row">
+          <!-- LiDAR signal plot-->
+          <div class="chart" id="plotly-selected-signal"></div>
+      </div>
+</div>
+
+<!-- Script to execute the Json ( we can create it also with looping) -->
+<!-- <script>
+//Parse your Json variable here
+var graphs = {{ context.plot_selected_signal| safe }};
+Plotly.plot('plotly-selected-signal', graphs, {});
+</script> -->
+
+<script src="{{ url_for('static', filename='js/plots.js') }}"></script>
+
+{% endblock my_content %}
