@@ -85,7 +85,7 @@ class licelcontroller:
 
   def closeConnection(self):
     try:
-      print('Closing connecting to: ', server_address)
+      print('Closing connecting to: ', (self.host,self.port))
       self.sock.close()
       print('Connection closed')
     except Exception as e:
@@ -223,7 +223,7 @@ class licelcontroller:
                       + " " + str(dataset) \
                       + " " + str(memory)
     
-    delay = 0.1 # seconds
+    delay = 0.25 # seconds
     databuff=b'0'
     
     try:
