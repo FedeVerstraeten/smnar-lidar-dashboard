@@ -56,8 +56,8 @@ def plot_lidar_signal():
   data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
   
   # DUMP THE DATA INTO A FILE
-  #  with open('analog.txt', 'w') as file: # or analog.dat 'wb'
-    #  np.savetxt(file,data_mv,delimiter=',')
+  with open('analog.txt', 'w') as file: # or analog.dat 'wb'
+    np.savetxt(file,data_mv,delimiter=',')
 
   #----------------------------------------------
 
@@ -124,6 +124,65 @@ def plot_selected_signal():
   # return render_template('signal.html', context=context)
   print(plot_selected_signal_JSON)
   return plot_selected_signal_JSON
+
+@app.route("/acquis", methods=['GET','POST'])
+def plot_acquis():
+  action_button = request.args['selected']
+
+  # basic settings
+  BIN_LONG_TRANCE = 4000
+
+  SHOTS_DELAY = 1000 # wait 10s = 300shots/30Hz
+
+  lc = licelcontroller()
+  lc.openConnection('10.49.234.234',2055)
+  tr=0 #first TR
+
+  if(action_button =="start"):
+    # start the acquisition
+    lc.clearMemory()
+    lc.startAcquisition()
+    lc.msDelay(SHOTS_DELAY)
+    lc.stopAcquisition() 
+    #lc.waitForReady(100) # wait till it returns to the idle state
+
+    ## get the shotnumber 
+    if lc.getStatus() == 0:
+      if (lc.shots_number > 1):
+        cycles = lc.shots_number - 2 # WHY??!
+
+    # read from the TR triggered mem A
+    data_lsw = lc.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
+    data_msw = lc.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
+    
+    # combine, normalize an scale data to mV
+    data_accu,data_clip = lc.combineAnalogDatasets(data_lsw, data_msw)
+    data_phys = lc.normalizeData(data_accu,cycles)
+    data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
+    
+    # DUMP THE DATA INTO A FILE
+    with open('analog.txt', 'w') as file: # or analog.dat 'wb'
+      np.savetxt(file,data_mv,delimiter=',')
+
+    lidar_signal = np.array(data_mv)
+    number_bins = len(data_mv)
+ 
+    BIN_RC_THRESHOLD=int(BIN_LONG_TRANCE/4)
+    height = np.arange(0, number_bins, 1)
+    lidar_bias = np.mean(lidar_signal[BIN_RC_THRESHOLD:])
+    lidar_rc = (lidar_signal - lidar_bias)*(height**2)
+
+    #ploting
+    plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar_signal)
+    plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar_rc)
+
+    # load dict context
+    context = {"number_bins": number_bins,
+               "plot_lidar_signal": plot_lidar_signal,
+               "plot_lidar_range_correction": plot_lidar_range_correction}
+
+    # run html template
+    return context
 
 
 if __name__ == '__main__':

@@ -48,13 +48,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
                 <li class="nav-item">
                     <a class="nav-link" href="#"> 
-                        <button class="btn btn-outline-success" type="button">Alignment Mode</button>
+                        <button class="btn btn-outline-success" data-toggle="button" aria-pressed="false" type="button">Alignment Mode</button>
                         <!-- <span class="sr-only">(current)</span> -->
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">
-                        <button class="btn btn-outline-secondary" type="button">Adquisition Mode</button>
+                        <button class="btn btn-outline-secondary" ata-toggle="button" aria-pressed="false" type="button">Adquisition Mode</button>
                     </a>
                 </li>
             </ul>
@@ -135,13 +135,9 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                 </li>
 
                                 <li class="nav-item">
-                                    <button type="button" class="btn btn-outline-success" data-toggle="button" aria-pressed="false" id="startbtn">START</button>
-                                    <a href="https://youtu.be/ZZ5LpwO-An4">
-                                        <button type="button" class="btn btn-outline-danger">STOP</button>
-                                    </a>
-                                    <a href="https://youtu.be/G1IbRujko-A">
-                                        <button type="button" class="btn btn-outline-primary">SAVE</button>
-                                    </a>
+                                    <button type="button" class="btn btn-outline-success" id="startbtn" value="start">START</button>
+                                    <button type="button" class="btn btn-outline-danger" id="stopbtn" value="stop" >STOP</button>
+                                    <button type="button" class="btn btn-outline-primary" id="savebtn" value="save">SAVE</button>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ url_for('plot_lidar_signal')}}" class="nav-link ">
@@ -176,18 +172,18 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                 </li>
                             </ul>
                         </li>
-
-                        <!-- Sounding Menu -->
+                        
+                        <!-- Rayleigh-Fit Menu -->
                         <li class="nav-item has-treeview menu-close">
                             <a href="#" class="nav-link ">
                                 <i class="nav-icon fas fa-th"></i>
                                 <p>
-                                    Sounding controls
+                                    Rayleigh-Fit controls
                                     <i class="right fas fa-angle-left"></i>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
-                                <!-- Sounding controls -->
+                                <!-- Rayleigh-Fit controls -->
                                 <li class="nav-item">
                                     <form>
                                       <div class="form-row align-items-center">
@@ -212,6 +208,66 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                               <div class="input-group-text">hPa</div>
                                             </div>
                                             <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Pressure">
+                                          </div>
+                                        </div>
+                                        <div class="col-sm-2 my-1">
+                                          <button type="submit" class="btn btn-primary">Apply</button>
+                                        </div>
+                                      </div>
+                                      <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                          <label class="sr-only" for="inlineFormInputGroup">MASL</label>
+                                          <div class="input-group">
+                                            <div class="input-group-prepend">
+                                              <div class="input-group-text">m</div>
+                                            </div>
+                                            <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="MASL">
+                                          </div>
+                                        </div>
+                                        <div class="col-sm-2 my-1">
+                                          <button type="submit" class="btn btn-primary">Apply</button>
+                                        </div>
+                                      </div>
+                                      <div class="form-row align-items-center">
+                                          <div class="col-sm-4 my-1">
+                                             <label class="sr-only" for="inlineFormInputName">Initial</label>
+                                             <input type="text" class="form-control" id="inlineFormInputName" placeholder="Initial">
+                                          </div>
+                                          <div class="col-sm-4 my-1">
+                                             <label class="sr-only" for="inlineFormInputName">Final</label>
+                                             <input type="text" class="form-control" id="inlineFormInputName" placeholder="Final">
+                                          </div>
+                                          <div class="col-sm-2 my-1">
+                                            <button type="submit" class="btn btn-primary">Apply</button>
+                                          </div>
+                                      </div>
+                                    </form> 
+                                </li>
+
+                            </ul>
+                        </li>
+
+                        <!-- Sounding Menu -->
+                        <li class="nav-item has-treeview menu-close">
+                            <a href="#" class="nav-link ">
+                                <i class="nav-icon fas fa-th"></i>
+                                <p>
+                                    Sounding controls
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <!-- Sounding controls -->
+                                <li class="nav-item">
+                                    <form>
+                                      <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                          <label class="sr-only" for="inlineFormInputGroup">Station number</label>
+                                          <div class="input-group">
+                                            <div class="input-group-prepend">
+                                              <div class="input-group-text">ST</div>
+                                            </div>
+                                            <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Station number">
                                           </div>
                                         </div>
                                         <div class="col-sm-2 my-1">
