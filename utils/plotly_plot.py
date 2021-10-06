@@ -24,8 +24,8 @@ def plotly_lidar_signal(lidar_signal):
                 title='LiDAR raw signal')
   
   fig.update_xaxes(rangeslider_visible=True)
-  fig.update_layout(width=1500, height=500)
-  
+  fig.update_layout(width=1200, height=500)
+
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
   
   return plot_json
