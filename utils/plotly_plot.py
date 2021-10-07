@@ -48,15 +48,14 @@ def plotly_lidar_signal(lidar_signal):
   
 #   return plot_json    
 
-def plotly_lidar_range_correction(lidar_rc):
+def plotly_lidar_range_correction(range_lidar,lidar_rc,lidar_RF):
   # Plotly plot 1:
-  df = pd.DataFrame(lidar_rc)
-  df.reset_index(inplace=True)
-  df.columns=["bin","TR0_500mV"]
-  df.index=df['bin']
+  print("lengs",len(range_lidar),len(lidar_rc),len(lidar_RF))
+  df=pd.DataFrame({'meters':range_lidar,'TR0_500mV':lidar_rc,'TR0_500mV_RF':lidar_RF})
+  df.index=df['meters']
   fig = go.Figure()
-  #fig = make_subplots() # rayleigh-fit secondary curve?
-  fig = make_subplots(specs=[[{"secondary_y": True}]]) # rayleigh-fit secondary curve?
+  fig = make_subplots() # rayleigh-fit secondary curve?
+  #fig = make_subplots(specs=[[{"secondary_y": True}]]) # rayleigh-fit secondary curve?
 
   # Adding traces
   fig.add_trace(
@@ -71,17 +70,17 @@ def plotly_lidar_range_correction(lidar_rc):
     secondary_y=False
   )
 
-  # fig.add_trace(
-  #   go.Scatter(
-  #       x=df.index,
-  #       y=df["TR0_500mV_RF"],
-  #       mode="lines",
-  #       name="TR0 500mV RF",
-  #       marker_color='#b23434',
-  #       opacity=0.7
-  #   ),
-  #   secondary_y=True
-  # )
+  fig.add_trace(
+    go.Scatter(
+        x=df.index,
+        y=df["TR0_500mV_RF"],
+        mode="lines",
+        name="TR0 500mV RF",
+        marker_color='#b23434',
+        opacity=0.7
+    ),
+    secondary_y=False
+  )
 
   # Add figure title
   fig.update_layout(legend=dict(
@@ -108,8 +107,8 @@ def plotly_lidar_range_correction(lidar_rc):
   # Set y-axes titles
   fig.update_yaxes(title_text="TR0 500mV",
                    secondary_y=False, showgrid=False)
-  # fig.update_yaxes(title_text="TR0 500mV RF", tickangle=45,
-  #                  secondary_y=True, showgrid=False)
+  fig.update_yaxes(title_text="TR0 500mV RF", tickangle=45,
+                   secondary_y=True, showgrid=False)
   
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
   
