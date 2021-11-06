@@ -12,24 +12,26 @@ class lidarsignal:
   def __init__(self):
   
     # raw signal
-    self.BIN_METERS = 7.5 # meters for each bin
+    self.__BIN_METERS = 7.5 # meters for each bin
     self.raw_signal=[]
+    self.range = []
     self.bin_long_trace=0
 
     # range correction
     self.bin_offset = 0
     self.bin_threshold = 0
-    self.lidar_bias = 0
+    self.bias = 0
     self.rc_signal = []
 
     # rayleigh fit
-    self.wave_lenght = 532 # [nm]
+    self.wavelength = 532 # [nm]
     self.surface_temperature = 300 # [K]
     self.surface_pressure = 1024 # [hPa]
     self.masl = 5.0 # meters above sea level (AMSL)
     self.fitting_interval = [0,0] # meters
     self.pr2_mol = []
     self.rms_err = 0
+    self.adj_factor = 0
 
     self.__us_std_model = {
                             "height" : [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 5200, 5400, 5600, 5800, 6000, 6200, 6400, 6600, 6800, 7000, 7200, 7400, 7600, 7800, 8000, 8200, 8400, 8600, 8800, 9000, 9200, 9400, 9600, 9800, 10000, 10200, 10400, 10600, 10800, 11000, 11200, 11400, 11600, 11800, 12000, 12200, 12400, 12600, 12800, 13000, 13200, 13400, 13600, 13800, 14000, 14200, 14400, 14600, 14800, 15000, 15200, 15400, 15600, 15800, 16000, 16200, 16400, 16600, 16800, 17000, 17200, 17400, 17600, 17800, 18000, 18200, 18400, 18600, 18800, 19000, 19200, 19400, 19600, 19800, 20000, 20200, 20400, 20600, 20800, 21000, 21200, 21400, 21600, 21800, 22000, 22200, 22400, 22600, 22800, 23000, 23200, 23400, 23600, 23800, 24000, 24200, 24400, 24600, 24800, 25000, 25200, 25400, 25600, 25800, 26000, 26200, 26400, 26600, 26800, 27000, 27200, 27400, 27600, 27800, 28000, 28200, 28400, 28600, 28800, 29000, 29200, 29400, 29600, 29800, 30000],
@@ -48,29 +50,32 @@ class lidarsignal:
       self.raw_signal = np.array(signal)
       self.bin_long_trace = len(signal)
 
-  def setBinOffset(self,bin_offset):
+  def offsetCorrection(self,bin_offset):
     if bin_offset > 0:
       self.bin_offset = int(bin_offset)
+      self.bin_long_trace = self.bin_long_trace - bin_offset
+      self.raw_signal = self.raw_signal[self.bin_offset : ]
 
   def setThreshold(self,threshold_meters):
     if threshold_meters > 0:
-      self.bin_threshold = int(threshold_meters/BIN_METERS)
+      self.bin_threshold = int(threshold_meters/self.__BIN_METERS)
 
   def rangeCorrection(self,threshold_meters=0):
     
     # set theshold
-    self.setThreshold(threshold_meters)
     if self.bin_threshold == 0:
       self.bin_threshold = int(self.bin_long_trace/4)
+    else:
+      self.setThreshold(threshold_meters)
 
-    # Height on bins
-    height = np.arange(0, len(self.raw_signal), 1)
+    # Height range on bins
+    self.range = self.__BIN_METERS * np.arange(0, len(self.raw_signal), 1)
     
     # bias calculation
-    bias = np.mean(self.raw_signal[self.bin_threshold:])
+    self.bias = np.mean(self.raw_signal[self.bin_threshold:])
 
     # range correction
-    self.rc_signal = (self.raw_signal[self.bin_offset : ] - bias)*(height**2)
+    self.rc_signal = (self.raw_signal - self.bias)*(self.range**2)
 
   def smoothSignal(self,level):
     # smooth with square box
@@ -83,18 +88,18 @@ class lidarsignal:
     box = np.ones(box_points)/box_points
     self.rc_signal = np.convolve(self.rc_signal, box, mode='same')
 
-  def setSurfaceConditions(self,surface_temperature,surface_pressure):
+  def setSurfaceConditions(self,temperature,pressure):
     # Temperature on Kelvin degrees
-    if surface_temperature > 0:
-      self.surface_temperature = surface_temperature
+    if temperature > 0:
+      self.surface_temperature = temperature
 
     # Pressure on hecto Pascal
-    if self.surface_pressure > 0:
-      self.surface_pressure = surface_pressure
+    if pressure > 0:
+      self.surface_pressure = pressure
 
-  def molecularProfile(self,wave_length,masl,surface_temperature=0,surface_pressure=0):
+  def molecularProfile(self,wavelength,masl,surface_temperature=0,surface_pressure=0):
 
-    self.wave_lenght = wave_length
+    self.wavelength = wavelength
     self.masl = masl
 
     self.setSurfaceConditions(surface_temperature,surface_pressure)
@@ -118,14 +123,14 @@ class lidarsignal:
       pressure_lowres = self.__us_std_model["pressure"]
 
       # Defining high resolution Height vector
-      height_highres = np.arange(height_lowres[0], (self.bin_long_trace+1)*BIN_METERS, BIN_METERS)
+      height_highres = np.arange(height_lowres[0], (self.bin_long_trace+1)*self.__BIN_METERS, self.__BIN_METERS)
 
       # Interpolation Spline 1D cubic
-      temperature_spline = interp1d(height_lowres, temp_lowres, kind='cubic')
-      pressure_spline = interp1d(height_lowres, press_lowres, kind='cubic')
+      temperature_spline = interp1d(height_lowres, temperature_lowres, kind='cubic')
+      pressure_spline = interp1d(height_lowres, pressure_lowres, kind='cubic')
       
       # Defining high resolution Temperature & Pressure vectors
-      temperature__highres = temperature_spline(height_highres)
+      temperature_highres = temperature_spline(height_highres)
       pressure_highres = pressure_spline(height_highres)
 
       # AMSL correction
@@ -140,7 +145,7 @@ class lidarsignal:
     nmol = (100*pressure_highres[index_masl:])/(temperature_highres[index_masl:]*kboltz) 
 
     # alpha & beta coefficients
-    beta_mol = nmol * ((550/wave_length)**4.09) * 5.45e-32
+    beta_mol = nmol * ((550/self.wavelength)**4.09) * 5.45e-32
     alpha_mol = beta_mol * (8*np.pi/3)
 
     # Cumulative trapezoidal numerical integration
@@ -156,8 +161,8 @@ class lidarsignal:
 
   def rayleighFit(self,fit_init,fit_final):
 
-    bin_init = int(fit_init/BIN_METERS)
-    bin_fin = int(fit_final/BIN_METERS)
+    bin_init = int(fit_init/self.__BIN_METERS)
+    bin_fin = int(fit_final/self.__BIN_METERS)
     self.fitting_interval = [bin_init,bin_fin]
 
     # Adjusment factor calculus between elastic LiDAR and molecular signals
@@ -166,11 +171,11 @@ class lidarsignal:
     sum_sel_sm = np.dot(self.rc_signal[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
     sum_sm_square = np.dot(self.pr2_mol[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
 
-    adj_factor = sum_sel_sm/sum_sm_square
+    self.adj_factor = sum_sel_sm/sum_sm_square
     # print("Adj factor a(r,dr)=",np.format_float_scientific(adj_factor))
 
     # Minimizing the RMS error
-    sum_diff = self.rc_signal[bin_init:bin_fin+1] - adj_factor * self.pr2_mol[bin_init:bin_fin+1]
+    sum_diff = self.rc_signal[bin_init:bin_fin+1] - self.adj_factor * self.pr2_mol[bin_init:bin_fin+1]
     dr = fit_final - fit_init
     self.rms_err = np.sqrt((1/dr) * np.dot(sum_diff,sum_diff))
     # print("RMS error =",np.format_float_scientific(rms_err))
