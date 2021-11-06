@@ -6,17 +6,20 @@ import numpy as np
 import json
 from utils import plotly_plot
 
-from scipy import constants
-from scipy import integrate
-from scipy.interpolate import interp1d
+# from scipy import constants
+# from scipy import integrate
+# from scipy.interpolate import interp1d
 
 from lidarcontroller.licelcontroller import licelcontroller
 from lidarcontroller import licelsettings
+from lidarcontroller.lidarsignal import lidarsignal
 
 #configuration
 app = Flask(__name__)
 app.config.from_object('config.Config')
 
+# global
+lidar = lidarsignal()
 
 # Defining routes
 
@@ -28,160 +31,84 @@ def plot_lidar_signal():
   BIN_LONG_TRANCE = 4000
   SHOTS_DELAY = 1000 # wait 10s = 300shots/30Hz
   OFFSET_BINS = 10
+  THRESHOLD_METERS = 2000 # meters
 
 
   # initialization
-  lc = licelcontroller()
-  lc.openConnection('10.49.234.234',2055)
-  tr=0 #first TR
-  lc.selectTR(tr)
-  lc.setInputRange(licelsettings.MILLIVOLT500)
-  lc.setThresholdMode(licelsettings.THRESHOLD_LOW)
-  # lc.setDiscriminatorLevel(8) # can be set between 0 and 63
+  # lc = licelcontroller()
+  # lc.openConnection('10.49.234.234',2055)
+  # tr=0 #first TR
+  # lc.selectTR(tr)
+  # lc.setInputRange(licelsettings.MILLIVOLT500)
+  # lc.setThresholdMode(licelsettings.THRESHOLD_LOW)
+  # # lc.setDiscriminatorLevel(8) # can be set between 0 and 63
   
  
-  # start the acquisition
-  lc.clearMemory()
-  lc.startAcquisition()
-  lc.msDelay(SHOTS_DELAY)
-  lc.stopAcquisition() 
-  #lc.waitForReady(100) # wait till it returns to the idle state
+  # # start the acquisition
+  # lc.clearMemory()
+  # lc.startAcquisition()
+  # lc.msDelay(SHOTS_DELAY)
+  # lc.stopAcquisition() 
+  # #lc.waitForReady(100) # wait till it returns to the idle state
 
-  ## get the shotnumber 
-  if lc.getStatus() == 0:
-    if (lc.shots_number > 1):
-      cycles = lc.shots_number - 2 # WHY??!
+  # ## get the shotnumber 
+  # if lc.getStatus() == 0:
+  #   if (lc.shots_number > 1):
+  #     cycles = lc.shots_number - 2 # WHY??!
 
-  # read from the TR triggered mem A
-  data_lsw = lc.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
-  data_msw = lc.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
+  # # read from the TR triggered mem A
+  # data_lsw = lc.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
+  # data_msw = lc.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
   
-  # combine, normalize an scale data to mV
-  data_accu,data_clip = lc.combineAnalogDatasets(data_lsw, data_msw)
-  data_phys = lc.normalizeData(data_accu,cycles)
-  data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
+  # # combine, normalize an scale data to mV
+  # data_accu,data_clip = lc.combineAnalogDatasets(data_lsw, data_msw)
+  # data_phys = lc.normalizeData(data_accu,cycles)
+  # data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
   
-  # DUMP THE DATA INTO A FILE
-  with open('analog.txt', 'w') as file: # or analog.dat 'wb'
-    np.savetxt(file,data_mv,delimiter=',')
+  # # DUMP THE DATA INTO A FILE
+  # with open('analog.txt', 'w') as file: # or analog.dat 'wb'
+  #   np.savetxt(file,data_mv,delimiter=',')
 
   #----------- RANGE CORRECTION ---------------
 
-  lidar_signal = np.array(data_mv)
+  # lidar_signal = np.array(data_mv)
   
   # load data
   # LIDAR_FILE='./analog_532par_500mV_CON_THRESHOLD.txt'
-  # data_csv = pd.read_csv(LIDAR_FILE,sep='\n',header=None)
-  # lidar_signal = np.array(data_csv[0])
-  
-   # number_bins = len(data_csv[0])
+  # LIDAR_FILE='./analog_dia_nubes_20mV.txt'
+  # LIDAR_FILE='./dashboard_532par_500mV_analog_SIN_THRESHOLD.txt'
+  # LIDAR_FILE='./tr1_532par_100mV_20211001_1757_analog.txt'
+  LIDAR_FILE='./tr1_532par_500mV_20211001_1740_analog.txt'
+  data_csv = pd.read_csv(LIDAR_FILE,sep='\n',header=None)
+  lidar_data = np.array(data_csv[0])
 
-  # offset correction
-  lidar_signal=lidar_signal[OFFSET_BINS:]
-  number_bins = len(lidar_signal)
-
-  # LiDAR signal range correction since bin number 1000
-  # BIN_RC_THRESHOLD=1000
-  BIN_RC_THRESHOLD=int(BIN_LONG_TRANCE/4)
-  height = np.arange(0, number_bins, 1)
-  lidar_bias = np.mean(lidar_signal[BIN_RC_THRESHOLD:])
-  lidar_rc = (lidar_signal - lidar_bias)*(height**2)
-
-  # smooth with box
-  box_pts=5
-  box = np.ones(box_pts)/box_pts
-  lidar_rc = np.convolve(lidar_rc, box, mode='same')
+  # lidarsignal class
+  # lidar = lidarsignal()
+  global lidar
+  lidar.loadSignal(lidar_data)
+  lidar.offsetCorrection(OFFSET_BINS)
+  lidar.rangeCorrection(THRESHOLD_METERS)
+  lidar.smoothSignal(level = 3)
 
   #----------- RAYLEIGH-FIT ------------------
 
-  #-------------
-  #  Parameters
-  #-------------
-
-  # LiDAR 
-  BIN_RC_THRESHOLD=1000
-  wave_length = 532 #nm
-
-  # Current surface atmospheric conditions (Av.Dorrego SMN)
-  SURFACE_TEMP = 300 # [K] 27C
-  SURFACE_PRESS = 1024 # [hPa]
-  MASL = 10.0 # meters above sea level (AMSL)
-
-  # rayleigh-fit meters 
-  RF_INIT=3000
-  RF_FINAL=8000
-
-  #----------
-  #  MODEL
-  #----------
-
-  # load data
-  MODEL_FILE='./US-StdA_DB_CEILAP.csv'
-  data_csv = pd.read_csv(MODEL_FILE,sep=',',header=None)
-
-  height_lowres=np.array(data_csv[0])
-  temp_lowres=np.array(data_csv[1])
-  press_lowres=np.array(data_csv[2])
-
-  print("number bins ",number_bins)
-  # Height high resolution
-  #height_highres = np.linspace(height_lowres[0], number_bins*7.5, num=number_bins, endpoint=True)
-  
-  height_highres = np.arange(height_lowres[0], (number_bins+1)*7.5, 7.5,) # ESTE ES EL CORRECTO PERO HAY QUE AGREGAR UN CERO AL PRINCIPIO
-  #height_lowres[-1] = height_highres[-1]
-
-  index_MASL = (np.abs(height_highres - MASL)).argmin() # Height above mean sea level (AMSL)
-
-  # Interpolation Spline 1D
-  temp_spline = interp1d(height_lowres, temp_lowres, kind='cubic')
-  temp_highres = temp_spline(height_highres)
-
-  press_spline = interp1d(height_lowres, press_lowres, kind='cubic')
-  press_highres = press_spline(height_highres)
-
-  # Scaling the temperature and pressure profiles in the model
-  # with current surface conditions
-  temp_highres = SURFACE_TEMP * (temp_highres/temp_highres[index_MASL])
-  press_highres = SURFACE_PRESS * (press_highres/press_highres[index_MASL])
-
-  # atm molecular concentration 
-  kboltz=constants.k
-  nmol = (100*press_highres[index_MASL:])/(temp_highres[index_MASL:]*kboltz) 
-
-  # alpha y beta
-  beta_mol = nmol * (550/wave_length)**4.09 * 5.45 * (10**-32)
-  alpha_mol = beta_mol * (8*np.pi/3)
-
-  range_lidar = height_highres[:-index_MASL]
-  cumtrapz = integrate.cumtrapz(alpha_mol, range_lidar, initial=0)
-  tm2r_mol = np.exp(-2*cumtrapz)
-  pr2_mol = beta_mol*tm2r_mol
-
-
-  #----------
-  #  Min ECM
-  #----------
-  bin_init = int(RF_INIT/7.5)
-  bin_fin = int(RF_FINAL/7.5)
-
-
-  # sig == lidar_rc
-  # sigmol == pr2_mol
-  mNum = np.dot(lidar_rc[bin_init:bin_fin+1],pr2_mol[bin_init:bin_fin+1])
-  mDen = np.dot(pr2_mol[bin_init:bin_fin+1],pr2_mol[bin_init:bin_fin+1])
-  factor_adj = mNum/mDen
-
-  print("Min ECM:",np.format_float_scientific(factor_adj))
-
+  lidar.setSurfaceConditions(temperature=298,pressure=1023)
+  lidar.molecularProfile(wavelength=533,masl=10)
+  lidar.rayleighFit(3000,5000) # meters
+ 
+  print("Adj factor a(r,dr)=",np.format_float_scientific(lidar.adj_factor))
+  print("Err RMS =",np.format_float_scientific(lidar.rms_err))
  
   #-------------- PLOTING --------------------
 
   #ploting
-  plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar_signal)
-  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(range_lidar,lidar_rc,pr2_mol*factor_adj)
+  plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
+  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar.range,lidar.rc_signal,lidar.pr2_mol*lidar.adj_factor)
+  # plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar_signal)
+  # plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(range_lidar,lidar_rc,pr2_mol*factor_adj)
 
   # load dict context
-  context = {"number_bins": number_bins,
+  context = {"number_bins": lidar.bin_long_trace,
              "plot_lidar_signal": plot_lidar_signal,
              "plot_lidar_range_correction": plot_lidar_range_correction}
 
@@ -232,56 +159,59 @@ def plot_acquis():
 
   SHOTS_DELAY = 1000 # wait 10s = 300shots/30Hz
 
-  lc = licelcontroller()
-  lc.openConnection('10.49.234.234',2055)
-  tr=0 #first TR
+  # lc = licelcontroller()
+  # lc.openConnection('10.49.234.234',2055)
+  # tr=0 #first TR
 
   if(action_button =="start"):
+    while(True):
+      # height = [7.5*i for i in range(0,1000)]
+      # mv = [np.random.randint(0, 500) for iter in range(1000)]
+      height = lidar.range
+      mv = lidar.rc_signal + np.array([np.random.randint(-1e6,1e6) for iter in range(len(lidar.rc_signal))])
+      data = [height.tolist(), mv.tolist()]
+      response = make_response(json.dumps(data))
+      response.content_type = 'application/json'
+      print(response)
+      return response
+    # COPY CODE!!
     # start the acquisition
-    lc.clearMemory()
-    lc.startAcquisition()
-    lc.msDelay(SHOTS_DELAY)
-    lc.stopAcquisition() 
-    #lc.waitForReady(100) # wait till it returns to the idle state
-
+  
     ## get the shotnumber 
-    if lc.getStatus() == 0:
-      if (lc.shots_number > 1):
-        cycles = lc.shots_number - 2 # WHY??!
-
+  
     # read from the TR triggered mem A
-    data_lsw = lc.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
-    data_msw = lc.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
     
     # combine, normalize an scale data to mV
-    data_accu,data_clip = lc.combineAnalogDatasets(data_lsw, data_msw)
-    data_phys = lc.normalizeData(data_accu,cycles)
-    data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
     
     # DUMP THE DATA INTO A FILE
-    with open('analog.txt', 'w') as file: # or analog.dat 'wb'
-      np.savetxt(file,data_mv,delimiter=',')
+    # with open('analog.txt', 'w') as file: # or analog.dat 'wb'
+    #   np.savetxt(file,data_mv,delimiter=',')
 
-    lidar_signal = np.array(data_mv)
-    number_bins = len(data_mv)
+    # lidar_signal = np.array(data_mv)
+    # number_bins = len(data_mv)
  
-    BIN_RC_THRESHOLD=int(BIN_LONG_TRANCE/4)
-    height = np.arange(0, number_bins, 1)
-    lidar_bias = np.mean(lidar_signal[BIN_RC_THRESHOLD:])
-    lidar_rc = (lidar_signal - lidar_bias)*(height**2)
+    # BIN_RC_THRESHOLD=int(BIN_LONG_TRANCE/4)
+    # height = np.arange(0, number_bins, 1)
+    # lidar_bias = np.mean(lidar_signal[BIN_RC_THRESHOLD:])
+    # lidar_rc = (lidar_signal - lidar_bias)*(height**2)
 
-    #ploting
-    plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar_signal)
-    plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar_rc)
+    # #ploting
+    # plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar_signal)
+    # plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar_rc)
 
-    # load dict context
-    context = {"number_bins": number_bins,
-               "plot_lidar_signal": plot_lidar_signal,
-               "plot_lidar_range_correction": plot_lidar_range_correction}
+    # # load dict context
+    # context = {"number_bins": number_bins,
+    #            "plot_lidar_signal": plot_lidar_signal,
+    #            "plot_lidar_range_correction": plot_lidar_range_correction}
 
     # run html template
-    return context
-
+    # return context
+  if(action_button =="stop"):
+    data=[[],[]]
+    response = make_response(json.dumps(data))
+    response.content_type = 'application/json'
+    print(response)
+    return response
 
 if __name__ == '__main__':
   app.run(debug=True)
