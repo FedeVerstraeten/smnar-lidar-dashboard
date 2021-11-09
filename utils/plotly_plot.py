@@ -97,12 +97,15 @@ def plotly_lidar_range_correction(range_lidar,lidar_rc,lidar_RF):
       'yanchor': 'top'},
       paper_bgcolor="#ffffff",
       plot_bgcolor="#ffffff",
-      width=1200, height=700
+      # width=1200, height=700
+      width=800, height=600
   )
+  # display rayleigh-fit range
+  fig.add_vrect(x0=5000, x1=15000, line_width=0, fillcolor="red", opacity=0.2)
 
    # Set x-axis title
   #fig.update_xaxes(tickangle=45,rangeslider_visible=True)
-  fig.update_xaxes(tickangle=45)
+  fig.update_xaxes(tickangle=45,title_text="Height [m]")
   
   # Set y-axes titles
   fig.update_yaxes(title_text="TR0 500mV",
