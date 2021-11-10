@@ -6,9 +6,6 @@ import numpy as np
 import json
 from utils import plotly_plot
 
-# from scipy import constants
-# from scipy import integrate
-# from scipy.interpolate import interp1d
 
 from lidarcontroller.licelcontroller import licelcontroller
 from lidarcontroller import licelsettings
@@ -72,15 +69,6 @@ def plot_lidar_signal():
   #----------- RANGE CORRECTION ---------------
 
   lidar_data = np.array(data_mv)
-  
-  # load data
-  # LIDAR_FILE='./analog_532par_500mV_CON_THRESHOLD.txt'
-  # LIDAR_FILE='./analog_dia_nubes_20mV.txt'
-  # LIDAR_FILE='./dashboard_532par_500mV_analog_SIN_THRESHOLD.txt'
-  # LIDAR_FILE='./tr1_532par_100mV_20211001_1757_analog.txt'
-  # LIDAR_FILE='./tr1_532par_500mV_20211001_1740_analog.txt'
-  # data_csv = pd.read_csv(LIDAR_FILE,sep='\n',header=None)
-  # lidar_data = np.array(data_csv[0])
 
   # lidarsignal class
   # lidar = lidarsignal()
@@ -103,9 +91,7 @@ def plot_lidar_signal():
 
   #ploting
   plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
-  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar.range,lidar.rc_signal,lidar.pr2_mol*lidar.adj_factor)
-  # plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar_signal)
-  # plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(range_lidar,lidar_rc,pr2_mol*factor_adj)
+  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
 
   # load dict context
   context = {"number_bins": lidar.bin_long_trace,
@@ -195,19 +181,13 @@ def plot_acquis():
     lidar.offsetCorrection(OFFSET_BINS)
     lidar.rangeCorrection(THRESHOLD_METERS)
     lidar.smoothSignal(level = 3)
-    lidar.setSurfaceConditions(temperature=298,pressure=1023)
-    lidar.molecularProfile(wavelength=533,masl=10)
+    lidar.setSurfaceConditions(temperature=298,pressure=1023) # optional?
+    lidar.molecularProfile(wavelength=533,masl=10) # optional?
     lidar.rayleighFit(3000,5000) # meters
- 
-    # data = [lidar.range.tolist(), lidar.rc_signal.tolist()]
-    # response = make_response(json.dumps(data))
-    # response.content_type = 'application/json'
-    # print(response)
-    # return response
   
     # ploting
     plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
-    plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar.range,lidar.rc_signal,lidar.pr2_mol*lidar.adj_factor)
+    plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
 
     # load dict context
     context = {"number_bins": lidar.bin_long_trace,

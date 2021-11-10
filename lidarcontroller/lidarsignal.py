@@ -28,7 +28,8 @@ class lidarsignal:
     self.surface_temperature = 300 # [K]
     self.surface_pressure = 1024 # [hPa]
     self.masl = 5.0 # meters above sea level (AMSL)
-    self.fitting_interval = [0,0] # meters
+    self.fit_init = 0 # [m]
+    self.fit_final = 0 # [m]
     self.pr2_mol = []
     self.rms_err = 0
     self.adj_factor = 0
@@ -161,9 +162,11 @@ class lidarsignal:
 
   def rayleighFit(self,fit_init,fit_final):
 
+    self.fit_init = fit_init
+    self.fit_final = fit_final
     bin_init = int(fit_init/self.__BIN_METERS)
     bin_fin = int(fit_final/self.__BIN_METERS)
-    self.fitting_interval = [bin_init,bin_fin]
+    
 
     # Adjusment factor calculus between elastic LiDAR and molecular signals
     # a = sum(Sel*Sm)/sum(Sm^2)

@@ -30,28 +30,15 @@ def plotly_lidar_signal(lidar_signal):
   
   return plot_json
 
-# def plotly_lidar_range_correction(lidar_rc):
-#   # Plotly plot 2:
-#   df = pd.DataFrame(lidar_rc)
-#   df.reset_index(inplace=True)
-#   df.columns=["bin","TR0_500mV"]
-  
-#   fig = px.line(df, 
-#                 x='bin', 
-#                 y=['TR0_500mV'], 
-#                 title='LiDAR range-corrected signal')
-  
-#   fig.update_xaxes(rangeslider_visible=True)
-#   fig.update_layout(width=1500, height=500)
-#   fig.add_vrect(x0=250, x1=1500, line_width=0, fillcolor="red", opacity=0.2)
-#   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-  
-#   return plot_json    
 
-def plotly_lidar_range_correction(range_lidar,lidar_rc,lidar_RF):
+def plotly_lidar_range_correction(lidar_signal):
+
+  lidar_range=lidar_signal.range
+  lidar_rc=lidar_signal.rc_signal
+  lidar_rf=lidar_signal.pr2_mol*lidar_signal.adj_factor
+
   # Plotly plot 1:
-  print("lengs",len(range_lidar),len(lidar_rc),len(lidar_RF))
-  df=pd.DataFrame({'meters':range_lidar,'TR0_500mV':lidar_rc,'TR0_500mV_RF':lidar_RF})
+  df=pd.DataFrame({'meters':lidar_range,'TR0_500mV':lidar_rc,'TR0_500mV_RF':lidar_rf})
   df.index=df['meters']
   fig = go.Figure()
   fig = make_subplots() # rayleigh-fit secondary curve?
@@ -101,9 +88,9 @@ def plotly_lidar_range_correction(range_lidar,lidar_rc,lidar_RF):
       width=800, height=600
   )
   # display rayleigh-fit range
-  fig.add_vrect(x0=5000, x1=15000, line_width=0, fillcolor="red", opacity=0.2)
+  fig.add_vrect(x0=lidar_signal.fit_init, x1=lidar_signal.fit_final, line_width=0, fillcolor="red", opacity=0.2)
 
-   # Set x-axis title
+  # Set x-axis title
   #fig.update_xaxes(tickangle=45,rangeslider_visible=True)
   fig.update_xaxes(tickangle=45,title_text="Height [m]")
   
