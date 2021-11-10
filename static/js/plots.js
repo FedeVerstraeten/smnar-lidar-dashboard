@@ -37,11 +37,9 @@ $('#startbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-        // var graph = JSON.parse(context.plot_lidar_range_correction)
-        // Plotly.newPlot('plotly-lidar-range-correction', graph);
         console.log("START OK");
         if (!interval) {
-          interval = setInterval(requestData,100);
+          interval = setInterval(requestPlots,2000);
           console.log("start",interval);
         }
       }
@@ -97,6 +95,26 @@ function requestData() {
 
       Plotly.newPlot('plotly-lidar-range-correction', data_update, [0]);
     },
+    cache: false
+  });
+}
+
+function requestPlots() {
+  $.ajax({
+    url: "/acquis",
+    type: "GET",
+    contentType: 'application/json;charset=UTF-8',
+    data: {
+      'selected': document.getElementById('startbtn').value
+    },
+    dataType:"json",
+    success: function (context) {
+      // console.log(context);
+      var graph_rc = JSON.parse(context.plot_lidar_range_correction)
+      var graph_raw = JSON.parse(context.plot_lidar_signal)
+      Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
+      Plotly.newPlot('plotly-lidar-signal', graph_raw);
+      },
     cache: false
   });
 }
