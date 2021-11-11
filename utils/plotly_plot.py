@@ -4,7 +4,7 @@ import plotly
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.express as px
-from vega_datasets import data
+# from vega_datasets import data
 import pandas as pd
 import json
 
