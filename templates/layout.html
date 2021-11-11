@@ -21,11 +21,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <link rel="stlesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/vega-tooltip@0.16.0/vega-tooltip.scss">
     <!-- Import Vega 3 & Vega-Lite 2 (does not have to be from CDN) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <!--    
     <script src="https://cdn.jsdelivr.net/npm/vega-tooltip@0.16.0/build/vega-tooltip.min.js"></script>
     <script src="https://d3js.org/d3.v3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@3.0.0-rc12"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-embed@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@3"></script> 
+    -->
     <script src="https://vega.github.io/datalib/datalib.min.js"></script>
     <!-- Import Plotly (does not have to be from CDN) -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -44,17 +46,15 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 <li class="nav-item">
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
                 </li>
-                
-
                 <li class="nav-item">
-                    <a class="nav-link" href="#"> 
-                        <button class="btn btn-outline-success" type="button">Alignment Mode</button>
+                    <a class="nav-link" href="#">
+                        <button class="btn btn-outline-success" data-toggle="button" aria-pressed="false" type="button">Alignment Mode</button>
                         <!-- <span class="sr-only">(current)</span> -->
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">
-                        <button class="btn btn-outline-secondary" type="button">Adquisition Mode</button>
+                        <button class="btn btn-outline-secondary" ata-toggle="button" aria-pressed="false" type="button">Adquisition Mode</button>
                     </a>
                 </li>
             </ul>
@@ -89,7 +89,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                         <!-- Add icons to the links using the .nav-icon class with font-awesome or any other icon font library -->
-                        
                         <!-- Main Menu -->
                         <li class="nav-item has-treeview menu-open">
                             <a href="#" class="nav-link ">
@@ -102,56 +101,49 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <ul class="nav nav-treeview">
                                 <!-- Control buttons -->
                                 <li class="nav-item">
-                                    <form>
-                                      <div class="form-row align-items-center">
-                                        <div class="col-sm-8 my-1">
-                                          <label class="sr-only" for="inlineFormInputGroup">Channel</label>
-                                          <div class="input-group">
-                                            <div class="input-group-prepend">
-                                              <div class="input-group-text">Ch</div>
+                                    <!-- <form> -->
+                                        <div class="form-row align-items-center">
+                                            <div class="col-sm-8 my-1">
+                                                <label class="sr-only" for="inlineFormInputGroup">Channel</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <div class="input-group-text">Ch</div>
+                                                    </div>
+                                                    <input type="text" class="form-control " id="inlineFormInputGroup" placeholder="Channel">
+                                                </div>
                                             </div>
-                                            <input type="text" class="form-control " id="inlineFormInputGroup" placeholder="Channel">
-                                          </div>
-                                        </div>
-                                        <div class="col-sm-2 my-1">
-                                          <button type="submit" class="btn btn-primary">Apply</button>
-                                        </div>
-                                      </div>
-                                      <div class="form-row align-items-center">
-                                        <div class="col-sm-8 my-1">
-                                          <label class="sr-only" for="inlineFormInputGroup">Adq. Time</label>
-                                          <div class="input-group">
-                                            <div class="input-group-prepend">
-                                              <div class="input-group-text">Sec</div>
+                                            <div class="col-sm-2 my-1">
+                                                <button type="submit" class="btn btn-primary">Apply</button>
                                             </div>
-                                            <input type="text" class="form-control " id="inlineFormInputGroup" placeholder="Adq. Time">
-                                          </div>
                                         </div>
-                                        <div class="col-sm-2 my-1">
-                                          <button type="submit" class="btn btn-primary">Apply</button>
+                                        <div class="form-row align-items-center">
+                                            <div class="col-sm-8 my-1">
+                                                <label class="sr-only" for="inlineFormInputGroup">Adq. Time</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <div class="input-group-text">Sec</div>
+                                                    </div>
+                                                    <input type="text" class="form-control " id="inlineFormInputGroup" placeholder="Adq. Time">
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-2 my-1">
+                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                            </div>
                                         </div>
-                                      </div>
-                                    </form> 
+                                    <!-- </form> -->
                                 </li>
-
                                 <li class="nav-item">
-                                    <button type="button" class="btn btn-outline-success" data-toggle="button" aria-pressed="false" id="startbtn">START</button>
-                                    <a href="https://youtu.be/ZZ5LpwO-An4">
-                                        <button type="button" class="btn btn-outline-danger">STOP</button>
-                                    </a>
-                                    <a href="https://youtu.be/G1IbRujko-A">
-                                        <button type="button" class="btn btn-outline-primary">SAVE</button>
-                                    </a>
+                                    <button type="button" class="btn btn-outline-success" id="startbtn" value="start">START</button>
+                                    <button type="button" class="btn btn-outline-danger" id="stopbtn" value="stop">STOP</button>
+                                    <button type="button" class="btn btn-outline-primary" id="savebtn" value="save">SAVE</button>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ url_for('plot_lidar_signal')}}" class="nav-link ">
-                                        <p>LiDAR</p>
+                                        <p>Manual single-shot</p>
                                     </a>
                                 </li>
-
                             </ul>
                         </li>
-
                         <!-- Load ini files -->
                         <li class="nav-item has-treeview menu-closed">
                             <a href="#" class="nav-link ">
@@ -164,19 +156,94 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <form>
-                                      <div class="form-group">
-                                        <label for="exampleFormControlFile1">Acquis</label>
-                                        <input type="file" class="form-control-file" id="AcquisINI">
-                                      </div>
-                                      <div class="form-group">
-                                        <label for="exampleFormControlFile1">Global info</label>
-                                        <input type="file" class="form-control-file" id="AcquisINI">
-                                      </div>
+                                        <div class="form-group">
+                                            <label for="exampleFormControlFile1">
+                                                <b style="color:white">Acquis</b>
+                                            </label>
+                                            <input type="file" class="form-control-file" id="AcquisINI">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="exampleFormControlFile2">
+                                                <b style="color:white">Global Info</b>
+                                            </label>
+                                            <input type="file" class="form-control-file" id="AcquisINI">
+                                        </div>
                                     </form>
                                 </li>
                             </ul>
                         </li>
-
+                        <!-- Rayleigh-Fit Menu -->
+                        <li class="nav-item has-treeview menu-close">
+                            <a href="#" class="nav-link ">
+                                <i class="nav-icon fas fa-th"></i>
+                                <p>
+                                    Rayleigh-Fit controls
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <!-- Rayleigh-Fit controls -->
+                                <li class="nav-item">
+                                    <form>
+                                        <div class="form-row align-items-center">
+                                            <div class="col-sm-8 my-1">
+                                                <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <div class="input-group-text">ºC</div>
+                                                    </div>
+                                                    <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Temperature">
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-2 my-1">
+                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                            </div>
+                                        </div>
+                                        <div class="form-row align-items-center">
+                                            <div class="col-sm-8 my-1">
+                                                <label class="sr-only" for="inlineFormInputGroup">Pressure</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <div class="input-group-text">hPa</div>
+                                                    </div>
+                                                    <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Pressure">
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-2 my-1">
+                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                            </div>
+                                        </div>
+                                        <div class="form-row align-items-center">
+                                            <div class="col-sm-8 my-1">
+                                                <label class="sr-only" for="inlineFormInputGroup">MASL</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <div class="input-group-text">m</div>
+                                                    </div>
+                                                    <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="MASL">
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-2 my-1">
+                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                            </div>
+                                        </div>
+                                        <div class="form-row align-items-center">
+                                            <div class="col-sm-4 my-1">
+                                                <label class="sr-only" for="inlineFormInputName">Initial</label>
+                                                <input type="text" class="form-control" id="inlineFormInputName" placeholder="Initial">
+                                            </div>
+                                            <div class="col-sm-4 my-1">
+                                                <label class="sr-only" for="inlineFormInputName">Final</label>
+                                                <input type="text" class="form-control" id="inlineFormInputName" placeholder="Final">
+                                            </div>
+                                            <div class="col-sm-2 my-1">
+                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
                         <!-- Sounding Menu -->
                         <li class="nav-item has-treeview menu-close">
                             <a href="#" class="nav-link ">
@@ -190,42 +257,43 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                 <!-- Sounding controls -->
                                 <li class="nav-item">
                                     <form>
-                                      <div class="form-row align-items-center">
-                                        <div class="col-sm-8 my-1">
-                                          <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
-                                          <div class="input-group">
-                                            <div class="input-group-prepend">
-                                              <div class="input-group-text">ºC</div>
+                                        <div class="form-row align-items-center">
+                                            <div class="col-sm-10 my-1">
+                                                <label class="sr-only" for="inlineFormInputGroup">Station number</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <div class="input-group-text">ST</div>
+                                                    </div>
+                                                    <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Station number">
+                                                </div>
                                             </div>
-                                            <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Temperature">
-                                          </div>
                                         </div>
-                                        <div class="col-sm-2 my-1">
-                                          <button type="submit" class="btn btn-primary">Apply</button>
+                                        <div class="form-row align-items-center">
+                                            <select name="region_sounding" id="region_sounding" required="required" style="width:200px">
+                                                <option value="" label="Select a region ... " selected="selected">Select a region... </option>
+                                                <option value="naconf">North America</option>
+                                                <option value="samer">South America</option>
+                                                <option value="pac">South Pacific</option>
+                                                <option value="ant">Antarctica</option>
+                                                <option value="np">Arctic</option>
+                                                <option value="europe">Europe</option>
+                                                <option value="africa">Africa</option>
+                                                <option value="seasia">Southeast Asia</option>
+                                                <option value="mideast">Mideast</option>
+                                            </select>
                                         </div>
-                                      </div>
-                                      <div class="form-row align-items-center">
-                                        <div class="col-sm-8 my-1">
-                                          <label class="sr-only" for="inlineFormInputGroup">Pressure</label>
-                                          <div class="input-group">
-                                            <div class="input-group-prepend">
-                                              <div class="input-group-text">hPa</div>
-                                            </div>
-                                            <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Pressure">
-                                          </div>
+                                        <div class="input-group date" data-provide="datepicker">
+                                            <input type="datetime-local" id="datepicker" name="trip-start" value="2020-01-01">
                                         </div>
-                                        <div class="col-sm-2 my-1">
-                                          <button type="submit" class="btn btn-primary">Apply</button>
-                                        </div>
-                                      </div>
-                                    </form> 
+                                <li>
+                                    <input type="submit" value="Submit" class="btn btn-primary"></input>
                                 </li>
-
-                            </ul>
+                                </form>
                         </li>
-
-                        <!-- Secondary Menu -->
-                        <li class="nav-item has-treeview menu-closed">
+                    </ul>
+                    </li>
+                    <!-- Secondary Menu -->
+                    <!-- <li class="nav-item has-treeview menu-closed">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon fas fa-th"></i>
                                 <p>
@@ -240,7 +308,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                     </a>
                                 </li>
                                 <li>
-                                    <!-- /.Signal type selector -->
                                     <form method="POST" action="{{url_for('plot_selected_signal')}}">
                                         <select name="lidar_type_plot" id="lidar_type_plot" required="required" style="width:200px">
                                             <option value="" label="Select a signal ... " selected="selected">Select a signal... </option>
@@ -263,23 +330,23 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                     </select>
                                 </div>
                             </ul>
-                        </li>
-                        <!-- Laser controls -->
-                        <li class="nav-item has-treeview menu-closed">
-                            <a href="#" class="nav-link ">
-                                <i class="nav-icon fas fa-th"></i>
-                                <p>
-                                    Laser controls
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <button type="button" class="btn btn-outline-success" data-toggle="button" aria-pressed="false" id="startbtn">START</button>
-                                    <button type="button" class="btn btn-outline-danger">STOP</button>
-                                </li>
-                            </ul>
-                        </li>
+                        </li> -->
+                    <!-- Laser controls -->
+                    <li class="nav-item has-treeview menu-closed">
+                        <a href="#" class="nav-link ">
+                            <i class="nav-icon fas fa-th"></i>
+                            <p>
+                                Laser controls
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <button type="button" class="btn btn-outline-success" data-toggle="button" aria-pressed="false" id="startbtn">START</button>
+                                <button type="button" class="btn btn-outline-danger">STOP</button>
+                            </li>
+                        </ul>
+                    </li>
                     </ul>
                 </nav>
                 <!-- /.sidebar-menu -->
