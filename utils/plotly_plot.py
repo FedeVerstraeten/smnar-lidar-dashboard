@@ -33,12 +33,12 @@ def plotly_lidar_signal(lidar_signal):
 
 def plotly_lidar_range_correction(lidar_signal):
 
-  lidar_range=lidar_signal.range
-  lidar_rc=lidar_signal.rc_signal
-  lidar_rf=lidar_signal.pr2_mol*lidar_signal.adj_factor
-
   # Plotly plot 1:
-  df=pd.DataFrame({'meters':lidar_range,'TR0_500mV':lidar_rc,'TR0_500mV_RF':lidar_rf})
+  df=pd.DataFrame({
+                  'meters':lidar_signal.range,
+                  'TR0_500mV':lidar_signal.rc_signal,
+                  'TR0_500mV_RF':lidar_signal.pr2_mol*lidar_signal.adj_factor
+                  })
   df.index=df['meters']
   fig = go.Figure()
   fig = make_subplots() # rayleigh-fit secondary curve?
@@ -101,5 +101,76 @@ def plotly_lidar_range_correction(lidar_signal):
                    secondary_y=True, showgrid=False)
   
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+  
+  return plot_json
+
+def plotly_empty_signal(signal_type):
+  
+  BIN_LONG_TRANCE = 4000
+  empty_signal = [0] * BIN_LONG_TRANCE
+  plot_json = {}
+  
+  if signal_type == "raw":
+    df = pd.DataFrame(empty_signal)
+    df.reset_index(inplace=True)
+    df.columns=["bin","TR0_500mV"]
+    fig = px.line(df, 
+                  x='bin', 
+                  y=['TR0_500mV'], 
+                  title='LiDAR raw signal')
+    
+    fig.update_xaxes(rangeslider_visible=True)
+    fig.update_layout(width=1200, height=500)
+    plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+  
+  elif signal_type == "rangecorrected":
+    df = pd.DataFrame(empty_signal)
+    df.reset_index(inplace=True)
+    df.columns=["bin","TR0_500mV"]
+    df.index=df['bin']
+    fig = go.Figure()
+    fig = make_subplots() # rayleigh-fit secondary curve?
+
+
+    # Adding traces
+    fig.add_trace(
+      go.Scatter(
+          x=df.index,
+          y=df["TR0_500mV"],
+          mode="lines",
+          name="TR0 500mV",
+          marker_color='#39ac39',
+          opacity=1
+      ),
+      secondary_y=False
+    )
+
+    # Add figure title
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=0.93),
+        title={
+        'text': '<span style="font-size: 20px;">Range corrected LiDAR signal </span><br><span style="font-size: 10px;">(click and drag)</span>',
+        'y': 0.97,
+        'x': 0.45,
+        'xanchor': 'center',
+        'yanchor': 'top'},
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+        # width=1200, height=700
+        width=800, height=600
+    )
+
+    # Set x-axis title
+    fig.update_xaxes(tickangle=45,title_text="Height [m]")
+  
+    # Set y-axes titles
+    fig.update_yaxes(title_text="TR0 500mV",
+                     secondary_y=False, showgrid=False)
+    
+    plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
   
   return plot_json

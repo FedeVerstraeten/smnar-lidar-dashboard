@@ -56,12 +56,9 @@ $('#stopbtn').on('click', function (e) {
     },
     dataType:"json",
     success: function (context) {
-      // var graph = JSON.parse(context.plot_lidar_range_correction)
-      // Plotly.newPlot('plotly-lidar-range-correction', graph);
-      console.log("stop",interval);
       clearInterval(interval);
       interval=null;
-      console.log("STOP OK",acq_status);
+      console.log("stop",interval);
     }
  });
 })

@@ -21,6 +21,19 @@ lidar = lidarsignal()
 # Defining routes
 
 @app.route("/")
+def homepage():
+
+  # empty plot
+  plot_lidar_signal = plotly_plot.plotly_empty_signal("raw")
+  plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
+
+  # load dict context
+  context = {"plot_lidar_signal": plot_lidar_signal,
+             "plot_lidar_range_correction": plot_lidar_range_correction}
+
+  # run html template
+  return render_template('lidar.html', context=context)
+
 @app.route("/lidar")
 def plot_lidar_signal():
 
@@ -30,6 +43,8 @@ def plot_lidar_signal():
   OFFSET_BINS = 10
   THRESHOLD_METERS = 2000 # meters
 
+
+  #----------- LICEL ADQUISITION ---------------
 
   # initialization
   lc = licelcontroller()
@@ -62,6 +77,8 @@ def plot_lidar_signal():
   data_phys = lc.normalizeData(data_accu,cycles)
   data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
   
+  # close socket
+  lc.closeConnection()
   # # DUMP THE DATA INTO A FILE
   # with open('analog.txt', 'w') as file: # or analog.dat 'wb'
   #   np.savetxt(file,data_mv,delimiter=',')
@@ -91,7 +108,7 @@ def plot_lidar_signal():
 
   #ploting
   plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
-  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
+  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar.range,lidar.rc_signal,lidar.pr2_mol*lidar.adj_factor)
 
   # load dict context
   context = {"number_bins": lidar.bin_long_trace,
@@ -146,13 +163,13 @@ def plot_acquis():
   OFFSET_BINS = 10
   THRESHOLD_METERS = 2000 # meters
 
-  lc = licelcontroller()
-  lc.openConnection('10.49.234.234',2055)
-  tr=0 #first TR
 
   if(action_button =="start"):
       
     # initialization
+    lc = licelcontroller()
+    lc.openConnection('10.49.234.234',2055)
+    tr=0 #first TR
     lc.selectTR(tr)
     lc.setInputRange(licelsettings.MILLIVOLT500)
    
@@ -175,7 +192,10 @@ def plot_acquis():
     data_accu,data_clip = lc.combineAnalogDatasets(data_lsw, data_msw)
     data_phys = lc.normalizeData(data_accu,cycles)
     data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
- 
+    
+    # close socket
+    lc.closeConnection()
+
     # rayleigh fit 
     lidar.loadSignal(data_mv)
     lidar.offsetCorrection(OFFSET_BINS)
@@ -187,7 +207,7 @@ def plot_acquis():
   
     # ploting
     plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
-    plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
+    plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar.range,lidar.rc_signal,lidar.pr2_mol*lidar.adj_factor)
 
     # load dict context
     context = {"number_bins": lidar.bin_long_trace,
@@ -199,7 +219,7 @@ def plot_acquis():
     return context
   
   if(action_button =="stop"):
-    data=[[],[]]
+    data=[]
     response = make_response(json.dumps(data))
     response.content_type = 'application/json'
     print(response)
