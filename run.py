@@ -109,7 +109,7 @@ def plot_lidar_signal():
 
   lidar.setSurfaceConditions(temperature=298,pressure=1023)
   lidar.molecularProfile(wavelength=533,masl=10)
-  lidar.rayleighFit(3000,5000) # meters
+  lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
  
   print("Adj factor a(r,dr)=",np.format_float_scientific(lidar.adj_factor))
   print("Err RMS =",np.format_float_scientific(lidar.rms_err))
