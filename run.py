@@ -170,7 +170,7 @@ def plot_acquis():
   action_button = request.args['selected']
 
   # basic settings
-  BIN_LONG_TRANCE = globalconfig["bins"]
+  BIN_LONG_TRANCE = globalconfig["max_bins"]
   SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds 
   OFFSET_BINS = 10
   THRESHOLD_METERS = 2000 # meters
