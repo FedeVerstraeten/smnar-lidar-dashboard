@@ -122,7 +122,41 @@ def plotly_empty_signal(signal_type):
     fig.update_xaxes(rangeslider_visible=True)
     fig.update_layout(width=1200, height=500)
     plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-  
+
+  elif signal_type =="rms":
+    df = pd.DataFrame(empty_signal)
+    df.reset_index(inplace=True)
+    df.columns=["sample","rms_error"]
+ 
+    fig = go.Figure(data=go.Scatter(
+          x=df['sample'],
+          y=df["rms_error"],
+          mode="lines",
+          name="RMS error",
+          # title="RMS TMS",
+          marker_color='#b23434',
+          opacity=1
+    ))
+
+    fig.update_layout(
+      width=640,
+      height=480,
+      title={
+        'text': '<span style="font-size: 20px;">RMS Error</span>',
+        'y': 0.97,
+        'x': 0.45,
+        'xanchor': 'center',
+        'yanchor': 'top'}
+      )
+      
+    # Set x-axes titles
+    fig.update_xaxes(title_text="Sample",rangeslider_visible=False)
+
+    # Set y-axes titles
+    fig.update_yaxes(title_text="Error",showgrid=True)
+    
+    plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
   elif signal_type == "rangecorrected":
     df = pd.DataFrame(empty_signal)
     df.reset_index(inplace=True)
@@ -160,8 +194,8 @@ def plotly_empty_signal(signal_type):
         'yanchor': 'top'},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
-        # width=1200, height=700
-        width=800, height=600
+        width=640, height=480
+        # width=800, height=600
     )
 
     # Set x-axis title
@@ -172,5 +206,42 @@ def plotly_empty_signal(signal_type):
                      secondary_y=False, showgrid=False)
     
     plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+  
+  return plot_json
+
+def plotly_lidar_rms(lidar_rms):
+
+  df = pd.DataFrame(lidar_rms)
+  df.reset_index(inplace=True)
+  df.columns=["sample","rms_error"]
+
+  fig = go.Figure(data=go.Scatter(
+        x=df['sample'],
+        y=df["rms_error"],
+        mode="lines",
+        name="RMS error",
+        # title="RMS TMS",
+        marker_color='#b23434',
+        opacity=1
+  ))
+
+  fig.update_layout(
+    width=640,
+    height=480,
+    title={
+      'text': '<span style="font-size: 20px;">RMS Error</span>',
+      'y': 0.97,
+      'x': 0.45,
+      'xanchor': 'center',
+      'yanchor': 'top'}
+    )
+    
+  # Set x-axes titles
+  fig.update_xaxes(title_text="Sample",rangeslider_visible=False)
+
+  # Set y-axes titles
+  fig.update_yaxes(title_text="Error",showgrid=True)
+  
+  plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
   
   return plot_json

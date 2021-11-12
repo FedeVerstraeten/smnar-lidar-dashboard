@@ -38,10 +38,13 @@ def homepage():
   # empty plot
   plot_lidar_signal = plotly_plot.plotly_empty_signal("raw")
   plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
+  plot_lidar_rms = plotly_plot.plotly_empty_signal("rms")
 
   # load dict context
   context = {"plot_lidar_signal": plot_lidar_signal,
-             "plot_lidar_range_correction": plot_lidar_range_correction}
+             "plot_lidar_range_correction": plot_lidar_range_correction,
+             "plot_lidar_rms": plot_lidar_range_correction
+            }
 
   # run html template
   return render_template('lidar.html', context=context)
@@ -125,7 +128,9 @@ def plot_lidar_signal():
   # load dict context
   context = {"number_bins": lidar.bin_long_trace,
              "plot_lidar_signal": plot_lidar_signal,
-             "plot_lidar_range_correction": plot_lidar_range_correction}
+             "plot_lidar_range_correction": plot_lidar_range_correction,
+             "plot_lidar_rms": plot_lidar_range_correction
+            }
 
   # run html template
   return render_template('lidar.html', context=context)
