@@ -13,9 +13,11 @@ function requestPlots() {
     dataType:"json",
     success: function (context) {
       // console.log(context);
-      var graph_rc = JSON.parse(context.plot_lidar_range_correction)
-      var graph_raw = JSON.parse(context.plot_lidar_signal)
+      var graph_rc = JSON.parse(context.plot_lidar_range_correction);
+      var graph_rms = JSON.parse(context.plot_lidar_rms);
+      var graph_raw = JSON.parse(context.plot_lidar_signal);
       Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
+      Plotly.newPlot('plotly-lidar-rms', graph_rms);
       Plotly.newPlot('plotly-lidar-signal', graph_raw);
       },
     cache: false
