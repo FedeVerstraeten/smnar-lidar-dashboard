@@ -50,7 +50,6 @@ def plot_lidar_signal():
 
   # basic settings
   BIN_LONG_TRANCE = 4000
-  SHOTS_DELAY = 1000 # wait 10s = 300shots/30Hz
   OFFSET_BINS = 10
   THRESHOLD_METERS = 2000 # meters
 
@@ -58,9 +57,10 @@ def plot_lidar_signal():
   #----------- LICEL ADQUISITION ---------------
 
   # initialization
+  tr=globalconfig["channel"] 
   lc = licelcontroller()
   lc.openConnection('10.49.234.234',2055)
-  lc.selectTR(globalconfig["channel"])
+  lc.selectTR(tr)
   lc.setInputRange(licelsettings.MILLIVOLT500)
   # lc.setThresholdMode(licelsettings.THRESHOLD_LOW)
   # lc.setDiscriminatorLevel(8) # can be set between 0 and 63
@@ -69,7 +69,7 @@ def plot_lidar_signal():
   # start the acquisition
   lc.clearMemory()
   lc.startAcquisition()
-  lc.msDelay(globalconfig["adq_time"])
+  lc.msDelay(globalconfig["adq_time"]*1000)
   lc.stopAcquisition() 
   #lc.waitForReady(100) # wait till it returns to the idle state
 
@@ -118,7 +118,7 @@ def plot_lidar_signal():
 
   #ploting
   plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
-  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar.range,lidar.rc_signal,lidar.pr2_mol*lidar.adj_factor)
+  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
 
   # load dict context
   context = {"number_bins": lidar.bin_long_trace,
@@ -177,10 +177,10 @@ def plot_acquis():
   if(action_button =="start"):
       
     # initialization
-    
+    tr=globalconfig["channel"] 
     lc = licelcontroller()
     lc.openConnection('10.49.234.234',2055)
-    lc.selectTR(globalconfig.channel)
+    lc.selectTR(tr)
     lc.setInputRange(licelsettings.MILLIVOLT500)
    
     # start the acquisition
@@ -217,7 +217,7 @@ def plot_acquis():
   
     # ploting
     plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
-    plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar.range,lidar.rc_signal,lidar.pr2_mol*lidar.adj_factor)
+    plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
 
     # load dict context
     context = {"number_bins": lidar.bin_long_trace,
@@ -247,9 +247,10 @@ def licelcontrols():
     globalconfig[field_selected] = int(data_input)
   
   # Adquisition time
-  MAX_ADQ_TIME = 300 # 5min
+  MAX_ADQ_TIME = 600 # 600s = 10min
+  MIN_ADQ_TIME = 1 
   if(field_selected == "adq_time" and data_input.isdigit()):
-    if int(data_input) < MAX_ADQ_TIME:
+    if(MIN_ADQ_TIME <= int(data_input) < MAX_ADQ_TIME):
       globalconfig[field_selected] = int(data_input)
     else:
       globalconfig[field_selected] = MAX_ADQ_TIME
