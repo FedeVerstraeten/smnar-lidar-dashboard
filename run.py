@@ -19,13 +19,13 @@ app.config.from_object('config.Config')
 lidar = lidarsignal()
 globalconfig = {
                   "channel" : 0,
-                  "adq_time" : 10, # 10s = 300shots/30Hz(laser)
-                  "temperature" : 300,
-                  "pressure" : 1023,
-                  "masl" : 0,
-                  "wavelength" : 532,
-                  "fit_init" : 1000,
-                  "fit_final" : 2000
+                  "adq_time" : 10,      # 10s = 300shots/30Hz(laser)
+                  "temperature" : 300,  # K
+                  "pressure" : 1023,    # hPa
+                  "masl" : 0,           # m
+                  "wavelength" : 532,   # nm
+                  "fit_init" : 1000,    # m
+                  "fit_final" : 2000    # m
                  }
 
 
@@ -213,7 +213,7 @@ def plot_acquis():
     lidar.smoothSignal(level = 3)
     lidar.setSurfaceConditions(temperature=298,pressure=1023) # optional?
     lidar.molecularProfile(wavelength=533,masl=10) # optional?
-    lidar.rayleighFit(3000,5000) # meters
+    lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
   
     # ploting
     plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
@@ -236,12 +236,11 @@ def plot_acquis():
     return response
 
 @app.route("/licelcontrols", methods=['GET','POST'])
-def licelcontrols():
+def licel_controls():
 
   field_selected = request.args['selected']
   data_input = request.args['input']
 
-  print(field_selected)
   # Channel
   if(field_selected == "channel" and data_input.isdigit()):
     globalconfig[field_selected] = int(data_input)
@@ -255,6 +254,39 @@ def licelcontrols():
     else:
       globalconfig[field_selected] = MAX_ADQ_TIME
   
+  response = make_response(json.dumps(globalconfig))
+  response.content_type = 'application/json'
+  return response
+
+@app.route("/rayleighfit", methods=['GET','POST'])
+def rayleighfit_controls():
+
+  field_selected = request.args['selected']
+  data_input = request.args['input']
+
+  # Temperature
+  if(field_selected == "temperature" and (data_input.replace('.','',1).isdigit() or data_input.replace('-','',1).isdigit())):
+    if float(data_input) + 273 > 0:
+      globalconfig[field_selected] = float(data_input) + 273
+  
+  # Pressure
+  if(field_selected == "pressure" and data_input.replace('.','',1).isdigit()):
+    if float(data_input) > 0:
+      globalconfig[field_selected] = float(data_input)
+
+  # MASL
+  if(field_selected == "masl" and data_input.replace('.','',1).isdigit()):
+    if float(data_input) > 0:
+      globalconfig[field_selected] = float(data_input)
+  
+  # Fitting range
+  fitting=json.loads(data_input)
+  if(field_selected == "fitting" and fitting[0].isdigit() and fitting[1].isdigit()):
+    if(int(fitting[0]) < int(fitting[1])):
+      globalconfig["fit_init"] = int(fitting[0])
+      globalconfig["fit_final"] = int(fitting[1])
+  
+
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'
   return response

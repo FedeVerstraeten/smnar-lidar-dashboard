@@ -182,7 +182,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <ul class="nav nav-treeview">
                                 <!-- Rayleigh-Fit controls -->
                                 <li class="nav-item">
-                                    <form>
                                         <div class="form-row align-items-center">
                                             <div class="col-sm-8 my-1">
                                                 <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
@@ -190,11 +189,11 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                                     <div class="input-group-prepend">
                                                         <div class="input-group-text">ºC</div>
                                                     </div>
-                                                    <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Temperature">
+                                                    <input type="text" class="form-control" id="temperature_input" placeholder="Temperature">
                                                 </div>
                                             </div>
                                             <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                                <button type="submit" class="btn btn-primary" id="temperature_apply" value="temperature">Apply</button>
                                             </div>
                                         </div>
                                         <div class="form-row align-items-center">
@@ -204,11 +203,11 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                                     <div class="input-group-prepend">
                                                         <div class="input-group-text">hPa</div>
                                                     </div>
-                                                    <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Pressure">
+                                                    <input type="text" class="form-control" id="pressure_input" placeholder="Pressure">
                                                 </div>
                                             </div>
                                             <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                                <button type="submit" class="btn btn-primary" id="pressure_apply" value="pressure">Apply</button>
                                             </div>
                                         </div>
                                         <div class="form-row align-items-center">
@@ -218,27 +217,26 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                                     <div class="input-group-prepend">
                                                         <div class="input-group-text">m</div>
                                                     </div>
-                                                    <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="MASL">
+                                                    <input type="text" class="form-control" id="masl_input" placeholder="MASL">
                                                 </div>
                                             </div>
                                             <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                                <button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button>
                                             </div>
                                         </div>
                                         <div class="form-row align-items-center">
                                             <div class="col-sm-4 my-1">
                                                 <label class="sr-only" for="inlineFormInputName">Initial</label>
-                                                <input type="text" class="form-control" id="inlineFormInputName" placeholder="Initial">
+                                                <input type="text" class="form-control" id="fit_init_input" placeholder="Initial">
                                             </div>
                                             <div class="col-sm-4 my-1">
                                                 <label class="sr-only" for="inlineFormInputName">Final</label>
-                                                <input type="text" class="form-control" id="inlineFormInputName" placeholder="Final">
+                                                <input type="text" class="form-control" id="fit_final_input" placeholder="Final">
                                             </div>
                                             <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                                <button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button>
                                             </div>
                                         </div>
-                                    </form>
                                 </li>
                             </ul>
                         </li>
@@ -384,6 +382,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <script src="{{ url_for('static', filename='plugins/jquery/jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/controls.js') }}"></script>
     <script src="{{ url_for('static', filename='js/licelcontrols.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/rayleighfit.js') }}"></script>
     <!-- Bootstrap 4 -->
     <script src="{{ url_for('static', filename='plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- AdminLTE App -->
