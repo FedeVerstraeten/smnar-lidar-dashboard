@@ -84,8 +84,8 @@ def plotly_lidar_range_correction(lidar_signal):
       'yanchor': 'top'},
       paper_bgcolor="#ffffff",
       plot_bgcolor="#ffffff",
-      # width=1200, height=700
-      width=800, height=600
+      width=640, height=480
+      # width=800, height=600
   )
   # display rayleigh-fit range
   fig.add_vrect(x0=lidar_signal.fit_init, x1=lidar_signal.fit_final, line_width=0, fillcolor="red", opacity=0.2)

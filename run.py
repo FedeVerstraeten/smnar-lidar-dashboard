@@ -124,12 +124,13 @@ def plot_lidar_signal():
   #ploting
   plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
   plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
+  plot_lidar_rms = = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
 
   # load dict context
   context = {"number_bins": lidar.bin_long_trace,
              "plot_lidar_signal": plot_lidar_signal,
              "plot_lidar_range_correction": plot_lidar_range_correction,
-             "plot_lidar_rms": plot_lidar_range_correction
+             "plot_lidar_rms": plot_lidar_rms
             }
 
   # run html template
@@ -225,12 +226,14 @@ def plot_acquis():
     # ploting
     plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
     plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
+    plot_lidar_rms = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
 
     # load dict context
     context = {"number_bins": lidar.bin_long_trace,
-             "plot_lidar_signal": plot_lidar_signal,
-             "plot_lidar_range_correction": plot_lidar_range_correction}
-
+               "plot_lidar_signal": plot_lidar_signal,
+               "plot_lidar_range_correction": plot_lidar_range_correction,
+               "plot_lidar_rms": plot_lidar_rms
+              }
  
     # run html template
     return context
