@@ -101,7 +101,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <ul class="nav nav-treeview">
                                 <!-- Control buttons -->
                                 <li class="nav-item">
-                                    <!-- <form> -->
                                         <div class="form-row align-items-center">
                                             <div class="col-sm-8 my-1">
                                                 <label class="sr-only" for="inlineFormInputGroup">Channel</label>
@@ -109,11 +108,11 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                                     <div class="input-group-prepend">
                                                         <div class="input-group-text">Ch</div>
                                                     </div>
-                                                    <input type="text" class="form-control " id="inlineFormInputGroup" placeholder="Channel">
+                                                    <input type="text" class="form-control " id="channel_input" placeholder="Channel">
                                                 </div>
                                             </div>
                                             <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                                <button type="submit" class="btn btn-primary" id="channel_apply" value="channel">Apply</button>
                                             </div>
                                         </div>
                                         <div class="form-row align-items-center">
@@ -123,14 +122,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                                     <div class="input-group-prepend">
                                                         <div class="input-group-text">Sec</div>
                                                     </div>
-                                                    <input type="text" class="form-control " id="inlineFormInputGroup" placeholder="Adq. Time">
+                                                    <input type="text" class="form-control " id="adq_time_input" placeholder="Adq. Time">
                                                 </div>
                                             </div>
                                             <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary">Apply</button>
+                                                <button type="submit" class="btn btn-primary" id="adq_time_apply" value="adq_time">Apply</button>
                                             </div>
                                         </div>
-                                    <!-- </form> -->
                                 </li>
                                 <li class="nav-item">
                                     <button type="button" class="btn btn-outline-success" id="startbtn" value="start">START</button>
@@ -384,7 +382,8 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <!-- ./wrapper -->
     <!-- jQuery -->
     <script src="{{ url_for('static', filename='plugins/jquery/jquery.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/controls.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/licelcontrols.js') }}"></script>
     <!-- Bootstrap 4 -->
     <script src="{{ url_for('static', filename='plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- AdminLTE App -->

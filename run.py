@@ -17,6 +17,17 @@ app.config.from_object('config.Config')
 
 # global
 lidar = lidarsignal()
+globalconfig = {
+                  "channel" : 0,
+                  "adq_time" : 10, # 10s = 300shots/30Hz(laser)
+                  "temperature" : 300,
+                  "pressure" : 1023,
+                  "masl" : 0,
+                  "wavelength" : 532,
+                  "fit_init" : 1000,
+                  "fit_final" : 2000
+                 }
+
 
 # Defining routes
 
@@ -49,17 +60,16 @@ def plot_lidar_signal():
   # initialization
   lc = licelcontroller()
   lc.openConnection('10.49.234.234',2055)
-  tr=0 #first TR
-  lc.selectTR(tr)
+  lc.selectTR(globalconfig["channel"])
   lc.setInputRange(licelsettings.MILLIVOLT500)
-  lc.setThresholdMode(licelsettings.THRESHOLD_LOW)
-  lc.setDiscriminatorLevel(8) # can be set between 0 and 63
+  # lc.setThresholdMode(licelsettings.THRESHOLD_LOW)
+  # lc.setDiscriminatorLevel(8) # can be set between 0 and 63
   
  
   # start the acquisition
   lc.clearMemory()
   lc.startAcquisition()
-  lc.msDelay(SHOTS_DELAY)
+  lc.msDelay(globalconfig["adq_time"])
   lc.stopAcquisition() 
   #lc.waitForReady(100) # wait till it returns to the idle state
 
@@ -159,7 +169,7 @@ def plot_acquis():
 
   # basic settings
   BIN_LONG_TRANCE = 4000
-  SHOTS_DELAY = 1000 # wait 10s = 300shots/30Hz
+  SHOTS_DELAY = 1000 # wait 
   OFFSET_BINS = 10
   THRESHOLD_METERS = 2000 # meters
 
@@ -167,10 +177,10 @@ def plot_acquis():
   if(action_button =="start"):
       
     # initialization
+    
     lc = licelcontroller()
     lc.openConnection('10.49.234.234',2055)
-    tr=0 #first TR
-    lc.selectTR(tr)
+    lc.selectTR(globalconfig.channel)
     lc.setInputRange(licelsettings.MILLIVOLT500)
    
     # start the acquisition
@@ -224,6 +234,29 @@ def plot_acquis():
     response.content_type = 'application/json'
     print(response)
     return response
+
+@app.route("/licelcontrols", methods=['GET','POST'])
+def licelcontrols():
+
+  field_selected = request.args['selected']
+  data_input = request.args['input']
+
+  print(field_selected)
+  # Channel
+  if(field_selected == "channel" and data_input.isdigit()):
+    globalconfig[field_selected] = int(data_input)
+  
+  # Adquisition time
+  MAX_ADQ_TIME = 300 # 5min
+  if(field_selected == "adq_time" and data_input.isdigit()):
+    if int(data_input) < MAX_ADQ_TIME:
+      globalconfig[field_selected] = int(data_input)
+    else:
+      globalconfig[field_selected] = MAX_ADQ_TIME
+  
+  response = make_response(json.dumps(globalconfig))
+  response.content_type = 'application/json'
+  return response
 
 if __name__ == '__main__':
   app.run(debug=True)
