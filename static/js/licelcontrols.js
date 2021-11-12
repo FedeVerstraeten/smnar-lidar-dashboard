@@ -92,6 +92,18 @@ $('#adq_time_apply').on('click', function (e) {
   });
 })
 
-
-
-
+$('#max_bins_apply').on('click', function (e) {
+  $.ajax({
+    url: "/licelcontrols",
+    type: "GET",
+    contentType: 'application/json;charset=UTF-8',
+    data: {
+      'selected': document.getElementById('max_bins_apply').value,
+      'input': document.getElementById('max_bins_input').value
+    },
+    dataType:"json",
+    success: function (data) {
+      console.log(data);
+    }
+  });
+})

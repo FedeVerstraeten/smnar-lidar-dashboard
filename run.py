@@ -20,6 +20,7 @@ lidar = lidarsignal()
 globalconfig = {
                   "channel" : 0,
                   "adq_time" : 10,      # 10s = 300shots/30Hz(laser)
+                  "max_bins" : 4000,
                   "temperature" : 300,  # K
                   "pressure" : 1023,    # hPa
                   "masl" : 0,           # m
@@ -49,7 +50,8 @@ def homepage():
 def plot_lidar_signal():
 
   # basic settings
-  BIN_LONG_TRANCE = 4000
+  BIN_LONG_TRANCE = globalconfig["max_bins"]
+  SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds
   OFFSET_BINS = 10
   THRESHOLD_METERS = 2000 # meters
 
@@ -69,7 +71,7 @@ def plot_lidar_signal():
   # start the acquisition
   lc.clearMemory()
   lc.startAcquisition()
-  lc.msDelay(globalconfig["adq_time"]*1000)
+  lc.msDelay(SHOTS_DELAY)
   lc.stopAcquisition() 
   #lc.waitForReady(100) # wait till it returns to the idle state
 
@@ -168,8 +170,8 @@ def plot_acquis():
   action_button = request.args['selected']
 
   # basic settings
-  BIN_LONG_TRANCE = 4000
-  SHOTS_DELAY = 1000 # wait 
+  BIN_LONG_TRANCE = globalconfig["bins"]
+  SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds 
   OFFSET_BINS = 10
   THRESHOLD_METERS = 2000 # meters
 
@@ -246,14 +248,26 @@ def licel_controls():
     globalconfig[field_selected] = int(data_input)
   
   # Adquisition time
-  MAX_ADQ_TIME = 600 # 600s = 10min
-  MIN_ADQ_TIME = 1 
   if(field_selected == "adq_time" and data_input.isdigit()):
+    MAX_ADQ_TIME = 600 # 600s = 10min
+    MIN_ADQ_TIME = 1 
+   
     if(MIN_ADQ_TIME <= int(data_input) < MAX_ADQ_TIME):
       globalconfig[field_selected] = int(data_input)
     else:
       globalconfig[field_selected] = MAX_ADQ_TIME
   
+  # Max bins
+  if(field_selected == "max_bins" and data_input.isdigit()):
+    MAX_BINS = 4000
+    
+    if(0 < int(data_input) < MAX_BINS):
+      globalconfig[field_selected] = int(data_input)
+    else:
+      globalconfig[field_selected] = MAX_BINS
+  
+  
+
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'
   return response
