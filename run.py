@@ -43,7 +43,7 @@ def homepage():
   # load dict context
   context = {"plot_lidar_signal": plot_lidar_signal,
              "plot_lidar_range_correction": plot_lidar_range_correction,
-             "plot_lidar_rms": plot_lidar_range_correction
+             "plot_lidar_rms": plot_lidar_rms
             }
 
   # run html template
