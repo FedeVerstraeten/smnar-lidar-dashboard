@@ -232,7 +232,8 @@ def plot_acquis():
     context = {"number_bins": lidar.bin_long_trace,
                "plot_lidar_signal": plot_lidar_signal,
                "plot_lidar_range_correction": plot_lidar_range_correction,
-               "plot_lidar_rms": plot_lidar_rms
+               "plot_lidar_rms": plot_lidar_rms,
+               "shots_delay": SHOTS_DELAY,
               }
  
     # run html template

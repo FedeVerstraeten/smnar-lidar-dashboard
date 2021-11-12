@@ -38,7 +38,7 @@ $('#startbtn').on('click', function (e) {
       success: function (context) {
         console.log("START OK");
         if (!interval) {
-          interval = setInterval(requestPlots,2000);
+          interval = setInterval(requestPlots,context.shots_delay+1000);
           console.log("start",interval);
         }
       }
