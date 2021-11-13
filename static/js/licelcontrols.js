@@ -27,7 +27,7 @@ function requestPlots() {
         x: [[time]],
         y: [[context.rms_error]]
       }
-
+      console.log(update);
       var olderTime = time.setMinutes(time.getMinutes() - 1);
       var futureTime = time.setMinutes(time.getMinutes() + 1);
   
@@ -59,9 +59,16 @@ $('#startbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-        
-        var delay_ms = context.shots_delay + 1000
-
+	console.log("error es ",context.rms_error);
+	var time = new Date();
+	var initial_data = [{
+		x: [time],
+		y: [0],
+		mode: 'lines',
+		line: {color: '#b23434'}
+	}]
+	Plotly.newPlot('plotly-lidar-rms',initial_data);
+	var delay_ms = context.shots_delay + 1000;
         if (!interval) {
           interval = setInterval(requestPlots,delay_ms);
           console.log("START success",interval);
