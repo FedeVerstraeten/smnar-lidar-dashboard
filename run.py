@@ -234,6 +234,7 @@ def plot_acquis():
                "plot_lidar_range_correction": plot_lidar_range_correction,
                "plot_lidar_rms": plot_lidar_rms,
                "shots_delay": SHOTS_DELAY,
+               "rms_error" : lidar.rms_err
               }
  
     # run html template

@@ -12,14 +12,37 @@ function requestPlots() {
     },
     dataType:"json",
     success: function (context) {
-      // console.log(context);
-      var graph_rc = JSON.parse(context.plot_lidar_range_correction);
-      var graph_rms = JSON.parse(context.plot_lidar_rms);
+      
+      // Raw signal plot
       var graph_raw = JSON.parse(context.plot_lidar_signal);
-      Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
-      Plotly.newPlot('plotly-lidar-rms', graph_rms);
       Plotly.newPlot('plotly-lidar-signal', graph_raw);
-      },
+      
+      // Range corrected plot
+      var graph_rc = JSON.parse(context.plot_lidar_range_correction);
+      Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
+      
+      // Continuous RMS error plot
+      var time = new Date();
+      var update = {
+        x: [[time]],
+        y: [[context.rms_error]]
+      }
+
+      var olderTime = time.setMinutes(time.getMinutes() - 1);
+      var futureTime = time.setMinutes(time.getMinutes() + 1);
+  
+      var minuteView = {
+        xaxis: {
+            type: 'date',
+            range: [olderTime,futureTime]
+          }
+        };
+
+      Plotly.relayout('plotly-lidar-rms', minuteView);
+      Plotly.extendTraces('plotly-lidar-rms', update, [0])
+      // var graph_rms = JSON.parse(context.plot_lidar_rms);
+      // Plotly.newPlot('plotly-lidar-rms', graph_rms);
+    },
     cache: false
   });
 }
@@ -36,10 +59,12 @@ $('#startbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-        console.log("START OK");
+        
+        var delay_ms = context.shots_delay + 1000
+
         if (!interval) {
-          interval = setInterval(requestPlots,context.shots_delay+1000);
-          console.log("start",interval);
+          interval = setInterval(requestPlots,delay_ms);
+          console.log("START success",interval);
         }
       }
    });
@@ -57,7 +82,7 @@ $('#stopbtn').on('click', function (e) {
     success: function (context) {
       clearInterval(interval);
       interval=null;
-      console.log("stop",interval);
+      console.log("STOP success",interval);
     }
   });
 })
