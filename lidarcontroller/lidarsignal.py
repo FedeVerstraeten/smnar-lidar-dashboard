@@ -171,15 +171,20 @@ class lidarsignal:
     # Adjusment factor calculus between elastic LiDAR and molecular signals
     # a = sum(Sel*Sm)/sum(Sm^2)
 
+
     sum_sel_sm = np.dot(self.rc_signal[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
     sum_sm_square = np.dot(self.pr2_mol[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
 
     self.adj_factor = sum_sel_sm/sum_sm_square
     # print("Adj factor a(r,dr)=",np.format_float_scientific(adj_factor))
+   
+    # area low height 
+    bin_lh_offset = int(500/self.__BIN_METERS)
+    area_lh = np.sum(np.abs(self.rc_signal[bin_lh_offset:bin_init] - self.adj_factor * self.pr2_mol[bin_lh_offset:bin_init]))
 
     # Minimizing the RMS error
     sum_diff = self.rc_signal[bin_init:bin_fin+1] - self.adj_factor * self.pr2_mol[bin_init:bin_fin+1]
     dr = fit_final - fit_init
-    self.rms_err = np.sqrt((1/dr) * np.dot(sum_diff,sum_diff))
+    self.rms_err = (np.sqrt((1/dr) * np.dot(sum_diff,sum_diff)))/area_lh
     # print("RMS error =",np.format_float_scientific(rms_err))
     
