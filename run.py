@@ -19,6 +19,7 @@ app.config.from_object('config.Config')
 
 # global
 lidar = lidarsignal()
+lc = None
 #lc = licelcontroller()
 #lc.openConnection('10.49.234.234',2055)
 
@@ -160,10 +161,14 @@ def plot_acquis():
       
     # initialization
     global lc
-    tr=globalconfig["channel"] 
-    lc = licelcontroller()
-    lc.openConnection('10.49.234.234',2055)
-    print(lc.sock)
+    tr=globalconfig["channel"]
+
+    # TODO mejorar esto
+    if lc is None:
+      lc = licelcontroller()
+      lc.openConnection('10.49.234.234',2055)
+      print(lc.sock)
+
     lc.selectTR(tr)
     lc.setInputRange(licelsettings.MILLIVOLT500)
    
@@ -188,7 +193,7 @@ def plot_acquis():
     data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
     
     # close socket
-    lc.closeConnection()
+    # lc.closeConnection()
 
     # rayleigh fit 
     lidar.loadSignal(data_mv)
