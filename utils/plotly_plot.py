@@ -13,9 +13,12 @@ import json
 
 def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
   
+  bin_init = int(limit_init/7.5)
+  bin_final = int(limit_final/7.5)
+
   df=pd.DataFrame({
-                  'meters':lidar_signal.range[limit_init:limit_final],
-                  'TR0_500mV':lidar_signal.raw_signal[],
+                  'meters':lidar_signal.range[bin_init:bin_final],
+                  'TR0_500mV':lidar_signal.raw_signal[bin_init:bin_final],
                   })
   df.index=df['meters']
 
