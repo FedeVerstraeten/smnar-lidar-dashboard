@@ -101,60 +101,60 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <ul class="nav nav-treeview">
                                 <!-- Control buttons -->
                                 <li class="nav-item">
-                                        <div class="form-row align-items-center">
-                                            <div class="col-sm-8 my-1">
-                                                <label class="sr-only" for="inlineFormInputGroup">Channel</label>
-                                                <div class="input-group">
-                                                    <div class="input-group-prepend">
-                                                        <div class="input-group-text">Ch</div>
-                                                    </div>
-                                                    <input type="text" class="form-control " id="channel_input" placeholder="Channel">
+                                    <a href="{{ url_for('plot_lidar_signal')}}" class="nav-link ">
+                                        <p>Manual single-shot</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                            <label class="sr-only" for="inlineFormInputGroup">Channel</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">Ch</div>
                                                 </div>
-                                            </div>
-                                            <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary" id="channel_apply" value="channel">Apply</button>
+                                                <input type="text" class="form-control " id="channel_input" placeholder="Channel">
                                             </div>
                                         </div>
-                                        <div class="form-row align-items-center">
-                                            <div class="col-sm-8 my-1">
-                                                <label class="sr-only" for="inlineFormInputGroup">Adq. Time</label>
-                                                <div class="input-group">
-                                                    <div class="input-group-prepend">
-                                                        <div class="input-group-text">Sec</div>
-                                                    </div>
-                                                    <input type="text" class="form-control " id="adq_time_input" placeholder="Adq. Time">
+                                        <div class="col-sm-2 my-1">
+                                            <button type="submit" class="btn btn-primary" id="channel_apply" value="channel">Apply</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                            <label class="sr-only" for="inlineFormInputGroup">Adq. Time</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">Sec</div>
                                                 </div>
-                                            </div>
-                                            <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary" id="adq_time_apply" value="adq_time">Apply</button>
+                                                <input type="text" class="form-control " id="adq_time_input" placeholder="Adq. Time">
                                             </div>
                                         </div>
-                                        <label for="bias-control">
-                                            <b style="color:white; padding-right: 15px;">Bias range [meters]:</b>
-                                        </label>
-                                        <div class="form-row align-items-center">
-                                            <div class="col-sm-4 my-1">
-                                                <label class="sr-only" for="inlineFormInputName">Initial</label>
-                                                <input type="text" class="form-control" id="bias_init_input" placeholder="Initial">
-                                            </div>
-                                            <div class="col-sm-4 my-1">
-                                                <label class="sr-only" for="inlineFormInputName">Final</label>
-                                                <input type="text" class="form-control" id="bias_final_input" placeholder="Final">
-                                            </div>
-                                            <div class="col-sm-1 my-1">
-                                                <button type="submit" class="btn btn-primary" id="bias_apply" value="bias_range">Apply</button>
-                                            </div>
+                                        <div class="col-sm-2 my-1">
+                                            <button type="submit" class="btn btn-primary" id="adq_time_apply" value="adq_time">Apply</button>
                                         </div>
+                                    </div>
+                                    <label for="bias-control">
+                                        <b style="color:white; padding-right: 15px;">Bias range [meters]:</b>
+                                    </label>
+                                    <div class="form-row align-items-center">
+                                        <div class="col-sm-4 my-1">
+                                            <label class="sr-only" for="inlineFormInputName">Initial</label>
+                                            <input type="text" class="form-control" id="bias_init_input" placeholder="Initial">
+                                        </div>
+                                        <div class="col-sm-4 my-1">
+                                            <label class="sr-only" for="inlineFormInputName">Final</label>
+                                            <input type="text" class="form-control" id="bias_final_input" placeholder="Final">
+                                        </div>
+                                        <div class="col-sm-1 my-1">
+                                            <button type="submit" class="btn btn-primary" id="bias_apply" value="bias_range">Apply</button>
+                                        </div>
+                                    </div>
                                 </li>
                                 <li class="nav-item">
                                     <button type="button" class="btn btn-outline-success" id="startbtn" value="start">START</button>
                                     <button type="button" class="btn btn-outline-danger" id="stopbtn" value="stop">STOP</button>
                                     <button type="button" class="btn btn-outline-primary" id="savebtn" value="save">SAVE</button>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ url_for('plot_lidar_signal')}}" class="nav-link ">
-                                        <p>Manual single-shot</p>
-                                    </a>
                                 </li>
                             </ul>
                         </li>
@@ -169,44 +169,40 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             </a>
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
-                                    <form>
-                                        <div class="form-group">
-                                            <label for="rclimits">
-                                                <b style="color:white">Range corrected signal [meters]:</b>
-                                            </label>
-                                            <div class="form-row align-items-center">
-                                                <div class="col-sm-4 my-1">
-                                                    <label class="sr-only" for="inlineFormInputName">Initial</label>
-                                                    <input type="text" class="form-control" id="rc_limits_init_input" placeholder="Initial">
-                                                </div>
-                                                <div class="col-sm-4 my-1">
-                                                    <label class="sr-only" for="inlineFormInputName">Final</label>
-                                                    <input type="text" class="form-control" id="rc_limits_final_input" placeholder="Final">
-                                                </div>
-                                                <div class="col-sm-2 my-1">
-                                                    <button type="submit" class="btn btn-primary" id="rc_limits_apply" value="rc_limits">Apply</button>
-                                                </div>
+                                    <label for="rclimits">
+                                        <b style="color:white">Range corrected signal [meters]:</b>
+                                    </label>
+                                    <div class="form-row align-items-center">
+                                        <div class="col-sm-4 my-1">
+                                            <label class="sr-only" for="inlineFormInputName">Initial</label>
+                                            <input type="text" class="form-control" id="rc_limits_init_input" placeholder="Initial">
+                                        </div>
+                                        <div class="col-sm-4 my-1">
+                                            <label class="sr-only" for="inlineFormInputName">Final</label>
+                                            <input type="text" class="form-control" id="rc_limits_final_input" placeholder="Final">
+                                        </div>
+                                        <div class="col-sm-2 my-1">
+                                            <button type="submit" class="btn btn-primary" id="rc_limits_apply" value="rc_limits">Apply</button>
+                                        </div>
+                                    </div>
+                                    <div class="fform-row align-items-center">
+                                        <label for="rawlimits">
+                                            <b style="color:white">Raw signal [meters]:</b>
+                                        </label>
+                                        <div class="form-row align-items-center">
+                                            <div class="col-sm-4 my-1">
+                                                <label class="sr-only" for="inlineFormInputName">Initial</label>
+                                                <input type="text" class="form-control" id="raw_limits_init_input" placeholder="Initial">
+                                            </div>
+                                            <div class="col-sm-4 my-1">
+                                                <label class="sr-only" for="inlineFormInputName">Final</label>
+                                                <input type="text" class="form-control" id="raw_limits_final_input" placeholder="Final">
+                                            </div>
+                                            <div class="col-sm-2 my-1">
+                                                <button type="submit" class="btn btn-primary" id="raw_limits_apply" value="raw_limits">Apply</button>
                                             </div>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="rawlimits">
-                                                <b style="color:white">Raw signal [meters]:</b>
-                                            </label>
-                                            <div class="form-row align-items-center">
-                                                <div class="col-sm-4 my-1">
-                                                    <label class="sr-only" for="inlineFormInputName">Initial</label>
-                                                    <input type="text" class="form-control" id="raw_limits_init_input" placeholder="Initial">
-                                                </div>
-                                                <div class="col-sm-4 my-1">
-                                                    <label class="sr-only" for="inlineFormInputName">Final</label>
-                                                    <input type="text" class="form-control" id="raw_limits_final_input" placeholder="Final">
-                                                </div>
-                                                <div class="col-sm-2 my-1">
-                                                    <button type="submit" class="btn btn-primary" id="raw_limits_apply" value="raw_limits">Apply</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
+                                    </div>
                                 </li>
                             </ul>
                         </li>
@@ -251,67 +247,67 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <ul class="nav nav-treeview">
                                 <!-- Rayleigh-Fit controls -->
                                 <li class="nav-item">
-                                        <label for="surface-conditions-control">
-                                            <b style="color:white">Surface conditions:</b>
-                                        </label>
-                                        <div class="form-row align-items-center">
-                                            <div class="col-sm-8 my-1">
-                                                <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
-                                                <div class="input-group">
-                                                    <div class="input-group-prepend">
-                                                        <div class="input-group-text">ºC</div>
-                                                    </div>
-                                                    <input type="text" class="form-control" id="temperature_input" placeholder="Temperature">
+                                    <label for="surface-conditions-control">
+                                        <b style="color:white">Surface conditions:</b>
+                                    </label>
+                                    <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                            <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">ºC</div>
                                                 </div>
-                                            </div>
-                                            <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary" id="temperature_apply" value="temperature">Apply</button>
+                                                <input type="text" class="form-control" id="temperature_input" placeholder="Temperature">
                                             </div>
                                         </div>
-                                        <div class="form-row align-items-center">
-                                            <div class="col-sm-8 my-1">
-                                                <label class="sr-only" for="inlineFormInputGroup">Pressure</label>
-                                                <div class="input-group">
-                                                    <div class="input-group-prepend">
-                                                        <div class="input-group-text">hPa</div>
-                                                    </div>
-                                                    <input type="text" class="form-control" id="pressure_input" placeholder="Pressure">
+                                        <div class="col-sm-2 my-1">
+                                            <button type="submit" class="btn btn-primary" id="temperature_apply" value="temperature">Apply</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                            <label class="sr-only" for="inlineFormInputGroup">Pressure</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">hPa</div>
                                                 </div>
-                                            </div>
-                                            <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary" id="pressure_apply" value="pressure">Apply</button>
+                                                <input type="text" class="form-control" id="pressure_input" placeholder="Pressure">
                                             </div>
                                         </div>
-                                        <div class="form-row align-items-center">
-                                            <div class="col-sm-8 my-1">
-                                                <label class="sr-only" for="inlineFormInputGroup">MASL</label>
-                                                <div class="input-group">
-                                                    <div class="input-group-prepend">
-                                                        <div class="input-group-text">m</div>
-                                                    </div>
-                                                    <input type="text" class="form-control" id="masl_input" placeholder="MASL">
+                                        <div class="col-sm-2 my-1">
+                                            <button type="submit" class="btn btn-primary" id="pressure_apply" value="pressure">Apply</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-row align-items-center">
+                                        <div class="col-sm-8 my-1">
+                                            <label class="sr-only" for="inlineFormInputGroup">MASL</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">m</div>
                                                 </div>
-                                            </div>
-                                            <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button>
+                                                <input type="text" class="form-control" id="masl_input" placeholder="MASL">
                                             </div>
                                         </div>
-                                        <label for="rayleighfit-control">
-                                            <b style="color:white">Rayleigh-Fit range (meters):</b>
-                                        </label>
-                                        <div class="form-row align-items-center">
-                                            <div class="col-sm-4 my-1">
-                                                <label class="sr-only" for="inlineFormInputName">Initial</label>
-                                                <input type="text" class="form-control" id="fit_init_input" placeholder="Initial">
-                                            </div>
-                                            <div class="col-sm-4 my-1">
-                                                <label class="sr-only" for="inlineFormInputName">Final</label>
-                                                <input type="text" class="form-control" id="fit_final_input" placeholder="Final">
-                                            </div>
-                                            <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button>
-                                            </div>
+                                        <div class="col-sm-2 my-1">
+                                            <button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button>
                                         </div>
+                                    </div>
+                                    <label for="rayleighfit-control">
+                                        <b style="color:white">Rayleigh-Fit range (meters):</b>
+                                    </label>
+                                    <div class="form-row align-items-center">
+                                        <div class="col-sm-4 my-1">
+                                            <label class="sr-only" for="inlineFormInputName">Initial</label>
+                                            <input type="text" class="form-control" id="fit_init_input" placeholder="Initial">
+                                        </div>
+                                        <div class="col-sm-4 my-1">
+                                            <label class="sr-only" for="inlineFormInputName">Final</label>
+                                            <input type="text" class="form-control" id="fit_final_input" placeholder="Final">
+                                        </div>
+                                        <div class="col-sm-2 my-1">
+                                            <button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button>
+                                        </div>
+                                    </div>
                                 </li>
                             </ul>
                         </li>
@@ -364,7 +360,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
                     </ul>
                     </li>
                     <!-- Secondary Menu -->
-
                     <!-- Laser controls -->
                     <li class="nav-item has-treeview menu-closed">
                         <a href="#" class="nav-link ">
@@ -421,6 +416,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <script src="{{ url_for('static', filename='js/controls.js') }}"></script>
     <script src="{{ url_for('static', filename='js/licelcontrols.js') }}"></script>
     <script src="{{ url_for('static', filename='js/rayleighfit.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
     <!-- Bootstrap 4 -->
     <script src="{{ url_for('static', filename='plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- AdminLTE App -->
