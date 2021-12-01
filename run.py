@@ -26,15 +26,19 @@ lc = None
 globalconfig = {
                   "channel" : 0,
                   "adq_time" : 10,      # 10s = 300shots/30Hz(laser)
-                  "max_bins" : 4000,
-                  "bias_init" : 22500,   # m
-                  "bias_final" : 30000,   # m
+                  "max_bins" : 4000,    #bin
+                  "bias_init" : 22500,  # m (3000 bins)
+                  "bias_final" : 30000, # m (4000 bins)
                   "temperature" : 300,  # K
                   "pressure" : 1023,    # hPa
                   "masl" : 0,           # m
                   "wavelength" : 532,   # nm
-                  "fit_init" : 1000,    # m
-                  "fit_final" : 2000    # m
+                  "fit_init" : 5000,    # m
+                  "fit_final" : 10000,  # m
+                  "rc_limits_init" : 0,       # m 
+                  "rc_limits_final" : 30000,  # m
+                  "raw_limits_init" : 0,      # m 
+                  "raw_limits_final" : 30000  # m
                  }
 
 
@@ -73,7 +77,6 @@ def plot_lidar_signal():
   # initialization
   tr=globalconfig["channel"] 
   lc_local = licelcontroller()
-  print("por aca")
   lc_local.openConnection('10.49.234.234',2055)
   lc_local.selectTR(tr)
   lc_local.setInputRange(licelsettings.MILLIVOLT500)
@@ -132,9 +135,9 @@ def plot_lidar_signal():
   #-------------- PLOTING --------------------
 
   #ploting
-  plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
+  plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar)
   plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
-  plot_lidar_rms = plotly_plot.plotly_lidar_rms(lidar.raw_signal)
+  plot_lidar_rms =  plotly_plot.plotly_empty_signal("rms")
 
   # load dict context
   context = {"number_bins": lidar.bin_long_trace,
@@ -167,7 +170,6 @@ def plot_acquis():
     if lc is None:
       lc = licelcontroller()
       lc.openConnection('10.49.234.234',2055)
-      print(lc.sock)
 
     lc.selectTR(tr)
     lc.setInputRange(licelsettings.MILLIVOLT500)
@@ -205,9 +207,9 @@ def plot_acquis():
     lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
   
     # ploting
-    plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar.raw_signal)
+    plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
     plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar)
-    plot_lidar_rms = plotly_plot.plotly_lidar_rms(lidar.raw_signal)
+    plot_lidar_rms = plot_lidar_rms =  plotly_plot.plotly_empty_signal("rms")
 
     # load dict context
     context = {"number_bins": lidar.bin_long_trace,
@@ -270,7 +272,7 @@ def licel_controls():
 
     # Max bins
     if(0 < int(bias_range[0]) < MAX_BINS):
-      globalconfig["max_bins"] = round(int(bias_range[1])/7.5)
+      globalconfig["max_bins"] = round(int(bias_range[1])/BIN_METERS)
     else:
       globalconfig["max_bins"] = MAX_BINS
 
@@ -307,6 +309,31 @@ def rayleighfit_controls():
       globalconfig["fit_final"] = int(fitting[1])
   
 
+  response = make_response(json.dumps(globalconfig))
+  response.content_type = 'application/json'
+  return response
+
+@app.route("/plots",methods=['GET','POST'])
+def plots_limits():
+  field_selected = request.args['selected']
+  data_input = request.args['input']
+
+  MAX_HEIGHT_LIMIT = globalconfig["bias_final"]
+  
+  # Plot limits Range Corrected signal
+  rc_limits=json.loads(data_input)
+  if(field_selected == "rc_limits" and rc_limits[0].isdigit() and rc_limits[1].isdigit()):
+    if(int(rc_limits[0]) < int(rc_limits[1]) < MAX_HEIGHT_LIMIT):
+      globalconfig["rc_limits_init"] = int(rc_limits[0])
+      globalconfig["rc_limits_final"] = int(rc_limits[1])
+  
+  # Plot limits Raw signal
+  raw_limits=json.loads(data_input)
+  if(field_selected == "raw_limits" and raw_limits[0].isdigit() and raw_limits[1].isdigit()):
+    if(int(raw_limits[0]) < int(raw_limits[1]) < MAX_HEIGHT_LIMIT):
+      globalconfig["raw_limits_init"] = int(raw_limits[0])
+      globalconfig["raw_limits_final"] = int(raw_limits[1])
+  
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'
   return response

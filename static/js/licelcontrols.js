@@ -40,8 +40,6 @@ function requestPlots() {
 
       Plotly.relayout('plotly-lidar-rms', minuteView);
       Plotly.extendTraces('plotly-lidar-rms', update, [0])
-      // var graph_rms = JSON.parse(context.plot_lidar_rms);
-      // Plotly.newPlot('plotly-lidar-rms', graph_rms);
     },
     cache: false
   });
@@ -59,7 +57,11 @@ $('#startbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
+        
         console.log("error es ",context.rms_error);
+        var DELTA_TIME_MS = 1000
+
+        // Adding RMS first point
         var time = new Date();
         var initial_data = [{
           x: [time],
@@ -67,8 +69,10 @@ $('#startbtn').on('click', function (e) {
           mode: 'lines',
           line: {color: '#b23434'}
         }]
+
         Plotly.newPlot('plotly-lidar-rms',initial_data);
-        var delay_ms = context.shots_delay + 1000;
+        var delay_ms = context.shots_delay + DELTA_TIME_MS;
+
         if (!interval) {
           interval = setInterval(requestPlots,delay_ms);
           console.log("START success",interval);
