@@ -13,6 +13,7 @@ import json
 
 def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
   
+  # meters to bins
   bin_init = int(limit_init/7.5)
   bin_final = int(limit_final/7.5)
 
@@ -38,12 +39,16 @@ def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
   return plot_json
 
 
-def plotly_lidar_range_correction(lidar_signal):
+def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
+
+  # meters to bins
+  bin_init = int(limit_init/7.5)
+  bin_final = int(limit_final/7.5)
 
   df=pd.DataFrame({
-                  'meters':lidar_signal.range,
-                  'TR0_500mV':lidar_signal.rc_signal,
-                  'TR0_500mV_RF':lidar_signal.pr2_mol*lidar_signal.adj_factor
+                  'meters':lidar_signal.range[bin_init:bin_final],
+                  'TR0_500mV':lidar_signal.rc_signal[bin_init:bin_final],
+                  'TR0_500mV_RF':lidar_signal.adj_factor*lidar_signal.pr2_mol[bin_init:bin_final]
                   })
   df.index=df['meters']
   fig = go.Figure()
