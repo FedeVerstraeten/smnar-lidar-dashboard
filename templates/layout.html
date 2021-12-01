@@ -27,8 +27,8 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <script src="https://cdn.jsdelivr.net/npm/vega@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@3.0.0-rc12"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@3"></script> 
-    -->
     <script src="https://vega.github.io/datalib/datalib.min.js"></script>
+    -->
     <!-- Import Plotly (does not have to be from CDN) -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <!-- Import moment.js for time series (does not have to be from CDN) -->
@@ -108,7 +108,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                                     <div class="input-group-prepend">
                                                         <div class="input-group-text">Ch</div>
                                                     </div>
-                                                    <input type="text" class="form-control " id="channel_input" placeholder="Channel">
+                                                    <input type="text" class="form-control " id="channel_input" placeholder="Channel" value="1">
                                                 </div>
                                             </div>
                                             <div class="col-sm-2 my-1">
@@ -129,18 +129,20 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                                 <button type="submit" class="btn btn-primary" id="adq_time_apply" value="adq_time">Apply</button>
                                             </div>
                                         </div>
-                                         <div class="form-row align-items-center">
-                                            <div class="col-sm-8 my-1">
-                                                <label class="sr-only" for="inlineFormInputGroup">Max bins</label>
-                                                <div class="input-group">
-                                                    <div class="input-group-prepend">
-                                                        <div class="input-group-text">bin</div>
-                                                    </div>
-                                                    <input type="text" class="form-control " id="max_bins_input" placeholder="Max. bins">
-                                                </div>
+                                        <label for="bias-control">
+                                            <b style="color:white; padding-right: 15px;">Bias range [meters]:</b>
+                                        </label>
+                                        <div class="form-row align-items-center">
+                                            <div class="col-sm-4 my-1">
+                                                <label class="sr-only" for="inlineFormInputName">Initial</label>
+                                                <input type="text" class="form-control" id="bias_init_input" placeholder="Initial">
                                             </div>
-                                            <div class="col-sm-2 my-1">
-                                                <button type="submit" class="btn btn-primary" id="max_bins_apply" value="max_bins">Apply</button>
+                                            <div class="col-sm-4 my-1">
+                                                <label class="sr-only" for="inlineFormInputName">Final</label>
+                                                <input type="text" class="form-control" id="bias_final_input" placeholder="Final">
+                                            </div>
+                                            <div class="col-sm-1 my-1">
+                                                <button type="submit" class="btn btn-primary" id="bias_apply" value="bias_range">Apply</button>
                                             </div>
                                         </div>
                                 </li>
@@ -169,16 +171,17 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                 <li class="nav-item">
                                     <form>
                                         <div class="form-group">
-                                            <label for="exampleFormControlFile1">
-                                                <b style="color:white">Acquis</b>
+                                            <label for="acquisini">
+                                                <b style="color:white">Acquis file:</b>
                                             </label>
-                                            <input type="file" class="form-control-file" id="AcquisINI">
+                                            <input type="file" class="form-control-file" name="acquisini" id="AcquisINI">
+                                            <!-- <input type="submit"> -->
                                         </div>
                                         <div class="form-group">
-                                            <label for="exampleFormControlFile2">
-                                                <b style="color:white">Global Info</b>
+                                            <label for="globalinfoini">
+                                                <b style="color:white">Global Info file:</b>
                                             </label>
-                                            <input type="file" class="form-control-file" id="AcquisINI">
+                                            <input type="file" class="form-control-file" name="globalinfoini" id="GlobalInfoINI">
                                         </div>
                                     </form>
                                 </li>
@@ -196,6 +199,9 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <ul class="nav nav-treeview">
                                 <!-- Rayleigh-Fit controls -->
                                 <li class="nav-item">
+                                        <label for="surface-conditions-control">
+                                            <b style="color:white">Surface conditions:</b>
+                                        </label>
                                         <div class="form-row align-items-center">
                                             <div class="col-sm-8 my-1">
                                                 <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
@@ -238,6 +244,9 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                                 <button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button>
                                             </div>
                                         </div>
+                                        <label for="rayleighfit-control">
+                                            <b style="color:white">Rayleigh-Fit range (meters):</b>
+                                        </label>
                                         <div class="form-row align-items-center">
                                             <div class="col-sm-4 my-1">
                                                 <label class="sr-only" for="inlineFormInputName">Initial</label>

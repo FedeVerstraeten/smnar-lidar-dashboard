@@ -21,6 +21,8 @@ globalconfig = {
                   "channel" : 0,
                   "adq_time" : 10,      # 10s = 300shots/30Hz(laser)
                   "max_bins" : 4000,
+                  "bias_init" : 22500,   # m
+                  "bias_final" : 30000,   # m
                   "temperature" : 300,  # K
                   "pressure" : 1023,    # hPa
                   "masl" : 0,           # m
@@ -56,7 +58,7 @@ def plot_lidar_signal():
   BIN_LONG_TRANCE = globalconfig["max_bins"]
   SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds
   OFFSET_BINS = 10
-  THRESHOLD_METERS = 2000 # meters
+  THRESHOLD_METERS = globalconfig["bias_final"] # meters
 
 
   #----------- LICEL ADQUISITION ---------------
@@ -179,7 +181,7 @@ def plot_acquis():
   BIN_LONG_TRANCE = globalconfig["max_bins"]
   SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds 
   OFFSET_BINS = 10
-  THRESHOLD_METERS = 2000 # meters
+  THRESHOLD_METERS = globalconfig["bias_final"] # meters
 
 
   if(action_button =="start"):
@@ -267,16 +269,31 @@ def licel_controls():
     else:
       globalconfig[field_selected] = MAX_ADQ_TIME
   
-  # Max bins
-  if(field_selected == "max_bins" and data_input.isdigit()):
-    MAX_BINS = 4000
-    
-    if(0 < int(data_input) < MAX_BINS):
-      globalconfig[field_selected] = int(data_input)
+  # Bias range and max bins
+  bias_range=json.loads(data_input)
+  MAX_BINS = 16000
+  BIN_METERS = 7.5
+
+  if(field_selected == "bias_range" and bias_range[0].isdigit() and bias_range[1].isdigit()):
+
+    # Bias range
+    if(int(bias_range[0]) < int(bias_range[1])):
+      
+      if(int(bias_range[0]) > 0):
+        globalconfig["bias_init"] = int(bias_range[0])
+      else:
+        globalconfig["bias_init"] = 0
+
+      if(int(bias_range[1]) < MAX_BINS):
+        globalconfig["bias_final"] = int(bias_range[1])
+      else:
+        globalconfig["bias_final"] = MAX_BINS*BIN_METERS
+
+    # Max bins
+    if(0 < int(bias_range[0]) < MAX_BINS):
+      globalconfig["max_bins"] = round(int(bias_range[1])/7.5)
     else:
-      globalconfig[field_selected] = MAX_BINS
-  
-  
+      globalconfig["max_bins"] = MAX_BINS
 
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'

@@ -59,16 +59,16 @@ $('#startbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-	console.log("error es ",context.rms_error);
-	var time = new Date();
-	var initial_data = [{
-		x: [time],
-		y: [0],
-		mode: 'lines',
-		line: {color: '#b23434'}
-	}]
-	Plotly.newPlot('plotly-lidar-rms',initial_data);
-	var delay_ms = context.shots_delay + 1000;
+        console.log("error es ",context.rms_error);
+        var time = new Date();
+        var initial_data = [{
+          x: [time],
+          y: [0],
+          mode: 'lines',
+          line: {color: '#b23434'}
+        }]
+        Plotly.newPlot('plotly-lidar-rms',initial_data);
+        var delay_ms = context.shots_delay + 1000;
         if (!interval) {
           interval = setInterval(requestPlots,delay_ms);
           console.log("START success",interval);
@@ -126,14 +126,17 @@ $('#adq_time_apply').on('click', function (e) {
   });
 })
 
-$('#max_bins_apply').on('click', function (e) {
+$('#bias_apply').on('click', function (e) {
   $.ajax({
     url: "/licelcontrols",
     type: "GET",
     contentType: 'application/json;charset=UTF-8',
     data: {
-      'selected': document.getElementById('max_bins_apply').value,
-      'input': document.getElementById('max_bins_input').value
+      'selected': document.getElementById('bias_apply').value,
+      'input': JSON.stringify([
+                                document.getElementById('bias_init_input').value,
+                                document.getElementById('bias_final_input').value
+                              ])
     },
     dataType:"json",
     success: function (data) {
