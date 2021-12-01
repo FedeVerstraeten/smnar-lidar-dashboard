@@ -4,7 +4,6 @@ import plotly
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.express as px
-# from vega_datasets import data
 import pandas as pd
 import json
 
@@ -12,18 +11,23 @@ import json
 #   LiDAR
 #-----------
 
-def plotly_lidar_signal(lidar_signal):
-  # Plotly plot 1:
-  df = pd.DataFrame(lidar_signal)
-  df.reset_index(inplace=True)
-  df.columns=["bin","TR0_500mV"]
+def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
   
+  df=pd.DataFrame({
+                  'meters':lidar_signal.range[limit_init:limit_final],
+                  'TR0_500mV':lidar_signal.raw_signal[],
+                  })
+  df.index=df['meters']
+
   fig = px.line(df, 
-                x='bin', 
-                y=['TR0_500mV'], 
+                x=df.index, 
+                y=df['TR0_500mV'], 
                 title='LiDAR raw signal')
   
-  fig.update_xaxes(rangeslider_visible=True)
+  # Set axes titles
+  fig.update_xaxes(rangeslider_visible=True,title_text="Height [m]")
+  fig.update_yaxes(title_text="TR0 Raw [mV]",)
+
   fig.update_layout(width=1200, height=500)
 
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -33,7 +37,6 @@ def plotly_lidar_signal(lidar_signal):
 
 def plotly_lidar_range_correction(lidar_signal):
 
-  # Plotly plot 1:
   df=pd.DataFrame({
                   'meters':lidar_signal.range,
                   'TR0_500mV':lidar_signal.rc_signal,
@@ -95,9 +98,9 @@ def plotly_lidar_range_correction(lidar_signal):
   fig.update_xaxes(tickangle=45,title_text="Height [m]")
   
   # Set y-axes titles
-  fig.update_yaxes(title_text="TR0 500mV",
+  fig.update_yaxes(title_text="TR0 RC [mV x m^2] ",
                    secondary_y=False, showgrid=False)
-  fig.update_yaxes(title_text="TR0 500mV RF", tickangle=45,
+  fig.update_yaxes(title_text="TR0 RC 500mV RF", tickangle=45,
                    secondary_y=True, showgrid=False)
   
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
