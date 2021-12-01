@@ -15,8 +15,13 @@ from lidarcontroller.lidarsignal import lidarsignal
 app = Flask(__name__)
 app.config.from_object('config.Config')
 
+
+
 # global
 lidar = lidarsignal()
+#lc = licelcontroller()
+#lc.openConnection('10.49.234.234',2055)
+
 globalconfig = {
                   "channel" : 0,
                   "adq_time" : 10,      # 10s = 300shots/30Hz(laser)
@@ -59,44 +64,45 @@ def plot_lidar_signal():
   BIN_LONG_TRANCE = globalconfig["max_bins"]
   SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds
   OFFSET_BINS = 10
-  THRESHOLD_METERS = globalconfig["bias_final"] # meters
+  THRESHOLD_METERS = globalconfig["bias_init"] # meters
 
 
   #----------- LICEL ADQUISITION ---------------
 
   # initialization
   tr=globalconfig["channel"] 
-  lc = licelcontroller()
-  lc.openConnection('10.49.234.234',2055)
-  lc.selectTR(tr)
-  lc.setInputRange(licelsettings.MILLIVOLT500)
+  lc_local = licelcontroller()
+  print("por aca")
+  lc_local.openConnection('10.49.234.234',2055)
+  lc_local.selectTR(tr)
+  lc_local.setInputRange(licelsettings.MILLIVOLT500)
   # lc.setThresholdMode(licelsettings.THRESHOLD_LOW)
   # lc.setDiscriminatorLevel(8) # can be set between 0 and 63
   
  
   # start the acquisition
-  lc.clearMemory()
-  lc.startAcquisition()
-  lc.msDelay(SHOTS_DELAY)
-  lc.stopAcquisition() 
+  lc_local.clearMemory()
+  lc_local.startAcquisition()
+  lc_local.msDelay(SHOTS_DELAY)
+  lc_local.stopAcquisition() 
   #lc.waitForReady(100) # wait till it returns to the idle state
 
   # get the shotnumber 
-  if lc.getStatus() == 0:
-    if (lc.shots_number > 1):
-      cycles = lc.shots_number - 2 # WHY??!
+  if lc_local.getStatus() == 0:
+    if (lc_local.shots_number > 1):
+      cycles = lc_local.shots_number - 2 # WHY??!
 
   # read from the TR triggered mem A
-  data_lsw = lc.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
-  data_msw = lc.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
+  data_lsw = lc_local.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
+  data_msw = lc_local.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
   
   # combine, normalize an scale data to mV
-  data_accu,data_clip = lc.combineAnalogDatasets(data_lsw, data_msw)
-  data_phys = lc.normalizeData(data_accu,cycles)
-  data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
+  data_accu,data_clip = lc_local.combineAnalogDatasets(data_lsw, data_msw)
+  data_phys = lc_local.normalizeData(data_accu,cycles)
+  data_mv = lc_local.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
   
   # close socket
-  lc.closeConnection()
+  lc_local.closeConnection()
   # # DUMP THE DATA INTO A FILE
   # with open('analog.txt', 'w') as file: # or analog.dat 'wb'
   #   np.savetxt(file,data_mv,delimiter=',')
@@ -147,15 +153,17 @@ def plot_acquis():
   BIN_LONG_TRANCE = globalconfig["max_bins"]
   SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds 
   OFFSET_BINS = 10
-  THRESHOLD_METERS = globalconfig["bias_final"] # meters
+  THRESHOLD_METERS = globalconfig["bias_init"] # meters
 
 
   if(action_button =="start"):
       
     # initialization
+    global lc
     tr=globalconfig["channel"] 
     lc = licelcontroller()
     lc.openConnection('10.49.234.234',2055)
+    print(lc.sock)
     lc.selectTR(tr)
     lc.setInputRange(licelsettings.MILLIVOLT500)
    
