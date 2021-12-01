@@ -54,4 +54,24 @@ var graphs = {{ context.plot_lidar_rms | safe }};
 Plotly.plot('plotly-lidar-rms', graphs, {});
 </script>
 
+<script>
+// Loading initial globalconfig of variable dashboard
+var globalconfig = {{ context.globalconfig | safe }};
+
+// Licel controls
+document.getElementById('channel_input').value = globalconfig["channel"];
+document.getElementById('adq_time_input').value = globalconfig["adq_time"];
+document.getElementById('bias_init_input').value = globalconfig["bias_init"];
+document.getElementById('bias_final_input').value = globalconfig["bias_final"];
+
+// Rayleigh-Fit controls
+document.getElementById('temperature_input').value = globalconfig["temperature"];
+document.getElementById('pressure_input').value = globalconfig["pressure"];
+document.getElementById('masl_input').value = globalconfig["masl"];
+document.getElementById('fit_init_input').value = globalconfig["fit_init"];
+document.getElementById('fit_final_input').value = globalconfig["fit_final"];
+
+</script>
+
+
 {% endblock my_content %}
