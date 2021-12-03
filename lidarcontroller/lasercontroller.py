@@ -26,9 +26,12 @@ class laserController:
       raise ValueError("Unable to start serial port. Please check the connection and the permissions.")
       sys.exit()
     else:
-      print("Serial connection established")
+      print("Serial connection established to port:",self.serialcom.port)
 
   def disconnect(self):
+    self.serialcom.reset_input_buffer()
+    self.serialcom.reset_output_buffer()
+
     try:
       self.serialcom.close()
     except Exception as ex:
@@ -38,6 +41,9 @@ class laserController:
       print("Serial Port " + self.serialcom.port + " closed")
 
   def startLaser(self):
+    self.serialcom.reset_input_buffer()
+    self.serialcom.reset_output_buffer()
+    
     if self.serialcom.isOpen():
       print("START Laser")
       self.serialcom.write(b'ST 1')
@@ -47,20 +53,23 @@ class laserController:
       print("Shutter opened")
 
   def stopLaser(self):
+    self.serialcom.reset_input_buffer()
+    self.serialcom.reset_output_buffer()
+
     if self.serialcom.isOpen():
       print("STOP Laser")
-      self.serialcom.write(b'SH 0')
+      self.serialcom.write(b'SH 0\r')
       print("SHUTTER closed")
       time.sleep(1)
-      self.serialcom.write(b'ST 0')
+      self.serialcom.write(b'ST 0\r')
       print("Laser off")
 
-  def shotsCounter(self):
-    if self.serialcom.isOpen():
-      shots = self.serialcom.write(b'SC')
-      print("Shot counter = ",shots)
+  # def shotsCounter(self):
+  #   if self.serialcom.isOpen():
+  #     shots = self.serialcom.write(b'SC\r')
+  #     print("Shot counter = ",shots)
 
-  def singleShot(self):
-    if self.serialcom.isOpen():
-      print("Single shot" )      
-      shots = self.serialcom.write(b'SC')
+  # def singleShot(self):
+  #   if self.serialcom.isOpen():
+  #     print("Single shot" )      
+  #     shots = self.serialcom.write(b'SS\r')

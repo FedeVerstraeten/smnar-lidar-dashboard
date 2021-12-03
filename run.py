@@ -10,6 +10,7 @@ from utils import plotly_plot
 from lidarcontroller.licelcontroller import licelcontroller
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarsignal
+from lidarcontroller.lasercontroller import laserController
 
 #configuration
 app = Flask(__name__)
@@ -338,5 +339,32 @@ def plots_limits():
   response.content_type = 'application/json'
   return response
 
+@app.route("/laser")
+def laser_controls():
+  action_button = request.args['selected']
+
+  if(action_button =="laser_start"):
+    laser = laserController(port = "COM3", baudrate = 9600, timeout = 5)
+    laser.connect()
+    laser.startLaser()
+    laser.disconnect()
+    data ="Laser START"
+  
+  if(action_button =="laser_stop"):
+    laser = laserController(port = "COM3", baudrate = 9600, timeout = 5)
+    laser.connect()
+    laser.stopLaser()
+    laser.disconnect()
+    data="Laser STOP"
+  
+  response = make_response(json.dumps(data))
+  response.content_type = 'application/json'
+  print(response)
+  
+  return response
+
+
+
 if __name__ == '__main__':
   app.run(debug=True)
+
