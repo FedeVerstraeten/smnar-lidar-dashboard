@@ -17,8 +17,14 @@ put your custom script or styling here
 <!-- Plotly plot placeholder -->
 <div class="container-fluid">
       <div class="row">
+        <div class="column">
           <!-- LiDAR signal with range correction plot-->
           <div id="plotly-lidar-range-correction"></div>
+        </div>
+        <div class="column">
+          <!-- RMS error fitting plot-->
+          <div id="plotly-lidar-rms"></div>
+        </div>
       </div>
       <hr>
       <div class="row">
@@ -41,5 +47,37 @@ Plotly.plot('plotly-lidar-signal', graphs, {});
 var graphs = {{ context.plot_lidar_range_correction | safe }};
 Plotly.plot('plotly-lidar-range-correction', graphs, {});
 </script>
+
+<script>
+//Parse your Json variable here
+var graphs = {{ context.plot_lidar_rms | safe }};
+Plotly.plot('plotly-lidar-rms', graphs, {});
+</script>
+
+<script>
+// Loading initial globalconfig of variable dashboard
+var globalconfig = {{ context.globalconfig | safe }};
+
+// Licel controls
+document.getElementById('channel_input').value = globalconfig["channel"];
+document.getElementById('adq_time_input').value = globalconfig["adq_time"];
+document.getElementById('bias_init_input').value = globalconfig["bias_init"];
+document.getElementById('bias_final_input').value = globalconfig["bias_final"];
+
+// Plots limits
+document.getElementById('rc_limits_init_input').value = globalconfig["rc_limits_init"];
+document.getElementById('rc_limits_final_input').value = globalconfig["rc_limits_final"];
+document.getElementById('raw_limits_init_input').value = globalconfig["raw_limits_init"];
+document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
+
+// Rayleigh-Fit controls
+document.getElementById('temperature_input').value = globalconfig["temperature"];
+document.getElementById('pressure_input').value = globalconfig["pressure"];
+document.getElementById('masl_input').value = globalconfig["masl"];
+document.getElementById('fit_init_input').value = globalconfig["fit_init"];
+document.getElementById('fit_final_input').value = globalconfig["fit_final"];
+
+</script>
+
 
 {% endblock my_content %}

@@ -4,7 +4,6 @@ import plotly
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.express as px
-# from vega_datasets import data
 import pandas as pd
 import json
 
@@ -12,18 +11,27 @@ import json
 #   LiDAR
 #-----------
 
-def plotly_lidar_signal(lidar_signal):
-  # Plotly plot 1:
-  df = pd.DataFrame(lidar_signal)
-  df.reset_index(inplace=True)
-  df.columns=["bin","TR0_500mV"]
+def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
   
+  # meters to bins
+  bin_init = int(limit_init/7.5)
+  bin_final = int(limit_final/7.5)
+
+  df=pd.DataFrame({
+                  'meters':lidar_signal.range[bin_init:bin_final],
+                  'TR0_500mV':lidar_signal.raw_signal[bin_init:bin_final],
+                  })
+  df.index=df['meters']
+
   fig = px.line(df, 
-                x='bin', 
-                y=['TR0_500mV'], 
+                x=df.index, 
+                y=df['TR0_500mV'], 
                 title='LiDAR raw signal')
   
-  fig.update_xaxes(rangeslider_visible=True)
+  # Set axes titles
+  fig.update_xaxes(rangeslider_visible=True,title_text="Height [m]")
+  fig.update_yaxes(title_text="TR0 Raw [mV]",)
+
   fig.update_layout(width=1200, height=500)
 
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -31,13 +39,16 @@ def plotly_lidar_signal(lidar_signal):
   return plot_json
 
 
-def plotly_lidar_range_correction(lidar_signal):
+def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
 
-  # Plotly plot 1:
+  # meters to bins
+  bin_init = int(limit_init/7.5)
+  bin_final = int(limit_final/7.5)
+
   df=pd.DataFrame({
-                  'meters':lidar_signal.range,
-                  'TR0_500mV':lidar_signal.rc_signal,
-                  'TR0_500mV_RF':lidar_signal.pr2_mol*lidar_signal.adj_factor
+                  'meters':lidar_signal.range[bin_init:bin_final],
+                  'TR0_500mV':lidar_signal.rc_signal[bin_init:bin_final],
+                  'TR0_500mV_RF':lidar_signal.adj_factor*lidar_signal.pr2_mol[bin_init:bin_final]
                   })
   df.index=df['meters']
   fig = go.Figure()
@@ -84,8 +95,8 @@ def plotly_lidar_range_correction(lidar_signal):
       'yanchor': 'top'},
       paper_bgcolor="#ffffff",
       plot_bgcolor="#ffffff",
-      # width=1200, height=700
-      width=800, height=600
+      width=640, height=480
+      # width=800, height=600
   )
   # display rayleigh-fit range
   fig.add_vrect(x0=lidar_signal.fit_init, x1=lidar_signal.fit_final, line_width=0, fillcolor="red", opacity=0.2)
@@ -95,9 +106,9 @@ def plotly_lidar_range_correction(lidar_signal):
   fig.update_xaxes(tickangle=45,title_text="Height [m]")
   
   # Set y-axes titles
-  fig.update_yaxes(title_text="TR0 500mV",
+  fig.update_yaxes(title_text="TR0 RC [mV x m^2] ",
                    secondary_y=False, showgrid=False)
-  fig.update_yaxes(title_text="TR0 500mV RF", tickangle=45,
+  fig.update_yaxes(title_text="TR0 RC 500mV RF", tickangle=45,
                    secondary_y=True, showgrid=False)
   
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -122,7 +133,41 @@ def plotly_empty_signal(signal_type):
     fig.update_xaxes(rangeslider_visible=True)
     fig.update_layout(width=1200, height=500)
     plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-  
+
+  elif signal_type =="rms":
+    df = pd.DataFrame(empty_signal)
+    df.reset_index(inplace=True)
+    df.columns=["sample","rms_error"]
+ 
+    fig = go.Figure(data=go.Scatter(
+          x=df['sample'],
+          y=df["rms_error"],
+          mode="lines",
+          name="RMS error",
+          # title="RMS TMS",
+          marker_color='#b23434',
+          opacity=1
+    ))
+
+    fig.update_layout(
+      width=640,
+      height=480,
+      title={
+        'text': '<span style="font-size: 20px;">RMS Error</span>',
+        'y': 0.97,
+        'x': 0.45,
+        'xanchor': 'center',
+        'yanchor': 'top'}
+      )
+      
+    # Set x-axes titles
+    fig.update_xaxes(title_text="Sample",rangeslider_visible=False)
+
+    # Set y-axes titles
+    fig.update_yaxes(title_text="Error",showgrid=True)
+    
+    plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
   elif signal_type == "rangecorrected":
     df = pd.DataFrame(empty_signal)
     df.reset_index(inplace=True)
@@ -160,8 +205,8 @@ def plotly_empty_signal(signal_type):
         'yanchor': 'top'},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
-        # width=1200, height=700
-        width=800, height=600
+        width=640, height=480
+        # width=800, height=600
     )
 
     # Set x-axis title
@@ -172,5 +217,42 @@ def plotly_empty_signal(signal_type):
                      secondary_y=False, showgrid=False)
     
     plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+  
+  return plot_json
+
+def plotly_lidar_rms(lidar_rms):
+
+  df = pd.DataFrame(lidar_rms)
+  df.reset_index(inplace=True)
+  df.columns=["sample","rms_error"]
+
+  fig = go.Figure(data=go.Scatter(
+        x=df['sample'],
+        y=df["rms_error"],
+        mode="lines",
+        name="RMS error",
+        # title="RMS TMS",
+        marker_color='#b23434',
+        opacity=1
+  ))
+
+  fig.update_layout(
+    width=640,
+    height=480,
+    title={
+      'text': '<span style="font-size: 20px;">RMS Error</span>',
+      'y': 0.97,
+      'x': 0.45,
+      'xanchor': 'center',
+      'yanchor': 'top'}
+    )
+    
+  # Set x-axes titles
+  fig.update_xaxes(title_text="Sample",rangeslider_visible=False)
+
+  # Set y-axes titles
+  fig.update_yaxes(title_text="Error",showgrid=True)
+  
+  plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
   
   return plot_json
