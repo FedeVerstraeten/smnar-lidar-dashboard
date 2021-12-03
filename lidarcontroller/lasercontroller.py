@@ -21,7 +21,7 @@ class laserController:
       self.serialcom.baudrate = baudrate
       self.serialcom.timeout = timeout
 
-      serialcom.open()
+      self.serialcom.open()
     except Exception as ex:
       raise ValueError("Unable to start serial port. Please check the connection and the permissions.")
       sys.exit()
