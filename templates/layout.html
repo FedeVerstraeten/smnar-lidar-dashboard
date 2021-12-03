@@ -71,20 +71,22 @@ scratch. This page gets rid of all links and provides the needed markup only.
         <!-- Main Sidebar Container -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
-            <a href="/" class="logo">
+            <a href="/" class="brand-link">
                 <!-- mini logo for sidebar mini 50x50 pixels -->
-                <!-- <span class="logo-mini"><b>SMN</b></span> -->
-                <!-- logo for regular state and mobile devices -->
-                <span class="logo-lg"><b>SMN</b> LiDAR</span>
+                <img src="{{ url_for('static', filename='dist/img/logo.gif') }}" alt="SMN Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light"><b>SMN</b> LiDAR Dashboard</span>               
             </a>
             <!-- Sidebar -->
             <div class="sidebar">
                 <!-- Sidebar user panel (optional) -->
-                <div class="user-panel">
-                    <div class="pull-left image">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/Smn_logo.png" class="img-circle" alt="User Image">
+                <!-- <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                    <div class="image">
+                        <img src="{{ url_for('static', filename='dist/img/logo.gif') }}" class="img-circle" alt="User Image">
                     </div>
-                </div>
+                    <div class="info">
+                        <a href="#" class="d-block">SMN LiDAR Dashboard</a>
+                    </div>
+                </div> -->
                 <!-- Sidebar Menu -->
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="true">
