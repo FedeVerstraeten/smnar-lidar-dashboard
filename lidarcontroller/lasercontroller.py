@@ -46,10 +46,10 @@ class laserController:
     
     if self.serialcom.isOpen():
       print("START Laser")
-      self.serialcom.write(b'ST 1')
+      self.serialcom.write(b'ST 1\r')
       print("Laser on")
       time.sleep(1)
-      self.serialcom.write(b'SH 1')
+      self.serialcom.write(b'SH 1\r')
       print("Shutter opened")
 
   def stopLaser(self):
