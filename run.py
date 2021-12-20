@@ -324,14 +324,14 @@ def plots_limits():
   # Plot limits Range Corrected signal
   rc_limits=json.loads(data_input)
   if(field_selected == "rc_limits" and rc_limits[0].isdigit() and rc_limits[1].isdigit()):
-    if(int(rc_limits[0]) < int(rc_limits[1]) < MAX_HEIGHT_LIMIT):
+    if(int(rc_limits[0]) < int(rc_limits[1]) <= MAX_HEIGHT_LIMIT):
       globalconfig["rc_limits_init"] = int(rc_limits[0])
       globalconfig["rc_limits_final"] = int(rc_limits[1])
   
   # Plot limits Raw signal
   raw_limits=json.loads(data_input)
   if(field_selected == "raw_limits" and raw_limits[0].isdigit() and raw_limits[1].isdigit()):
-    if(int(raw_limits[0]) < int(raw_limits[1]) < MAX_HEIGHT_LIMIT):
+    if(int(raw_limits[0]) < int(raw_limits[1]) <= MAX_HEIGHT_LIMIT):
       globalconfig["raw_limits_init"] = int(raw_limits[0])
       globalconfig["raw_limits_final"] = int(raw_limits[1])
   
