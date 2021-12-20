@@ -1,9 +1,21 @@
-FROM python:3.11-rc-alpine
+FROM python:3
 
-WORKDIR /app
-COPY . .
+WORKDIR /usr/src/app
 
-RUN pip3 install flask --proxy http://proxy-do.smn.gov.ar:8080
+COPY lidarcontroller/ ./lidarcontroller/
+COPY static/ ./static/
+COPY templates/ ./templates/
+COPY utils/ ./utils/
 
+COPY requirements.txt .
+COPY config.py .
+COPY run.py .
 
-ENTRYPOINT ["python3"]
+ENV http_proxy=http://proxy-do.smn.gov.ar:8080
+ENV https_proxy=http://proxy-do.smn.gov.ar:8080
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 5000
+
+CMD ["python", "run.py"]
