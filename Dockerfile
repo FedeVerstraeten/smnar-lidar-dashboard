@@ -11,8 +11,8 @@ COPY requirements.txt .
 COPY config.py .
 COPY run.py .
 
-ENV http_proxy=http://proxy-do.smn.gov.ar:8080
-ENV https_proxy=http://proxy-do.smn.gov.ar:8080
+#ENV http_proxy=http://proxy-do.smn.gov.ar:8080
+#ENV https_proxy=http://proxy-do.smn.gov.ar:8080
 
 RUN pip install --no-cache-dir -r requirements.txt
 
