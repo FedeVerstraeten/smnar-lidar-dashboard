@@ -10,6 +10,7 @@ from utils import plotly_plot
 from lidarcontroller.licelcontroller import licelcontroller
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarsignal
+from lidarcontroller.lasercontroller import laserController
 
 #configuration
 app = Flask(__name__)
@@ -323,14 +324,14 @@ def plots_limits():
   # Plot limits Range Corrected signal
   rc_limits=json.loads(data_input)
   if(field_selected == "rc_limits" and rc_limits[0].isdigit() and rc_limits[1].isdigit()):
-    if(int(rc_limits[0]) < int(rc_limits[1]) < MAX_HEIGHT_LIMIT):
+    if(int(rc_limits[0]) < int(rc_limits[1]) <= MAX_HEIGHT_LIMIT):
       globalconfig["rc_limits_init"] = int(rc_limits[0])
       globalconfig["rc_limits_final"] = int(rc_limits[1])
   
   # Plot limits Raw signal
   raw_limits=json.loads(data_input)
   if(field_selected == "raw_limits" and raw_limits[0].isdigit() and raw_limits[1].isdigit()):
-    if(int(raw_limits[0]) < int(raw_limits[1]) < MAX_HEIGHT_LIMIT):
+    if(int(raw_limits[0]) < int(raw_limits[1]) <= MAX_HEIGHT_LIMIT):
       globalconfig["raw_limits_init"] = int(raw_limits[0])
       globalconfig["raw_limits_final"] = int(raw_limits[1])
   
@@ -338,5 +339,34 @@ def plots_limits():
   response.content_type = 'application/json'
   return response
 
+@app.route("/laser")
+def laser_controls():
+  
+  action_button = request.args['selected']
+  serial_port = request.args['input']
+
+  if(action_button =="laser_start"):
+    laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
+    laser.connect()
+    laser.startLaser()
+    laser.disconnect()
+    data ="Laser START"
+  
+  if(action_button =="laser_stop"):
+    laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
+    laser.connect()
+    laser.stopLaser()
+    laser.disconnect()
+    data="Laser STOP"
+  
+  response = make_response(json.dumps(data))
+  response.content_type = 'application/json'
+  print(response)
+  
+  return response
+
+
+
 if __name__ == '__main__':
   app.run(debug=True)
+

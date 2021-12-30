@@ -12,27 +12,22 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <title>SMN | LiDAR Dashboard</title>
     <!-- Font Awesome Icons -->
     <!-- You can use href="/path/to/your/file.format", but I prefer this way to make it looks Flask-like-->
-    <link rel="shortcut icon" href="https://www.smn.gob.ar/sites/default/files/favicon.ico" type="image/vnd.microsoft.icon" />
+    <link rel="shortcut icon" href="{{ url_for('static', filename='dist/img/favicon.ico') }}" type="image/vnd.microsoft.icon" />
     <link rel="stylesheet" href="{{ url_for('static', filename='plugins/fontawesome-free/css/all.min.css') }}">
     <!-- Theme style -->
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/adminlte.min.css') }}">
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
     <link rel="stlesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/vega-tooltip@0.16.0/vega-tooltip.scss">
-    <!-- Import Vega 3 & Vega-Lite 2 (does not have to be from CDN) -->
+    <!-- Import JQuery from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <!--    
-    <script src="https://cdn.jsdelivr.net/npm/vega-tooltip@0.16.0/build/vega-tooltip.min.js"></script>
-    <script src="https://d3js.org/d3.v3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-lite@3.0.0-rc12"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-embed@3"></script> 
-    <script src="https://vega.github.io/datalib/datalib.min.js"></script>
-    -->
     <!-- Import Plotly (does not have to be from CDN) -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <!-- Import moment.js for time series (does not have to be from CDN) -->
     <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js'></script>
+    <!-- Toggle buttons -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/bootstrap-toggle.min.css') }}">
+    <script src="{{ url_for('static', filename='dist/js/bootstrap-toggle.min.js') }}"></script>
     {% block script %}
     {% endblock script %}
 </head>
@@ -74,7 +69,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
             <a href="/" class="brand-link">
                 <!-- mini logo for sidebar mini 50x50 pixels -->
                 <img src="{{ url_for('static', filename='dist/img/logo.gif') }}" alt="SMN Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light"><b>SMN</b> LiDAR Dashboard</span>               
+                <span class="brand-text font-weight-light"><b>SMN</b> LiDAR Dashboard</span>
             </a>
             <!-- Sidebar -->
             <div class="sidebar">
@@ -373,8 +368,23 @@ scratch. This page gets rid of all links and provides the needed markup only.
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <button type="button" class="btn btn-outline-success" data-toggle="button" aria-pressed="false" id="startbtn">START</button>
-                                <button type="button" class="btn btn-outline-danger">STOP</button>
+                                <div class="form-row align-items-center">
+                                    <div class="col-sm-7 my-1">
+                                        <label class="sr-only" for="inlineFormInputGroup">Laser shoot</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <div class="input-group-text">></div>
+                                            </div>
+                                            <input type="text" class="form-control " id="serial_port_input" placeholder="Serial port">
+                                            </div>
+                                    </div>
+                                    <div class="col-sm-2 my-1">
+                                        <button type="button" class="btn btn-outline-success btn-sm" id="laser_startbtn" value="laser_start">ON</button>
+                                    </div>
+                                    <div class="col-sm-2 my-1">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" id="laser_stopbtn" value="laser_stop">OFF</button>
+                                    </div>
+                                </div>
                             </li>
                         </ul>
                     </li>
@@ -419,6 +429,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <script src="{{ url_for('static', filename='js/licelcontrols.js') }}"></script>
     <script src="{{ url_for('static', filename='js/rayleighfit.js') }}"></script>
     <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/lasercontrols.js') }}"></script>
     <!-- Bootstrap 4 -->
     <script src="{{ url_for('static', filename='plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- AdminLTE App -->
