@@ -6,7 +6,8 @@ $('#laser_startbtn').on('click', function (e) {
     type: "GET",
     contentType: 'application/json;charset=UTF-8',
     data: {
-      'selected': document.getElementById('laser_startbtn').value
+      'selected': document.getElementById('laser_startbtn').value,
+      'input': document.getElementById('serial_port_input').value
     },
     dataType:"json",
     success: function (data) {
@@ -21,7 +22,8 @@ $('#laser_stopbtn').on('click', function (e) {
     type: "GET",
     contentType: 'application/json;charset=UTF-8',
     data: {
-      'selected': document.getElementById('laser_stopbtn').value
+      'selected': document.getElementById('laser_stopbtn').value,
+      'input': document.getElementById('serial_port_input').value
     },
     dataType:"json",
     success: function (data) {

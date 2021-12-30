@@ -341,17 +341,19 @@ def plots_limits():
 
 @app.route("/laser")
 def laser_controls():
+  
   action_button = request.args['selected']
+  serial_port = request.args['input']
 
   if(action_button =="laser_start"):
-    laser = laserController(port = "COM3", baudrate = 9600, timeout = 5)
+    laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
     laser.connect()
     laser.startLaser()
     laser.disconnect()
     data ="Laser START"
   
   if(action_button =="laser_stop"):
-    laser = laserController(port = "COM3", baudrate = 9600, timeout = 5)
+    laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
     laser.connect()
     laser.stopLaser()
     laser.disconnect()
