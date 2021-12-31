@@ -1,11 +1,11 @@
 import os
 import sys
 from flask import Flask, render_template, url_for, flash, redirect, request, make_response, jsonify, abort
+from werkzeug.utils import secure_filename
 import pandas as pd
 import numpy as np
 import json
 from utils import plotly_plot
-
 
 from lidarcontroller.licelcontroller import licelcontroller
 from lidarcontroller import licelsettings
@@ -15,8 +15,6 @@ from lidarcontroller.lasercontroller import laserController
 #configuration
 app = Flask(__name__)
 app.config.from_object('config.Config')
-
-
 
 # global
 lidar = lidarsignal()
@@ -365,8 +363,36 @@ def laser_controls():
   
   return response
 
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'txt','TXT', 'ini', 'INI'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.route('/inifiles', methods=['POST'])
+def load_ini_files():
+
+  # create dir
+  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+  target = os.path.join(APP_ROOT, 'inifiles/')
+
+  if not os.path.isdir(target):
+    os.mkdir(target)
+
+  # load ini files
+  file=request.files.get("acquisini")
+  if file and allowed_file(file.filename):
+    filename = secure_filename(file.filename)
+    destination = "/".join([target, file.filename])
+    file.save(destination)
+
+  file=request.files.get("globalinfoini")
+  if file and allowed_file(file.filename):
+    filename = secure_filename(file.filename)
+    destination = "/".join([target, file.filename])
+    file.save(destination)
+
+
+  return render_template('inifiles.html')
 
 if __name__ == '__main__':
   app.run(debug=True)
-
