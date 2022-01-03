@@ -1,3 +1,6 @@
+# smnar-lidar-dashboard
+inifiles/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

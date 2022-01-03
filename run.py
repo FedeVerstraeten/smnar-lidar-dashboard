@@ -5,8 +5,9 @@ from werkzeug.utils import secure_filename
 import pandas as pd
 import numpy as np
 import json
-from utils import plotly_plot
+import configparser
 
+from utils import plotly_plot
 from lidarcontroller.licelcontroller import licelcontroller
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarsignal
@@ -21,6 +22,8 @@ lidar = lidarsignal()
 lc = None
 #lc = licelcontroller()
 #lc.openConnection('10.49.234.234',2055)
+acquis_ini = configparser.ConfigParser()
+globalinfo_ini = configparser.ConfigParser()
 
 globalconfig = {
                   "channel" : 0,
@@ -39,7 +42,6 @@ globalconfig = {
                   "raw_limits_init" : 0,      # m 
                   "raw_limits_final" : 30000  # m
                  }
-
 
 # Defining routes
 
@@ -124,8 +126,8 @@ def plot_lidar_signal():
 
   #----------- RAYLEIGH-FIT ------------------
 
-  lidar.setSurfaceConditions(temperature=298,pressure=1023)
-  lidar.molecularProfile(wavelength=533,masl=10)
+  lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
+  lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"]) # optional?
   lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
  
   print("Adj factor a(r,dr)=",np.format_float_scientific(lidar.adj_factor))
@@ -201,8 +203,8 @@ def plot_acquis():
     lidar.offsetCorrection(OFFSET_BINS)
     lidar.rangeCorrection(THRESHOLD_METERS)
     lidar.smoothSignal(level = 3)
-    lidar.setSurfaceConditions(temperature=298,pressure=1023) # optional?
-    lidar.molecularProfile(wavelength=533,masl=10) # optional?
+    lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
+    lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"]) # optional?
     lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
   
     # ploting
@@ -373,7 +375,7 @@ def load_ini_files():
 
   # create dir
   APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-  target = os.path.join(APP_ROOT, 'inifiles/')
+  target = os.path.join(APP_ROOT, 'inifiles')
 
   if not os.path.isdir(target):
     os.mkdir(target)
@@ -384,13 +386,14 @@ def load_ini_files():
     filename = secure_filename(file.filename)
     destination = "/".join([target, file.filename])
     file.save(destination)
+    acquis_ini.read(destination)
 
   file=request.files.get("globalinfoini")
   if file and allowed_file(file.filename):
     filename = secure_filename(file.filename)
     destination = "/".join([target, file.filename])
     file.save(destination)
-
+    globalinfo_ini.read(destination)
 
   return render_template('inifiles.html')
 
