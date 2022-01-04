@@ -8,6 +8,7 @@ import json
 import configparser
 
 from utils import plotly_plot
+from utils import sounding
 from lidarcontroller.licelcontroller import licelcontroller
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarsignal
@@ -394,6 +395,17 @@ def load_ini_files():
     destination = "/".join([target, file.filename])
     file.save(destination)
     globalinfo_ini.read(destination)
+
+  return render_template('inifiles.html')
+
+@app.route('/sounding', methods=['POST'])
+def sounding_data():
+
+  station = request.form["station_number"]
+  region = request.form["region_sounding"]
+  date = request.form["date_sounding"]
+
+  sounding.download_sounding(station,region,date)
 
   return render_template('inifiles.html')
 
