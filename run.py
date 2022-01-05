@@ -420,12 +420,19 @@ def sounding_data():
     os.mkdir(target)
 
   # print to file
-  filename='UWyoming_'+date+'_'+station
+  filename='UWyoming_'+date+'_'+station+'.txt'
   destination = os.path.join(target,filename)
   with open(destination,'w') as file:
     file.write(sounding_data)
 
-  return render_template('inifiles.html')
+  station_info = ' '.join([station,region,date])
+  context = {
+              "filename": filename,
+              "station_info":station_info,
+              "sounding_data": sounding_data
+            }
+
+  return render_template('sounding.html',context=context)
 
 if __name__ == '__main__':
   app.run(debug=True)
