@@ -214,146 +214,150 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             </a>
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
-                                    <form>
-                                        <div class="form-group">
-                                            <label for="acquisini">
-                                                <b style="color:white">Acquis file:</b>
-                                            </label>
-                                            <input type="file" class="form-control-file" name="acquisini" id="AcquisINI">
-                                            <!-- <input type="submit"> -->
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="globalinfoini">
-                                                <b style="color:white">Global Info file:</b>
-                                            </label>
-                                            <input type="file" class="form-control-file" name="globalinfoini" id="GlobalInfoINI">
-                                        </div>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                        <!-- Rayleigh-Fit Menu -->
-                        <li class="nav-item has-treeview menu-close">
-                            <a href="#" class="nav-link ">
-                                <i class="nav-icon fas fa-th"></i>
-                                <p>
-                                    Rayleigh-Fit controls
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <!-- Rayleigh-Fit controls -->
-                                <li class="nav-item">
-                                    <label for="surface-conditions-control">
-                                        <b style="color:white">Surface conditions:</b>
-                                    </label>
-                                    <div class="form-row align-items-center">
-                                        <div class="col-sm-8 my-1">
-                                            <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <div class="input-group-text">ºC</div>
-                                                </div>
-                                                <input type="text" class="form-control" id="temperature_input" placeholder="Temperature">
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-2 my-1">
-                                            <button type="submit" class="btn btn-primary" id="temperature_apply" value="temperature">Apply</button>
-                                        </div>
-                                    </div>
-                                    <div class="form-row align-items-center">
-                                        <div class="col-sm-8 my-1">
-                                            <label class="sr-only" for="inlineFormInputGroup">Pressure</label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <div class="input-group-text">hPa</div>
-                                                </div>
-                                                <input type="text" class="form-control" id="pressure_input" placeholder="Pressure">
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-2 my-1">
-                                            <button type="submit" class="btn btn-primary" id="pressure_apply" value="pressure">Apply</button>
-                                        </div>
-                                    </div>
-                                    <div class="form-row align-items-center">
-                                        <div class="col-sm-8 my-1">
-                                            <label class="sr-only" for="inlineFormInputGroup">MASL</label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <div class="input-group-text">m</div>
-                                                </div>
-                                                <input type="text" class="form-control" id="masl_input" placeholder="MASL">
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-2 my-1">
-                                            <button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button>
-                                        </div>
-                                    </div>
-                                    <label for="rayleighfit-control">
-                                        <b style="color:white">Rayleigh-Fit range (meters):</b>
-                                    </label>
-                                    <div class="form-row align-items-center">
-                                        <div class="col-sm-4 my-1">
-                                            <label class="sr-only" for="inlineFormInputName">Initial</label>
-                                            <input type="text" class="form-control" id="fit_init_input" placeholder="Initial">
-                                        </div>
-                                        <div class="col-sm-4 my-1">
-                                            <label class="sr-only" for="inlineFormInputName">Final</label>
-                                            <input type="text" class="form-control" id="fit_final_input" placeholder="Final">
-                                        </div>
-                                        <div class="col-sm-2 my-1">
-                                            <button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button>
-                                        </div>
-                                    </div>
-                                </li>
-                            </ul>
-                        </li>
-                        <!-- Sounding Menu -->
-                        <li class="nav-item has-treeview menu-close">
-                            <a href="#" class="nav-link ">
-                                <i class="nav-icon fas fa-th"></i>
-                                <p>
-                                    Sounding controls
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <!-- Sounding controls -->
-                                <li class="nav-item">
-                                    <form>
-                                        <div class="form-row align-items-center">
-                                            <div class="col-sm-10 my-1">
-                                                <label class="sr-only" for="inlineFormInputGroup">Station number</label>
-                                                <div class="input-group">
-                                                    <div class="input-group-prepend">
-                                                        <div class="input-group-text">ST</div>
-                                                    </div>
-                                                    <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="Station number">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-row align-items-center">
-                                            <select name="region_sounding" id="region_sounding" required="required" style="width:200px">
-                                                <option value="" label="Select a region ... " selected="selected">Select a region... </option>
-                                                <option value="naconf">North America</option>
-                                                <option value="samer">South America</option>
-                                                <option value="pac">South Pacific</option>
-                                                <option value="ant">Antarctica</option>
-                                                <option value="np">Arctic</option>
-                                                <option value="europe">Europe</option>
-                                                <option value="africa">Africa</option>
-                                                <option value="seasia">Southeast Asia</option>
-                                                <option value="mideast">Mideast</option>
-                                            </select>
-                                        </div>
-                                        <div class="input-group date" data-provide="datepicker">
-                                            <input type="datetime-local" id="datepicker" name="trip-start" value="2020-01-01">
-                                        </div>
+                                    <form id="upload-form" method="POST" enctype=multipart/form-data action="{{url_for('load_ini_files')}}">
                                 <li>
-                                    <input type="submit" value="Submit" class="btn btn-primary"></input>
+                                    <div class="form-group">
+                                        <label for="acquisini">
+                                            <b style="color:white">Acquis file:</b>
+                                        </label>
+                                        <input type="file" class="form-control-file" name="acquisini" id="AcquisINI">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="globalinfoini">
+                                            <b style="color:white">Global Info file:</b>
+                                        </label>
+                                        <input type="file" class="form-control-file" name="globalinfoini" id="GlobalInfoINI">
+                                    </div>
+                                </li>
+                                <li>
+                                    <input type="submit" class="btn btn-primary" id="ini_files" value="Load config"></input>
                                 </li>
                                 </form>
                         </li>
+                    </ul>
+                    </li>
+                    <!-- Rayleigh-Fit Menu -->
+                    <li class="nav-item has-treeview menu-close">
+                        <a href="#" class="nav-link ">
+                            <i class="nav-icon fas fa-th"></i>
+                            <p>
+                                Rayleigh-Fit controls
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <!-- Rayleigh-Fit controls -->
+                            <li class="nav-item">
+                                <label for="surface-conditions-control">
+                                    <b style="color:white">Surface conditions:</b>
+                                </label>
+                                <div class="form-row align-items-center">
+                                    <div class="col-sm-8 my-1">
+                                        <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <div class="input-group-text">ºC</div>
+                                            </div>
+                                            <input type="text" class="form-control" id="temperature_input" placeholder="Temperature">
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-2 my-1">
+                                        <button type="submit" class="btn btn-primary" id="temperature_apply" value="temperature">Apply</button>
+                                    </div>
+                                </div>
+                                <div class="form-row align-items-center">
+                                    <div class="col-sm-8 my-1">
+                                        <label class="sr-only" for="inlineFormInputGroup">Pressure</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <div class="input-group-text">hPa</div>
+                                            </div>
+                                            <input type="text" class="form-control" id="pressure_input" placeholder="Pressure">
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-2 my-1">
+                                        <button type="submit" class="btn btn-primary" id="pressure_apply" value="pressure">Apply</button>
+                                    </div>
+                                </div>
+                                <div class="form-row align-items-center">
+                                    <div class="col-sm-8 my-1">
+                                        <label class="sr-only" for="inlineFormInputGroup">MASL</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <div class="input-group-text">m</div>
+                                            </div>
+                                            <input type="text" class="form-control" id="masl_input" placeholder="MASL">
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-2 my-1">
+                                        <button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button>
+                                    </div>
+                                </div>
+                                <label for="rayleighfit-control">
+                                    <b style="color:white">Rayleigh-Fit range (meters):</b>
+                                </label>
+                                <div class="form-row align-items-center">
+                                    <div class="col-sm-4 my-1">
+                                        <label class="sr-only" for="inlineFormInputName">Initial</label>
+                                        <input type="text" class="form-control" id="fit_init_input" placeholder="Initial">
+                                    </div>
+                                    <div class="col-sm-4 my-1">
+                                        <label class="sr-only" for="inlineFormInputName">Final</label>
+                                        <input type="text" class="form-control" id="fit_final_input" placeholder="Final">
+                                    </div>
+                                    <div class="col-sm-2 my-1">
+                                        <button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </li>
+                    <!-- Sounding Menu -->
+                    <li class="nav-item has-treeview menu-close">
+                        <a href="#" class="nav-link ">
+                            <i class="nav-icon fas fa-th"></i>
+                            <p>
+                                Sounding controls
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <!-- Sounding controls -->
+                            <li class="nav-item">
+                                <form method="POST" action="{{url_for('sounding_data')}}">
+                                    <div class="form-row align-items-center">
+                                        <div class="col-sm-10 my-1">
+                                            <label class="sr-only" for="station_number">Station number</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">ST</div>
+                                                </div>
+                                                <input type="text" class="form-control" name="station_number" id="station_number" placeholder="Station number">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-row align-items-center">
+                                        <select name="region_sounding" id="region_sounding" required="required" style="width:200px">
+                                            <option value="" label="Select a region ... " selected="selected">Select a region... </option>
+                                            <option value="naconf">North America</option>
+                                            <option value="samer">South America</option>
+                                            <option value="pac">South Pacific</option>
+                                            <option value="ant">Antarctica</option>
+                                            <option value="np">Arctic</option>
+                                            <option value="europe">Europe</option>
+                                            <option value="africa">Africa</option>
+                                            <option value="seasia">Southeast Asia</option>
+                                            <option value="mideast">Mideast</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group date" data-provide="datepicker">
+                                        <input type="date" id="date_sounding" name="date_sounding" class="datepicker" data-date-format="dd/mm/yyyy" value='2022-01-01'>
+                                    </div>
+                            <li>
+                                <input type="submit" value="Submit" class="btn btn-primary"></input>
+                            </li>
+                            </form>
+                    </li>
                     </ul>
                     </li>
                     <!-- Secondary Menu -->
@@ -376,7 +380,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                                 <div class="input-group-text">></div>
                                             </div>
                                             <input type="text" class="form-control " id="serial_port_input" placeholder="Serial port">
-                                            </div>
+                                        </div>
                                     </div>
                                     <div class="col-sm-2 my-1">
                                         <button type="button" class="btn btn-outline-success btn-sm" id="laser_startbtn" value="laser_start">ON</button>

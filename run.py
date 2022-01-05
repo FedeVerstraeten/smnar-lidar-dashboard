@@ -1,12 +1,14 @@
 import os
 import sys
 from flask import Flask, render_template, url_for, flash, redirect, request, make_response, jsonify, abort
+from werkzeug.utils import secure_filename
 import pandas as pd
 import numpy as np
 import json
+import configparser
+
 from utils import plotly_plot
-
-
+from utils import sounding
 from lidarcontroller.licelcontroller import licelcontroller
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarsignal
@@ -16,13 +18,13 @@ from lidarcontroller.lasercontroller import laserController
 app = Flask(__name__)
 app.config.from_object('config.Config')
 
-
-
 # global
 lidar = lidarsignal()
 lc = None
 #lc = licelcontroller()
 #lc.openConnection('10.49.234.234',2055)
+acquis_ini = configparser.ConfigParser()
+globalinfo_ini = configparser.ConfigParser()
 
 globalconfig = {
                   "channel" : 0,
@@ -41,7 +43,6 @@ globalconfig = {
                   "raw_limits_init" : 0,      # m 
                   "raw_limits_final" : 30000  # m
                  }
-
 
 # Defining routes
 
@@ -126,8 +127,8 @@ def plot_lidar_signal():
 
   #----------- RAYLEIGH-FIT ------------------
 
-  lidar.setSurfaceConditions(temperature=298,pressure=1023)
-  lidar.molecularProfile(wavelength=533,masl=10)
+  lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
+  lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"]) # optional?
   lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
  
   print("Adj factor a(r,dr)=",np.format_float_scientific(lidar.adj_factor))
@@ -203,8 +204,8 @@ def plot_acquis():
     lidar.offsetCorrection(OFFSET_BINS)
     lidar.rangeCorrection(THRESHOLD_METERS)
     lidar.smoothSignal(level = 3)
-    lidar.setSurfaceConditions(temperature=298,pressure=1023) # optional?
-    lidar.molecularProfile(wavelength=533,masl=10) # optional?
+    lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
+    lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"]) # optional?
     lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
   
     # ploting
@@ -365,8 +366,69 @@ def laser_controls():
   
   return response
 
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'txt','TXT', 'ini', 'INI'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.route('/inifiles', methods=['POST'])
+def load_ini_files():
+
+  # create dir
+  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+  target = os.path.join(APP_ROOT, 'inifiles')
+
+  if not os.path.isdir(target):
+    os.mkdir(target)
+
+  # load ini files
+  file=request.files.get("acquisini")
+  if file and allowed_file(file.filename):
+    filename = secure_filename(file.filename)
+    destination = os.path.join(target, file.filename)
+    file.save(destination)
+    acquis_ini.read(destination)
+
+  file=request.files.get("globalinfoini")
+  if file and allowed_file(file.filename):
+    filename = secure_filename(file.filename)
+    destination = os.path.join(target, file.filename)
+    file.save(destination)
+    globalinfo_ini.read(destination)
+
+  return render_template('inifiles.html')
+
+@app.route('/sounding', methods=['POST'])
+def sounding_data():
+
+  station = request.form["station_number"]
+  region = request.form["region_sounding"]
+  date = request.form["date_sounding"]
+
+  sounding_data = sounding.download_sounding(station,region,date)
+  height,temperature,pressure = sounding.extract_htp(sounding_data)
+
+  # create dir
+  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+  target = os.path.join(APP_ROOT, 'sounding')
+
+  if not os.path.isdir(target):
+    os.mkdir(target)
+
+  # print to file
+  filename='UWyoming_'+date+'_'+station+'.txt'
+  destination = os.path.join(target,filename)
+  with open(destination,'w') as file:
+    file.write(sounding_data)
+
+  station_info = ' '.join([station,region,date])
+  context = {
+              "filename": filename,
+              "station_info":station_info,
+              "sounding_data": sounding_data
+            }
+
+  return render_template('sounding.html',context=context)
 
 if __name__ == '__main__':
   app.run(debug=True)
-
