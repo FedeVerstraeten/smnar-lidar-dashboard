@@ -408,10 +408,6 @@ def sounding_data():
   sounding_data = sounding.download_sounding(station,region,date)
   height,temperature,pressure = sounding.extract_htp(sounding_data)
 
-  print("height:",height)
-  print("temperature:",temperature)
-  print("pressure:",pressure)
-
   # create dir
   APP_ROOT = os.path.dirname(os.path.abspath(__file__))
   target = os.path.join(APP_ROOT, 'sounding')
