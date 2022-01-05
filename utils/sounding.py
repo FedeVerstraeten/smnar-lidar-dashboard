@@ -1,3 +1,5 @@
+import os
+import re
 import urllib
 from urllib.error import URLError, HTTPError
 
@@ -25,7 +27,9 @@ def gets_html(url):
 
 # sounding data download from University of Wyoming
 def download_sounding(station,region,date):
-  
+  sounding_data = ""
+ 
+  # set up the url
   IURL = "http://weather.uwyo.edu/cgi-bin/sounding?"
   FTYPE = "TYPE=TEXT%3ALIST&"
 
@@ -37,8 +41,38 @@ def download_sounding(station,region,date):
   st = "STNM=" + station
   url = IURL + reg + FTYPE + yr + mon + day_beg + day_end + st
 
+  # parsing html response
   raw_html = gets_html(url)
-  sounding_data = raw_html.split('<PRE>')[1].split('</PRE>')[0]
+  if(raw_html.find('<PRE>') != -1):
+    sounding_data = raw_html.split('<PRE>')[1].split('</PRE>')[0]
 
-  with open('UWyoming_'+date+'_'+station,'w') as file:
-    file.write(sounding_data)
+  return sounding_data
+
+# parse the sounding data download to csv list
+def parse_sounding(sounding_data):
+  HEADER_END=5
+  parsed_data=[]
+
+  if sounding_data != []:
+    lines = sounding_data.splitlines(True)
+    for line in lines[HEADER_END:]:
+      line_csv = re.sub("\s+", ",", line.strip())
+      parsed_data.append(line_csv)
+
+  return parsed_data
+
+# extract radiosonde data: height, temperature, pressure
+def extract_htp(sounding_data):
+  pressure = []
+  height = []
+  temperature = []
+
+  parsed_data = parse_sounding(sounding_data)
+
+  for line in parsed_data:
+    pressure.append(line.split(',')[0])
+    height.append(line.split(',')[1])
+    temperature.append(line.split(',')[2])
+
+  return height,temperature,pressure
+

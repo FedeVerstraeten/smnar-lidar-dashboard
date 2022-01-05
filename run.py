@@ -385,14 +385,14 @@ def load_ini_files():
   file=request.files.get("acquisini")
   if file and allowed_file(file.filename):
     filename = secure_filename(file.filename)
-    destination = "/".join([target, file.filename])
+    destination = os.path.join(target, file.filename)
     file.save(destination)
     acquis_ini.read(destination)
 
   file=request.files.get("globalinfoini")
   if file and allowed_file(file.filename):
     filename = secure_filename(file.filename)
-    destination = "/".join([target, file.filename])
+    destination = os.path.join(target, file.filename)
     file.save(destination)
     globalinfo_ini.read(destination)
 
@@ -405,7 +405,25 @@ def sounding_data():
   region = request.form["region_sounding"]
   date = request.form["date_sounding"]
 
-  sounding.download_sounding(station,region,date)
+  sounding_data = sounding.download_sounding(station,region,date)
+  height,temperature,pressure = sounding.extract_htp(sounding_data)
+
+  print("height:",height)
+  print("temperature:",temperature)
+  print("pressure:",pressure)
+
+  # create dir
+  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+  target = os.path.join(APP_ROOT, 'sounding')
+
+  if not os.path.isdir(target):
+    os.mkdir(target)
+
+  # print to file
+  filename='UWyoming_'+date+'_'+station
+  destination = os.path.join(target,filename)
+  with open(destination,'w') as file:
+    file.write(sounding_data)
 
   return render_template('inifiles.html')
 
