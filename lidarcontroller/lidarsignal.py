@@ -7,7 +7,7 @@ from scipy import integrate
 from scipy.interpolate import interp1d
 
 
-class lidarsignal:
+class lidarSignal:
   
   def __init__(self):
   
@@ -157,8 +157,14 @@ class lidarsignal:
     # Purely molecular atmosphere profile
     self.pr2_mol = beta_mol*tm2r_mol
 
-  def loadSoundingData(self,sounding_file):
-    pass
+  def loadSoundingData(self,height,temperature,pressure):
+    
+    if height!=[] and temperature!=[] and pressure!=[]:
+      
+      self.sounding_data["height"]=height
+      self.sounding_data["temperature"]=temperature
+      self.sounding_data["pressure"]=pressure
+
 
   def rayleighFit(self,fit_init,fit_final):
 

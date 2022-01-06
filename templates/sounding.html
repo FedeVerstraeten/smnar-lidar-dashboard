@@ -9,7 +9,7 @@ put your custom script or styling here
 <!-- HEADER PAGE -->
 
 <div class="jumbotron">
-  <h1 class="display-4">Sounding, loaded!</h1>
+  <h1 class="display-4">{{ context.response | safe }}</h1>
   <p class="lead">Please, reload the dashboard with the button bellow or refresh the homepage.</p>
   <hr class="my-4">
   <p class="lead">
@@ -19,14 +19,12 @@ put your custom script or styling here
 
 <hr>
 
-
 <div class="container-fluid" id="sounding-data">
   <h3>{{ context.station_info | safe }}</h3>
-  <p>{{ context.filename | safe }}</p>
+  <p style="font-family:monospace"><b>FILE:</b> {{ context.filename | safe }}</p>
   <pre>
     {{ context.sounding_data | safe }}
   </pre>
 </div>
-
 
 {% endblock my_content %}

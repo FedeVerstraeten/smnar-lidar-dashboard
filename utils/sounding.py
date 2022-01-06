@@ -27,6 +27,7 @@ def gets_html(url):
 
 # sounding data download from University of Wyoming
 def download_sounding(station,region,date):
+  header_info = ""
   sounding_data = ""
  
   # set up the url
@@ -43,10 +44,16 @@ def download_sounding(station,region,date):
 
   # parsing html response
   raw_html = gets_html(url)
+
+  # header info
+  if(raw_html.find('<H2>') != -1):
+    header_info = raw_html.split('<H2>')[1].split('</H2>')[0]
+
+  # sounding raw data
   if(raw_html.find('<PRE>') != -1):
     sounding_data = raw_html.split('<PRE>')[1].split('</PRE>')[0]
 
-  return sounding_data
+  return header_info,sounding_data
 
 # parse the sounding data download to csv list
 def parse_sounding(sounding_data):
@@ -61,8 +68,8 @@ def parse_sounding(sounding_data):
 
   return parsed_data
 
-# extract radiosonde data: height, temperature, pressure
-def extract_htp(sounding_data):
+# get radiosonde data: height, temperature, pressure
+def get_htp(sounding_data):
   pressure = []
   height = []
   temperature = []

@@ -11,7 +11,7 @@ from utils import plotly_plot
 from utils import sounding
 from lidarcontroller.licelcontroller import licelcontroller
 from lidarcontroller import licelsettings
-from lidarcontroller.lidarsignal import lidarsignal
+from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
 
 #configuration
@@ -19,7 +19,7 @@ app = Flask(__name__)
 app.config.from_object('config.Config')
 
 # global
-lidar = lidarsignal()
+lidar = lidarSignal()
 lc = None
 #lc = licelcontroller()
 #lc.openConnection('10.49.234.234',2055)
@@ -118,7 +118,7 @@ def plot_lidar_signal():
   lidar_data = np.array(data_mv)
 
   # lidarsignal class
-  # lidar = lidarsignal()
+  # lidar = lidarSignal()
   global lidar
   lidar.loadSignal(lidar_data)
   lidar.offsetCorrection(OFFSET_BINS)
@@ -405,26 +405,34 @@ def sounding_data():
   region = request.form["region_sounding"]
   date = request.form["date_sounding"]
 
-  sounding_data = sounding.download_sounding(station,region,date)
-  height,temperature,pressure = sounding.extract_htp(sounding_data)
+  header_info,sounding_data = sounding.download_sounding(station,region,date)
+  height,temperature,pressure = sounding.get_htp(sounding_data)
+  lidar.loadSoundingData(height,temperature,pressure)
 
-  # create dir
+  # create sounding dir
   APP_ROOT = os.path.dirname(os.path.abspath(__file__))
   target = os.path.join(APP_ROOT, 'sounding')
-
   if not os.path.isdir(target):
     os.mkdir(target)
 
-  # print to file
-  filename='UWyoming_'+date+'_'+station+'.txt'
-  destination = os.path.join(target,filename)
-  with open(destination,'w') as file:
-    file.write(sounding_data)
 
-  station_info = ' '.join([station,region,date])
+  if sounding_data == "":
+    resp = "No data available for ST" + station + " on " + date
+    filename=""
+
+  else:
+    resp = "Radiosonde download successful!"
+    
+    # print to file
+    filename='UWyoming_'+date+'_'+station+'.txt'
+    destination = os.path.join(target,filename)
+    with open(destination,'w') as file:
+      file.write(sounding_data)
+
   context = {
+              "response": resp,
               "filename": filename,
-              "station_info":station_info,
+              "station_info":header_info,
               "sounding_data": sounding_data
             }
 
