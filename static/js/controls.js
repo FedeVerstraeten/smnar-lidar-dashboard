@@ -29,8 +29,3 @@ function requestData() {
     cache: false
   });
 }
-
-// $('#datepicker').datepicker({
-//     format: 'dd/mm/yyyy',
-//     startDate: '-3d'
-// });
