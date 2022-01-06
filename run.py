@@ -401,33 +401,41 @@ def load_ini_files():
 @app.route('/sounding', methods=['POST'])
 def sounding_data():
 
-  station = request.form["station_number"]
-  region = request.form["region_sounding"]
-  date = request.form["date_sounding"]
-
-  header_info,sounding_data = sounding.download_sounding(station,region,date)
-  height,temperature,pressure = sounding.get_htp(sounding_data)
-  lidar.loadSoundingData(height,temperature,pressure)
-
-  # create sounding dir
-  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-  target = os.path.join(APP_ROOT, 'sounding')
-  if not os.path.isdir(target):
-    os.mkdir(target)
-
-
-  if sounding_data == "":
-    resp = "No data available for ST" + station + " on " + date
+  if request.form.get('ussdt_checkbox') == 'on':
+    lidar.clearSoundingData()
+    resp="U.S. Standard Atmosphere model, enabled." 
     filename=""
+    header_info=""
+    sounding_data=""
 
   else:
-    resp = "Radiosonde download successful!"
-    
-    # print to file
-    filename='UWyoming_'+date+'_'+station+'.txt'
-    destination = os.path.join(target,filename)
-    with open(destination,'w') as file:
-      file.write(sounding_data)
+    station = request.form["station_number"]
+    region = request.form["region_sounding"]
+    date = request.form["date_sounding"]
+
+    header_info,sounding_data = sounding.download_sounding(station,region,date)
+    height,temperature,pressure = sounding.get_htp(sounding_data)
+    lidar.loadSoundingData(height,temperature,pressure)
+
+    # create sounding dir
+    APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+    target = os.path.join(APP_ROOT, 'sounding')
+    if not os.path.isdir(target):
+      os.mkdir(target)
+
+
+    if sounding_data == "":
+      resp = "No data available for ST" + station + " on " + date
+      filename=""
+
+    else:
+      resp = "Radiosonde download successful!"
+      
+      # print to file
+      filename='UWyoming_'+date+'_'+station+'.txt'
+      destination = os.path.join(target,filename)
+      with open(destination,'w') as file:
+        file.write(sounding_data)
 
   context = {
               "response": resp,

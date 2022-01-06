@@ -165,6 +165,11 @@ class lidarSignal:
       self.sounding_data["temperature"]=temperature
       self.sounding_data["pressure"]=pressure
 
+  def clearSoundingData(self):
+    
+    self.sounding_data["height"]=[]
+    self.sounding_data["temperature"]=[]
+    self.sounding_data["pressure"]=[]
 
   def rayleighFit(self,fit_init,fit_final):
 
