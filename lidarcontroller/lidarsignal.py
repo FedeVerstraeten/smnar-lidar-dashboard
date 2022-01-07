@@ -110,36 +110,32 @@ class lidarSignal:
         and self.sounding_data["temperature"] \
         and self.sounding_data["pressure"]):
 
-      # [TO-DO] CONSULTAR ESTO A JUAN!! si el sounding es highres
-      height_highres = self.sounding_data["height"]
-      temperature_highres = self.sounding_data["temperature"]
-      pressure_highres = self.sounding_data["pressure"]
-      
-      # AMSL correction
-      index_masl = (np.abs(height_highres - self.masl)).argmin() 
+      height_lowres = self.sounding_data["height"]
+      temperature_lowres = self.sounding_data["temperature"]
+      pressure_lowres = self.sounding_data["pressure"]
 
     else:
       height_lowres = self.__us_std_model["height"]
       temperature_lowres = self.__us_std_model["temperature"]
       pressure_lowres = self.__us_std_model["pressure"]
 
-      # Defining high resolution Height vector
-      height_highres = np.arange(height_lowres[0], (self.bin_long_trace+1)*self.__BIN_METERS, self.__BIN_METERS)
+    # Defining high resolution Height vector
+    height_highres = np.arange(height_lowres[0], (self.bin_long_trace+1)*self.__BIN_METERS, self.__BIN_METERS)
 
-      # Interpolation Spline 1D cubic
-      temperature_spline = interp1d(height_lowres, temperature_lowres, kind='cubic')
-      pressure_spline = interp1d(height_lowres, pressure_lowres, kind='cubic')
-      
-      # Defining high resolution Temperature & Pressure vectors
-      temperature_highres = temperature_spline(height_highres)
-      pressure_highres = pressure_spline(height_highres)
+    # Interpolation Spline 1D cubic
+    temperature_spline = interp1d(height_lowres, temperature_lowres, kind='cubic')
+    pressure_spline = interp1d(height_lowres, pressure_lowres, kind='cubic')
+    
+    # Defining high resolution Temperature & Pressure vectors
+    temperature_highres = temperature_spline(height_highres)
+    pressure_highres = pressure_spline(height_highres)
 
-      # AMSL correction
-      index_masl = (np.abs(height_highres - self.masl)).argmin() 
+    # AMSL correction
+    index_masl = (np.abs(height_highres - self.masl)).argmin() 
 
-      # Profile scaling with current surface temperature and pressure conditions
-      temperature_highres = self.surface_temperature * (temperature_highres/temperature_highres[index_masl])
-      pressure_highres = self.surface_pressure * (pressure_highres/pressure_highres[index_masl])
+    # Profile scaling with current surface temperature and pressure conditions
+    temperature_highres = self.surface_temperature * (temperature_highres/temperature_highres[index_masl])
+    pressure_highres = self.surface_pressure * (pressure_highres/pressure_highres[index_masl])
 
     # atmospheric molecular concentration
     kboltz = constants.k
