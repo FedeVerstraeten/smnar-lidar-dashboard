@@ -47,6 +47,7 @@ globalconfig = {
 # Defining routes
 
 @app.route("/")
+@app.route("/alignment")
 def homepage():
 
   # empty plot
@@ -80,95 +81,8 @@ def adquisition_mode():
   # run html template
   return render_template('adquisition.html', context=context)
 
-@app.route("/lidar")
-def plot_lidar_signal():
-
-  # basic settings
-  BIN_LONG_TRANCE = globalconfig["max_bins"]
-  SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds
-  OFFSET_BINS = 10
-  THRESHOLD_METERS = globalconfig["bias_init"] # meters
-
-
-  #----------- LICEL ADQUISITION ---------------
-
-  # initialization
-  tr=globalconfig["channel"] 
-  lc_local = licelcontroller()
-  lc_local.openConnection('10.49.234.234',2055)
-  lc_local.selectTR(tr)
-  lc_local.setInputRange(licelsettings.MILLIVOLT500)
-  # lc.setThresholdMode(licelsettings.THRESHOLD_LOW)
-  # lc.setDiscriminatorLevel(8) # can be set between 0 and 63
-  
- 
-  # start the acquisition
-  lc_local.clearMemory()
-  lc_local.startAcquisition()
-  lc_local.msDelay(SHOTS_DELAY)
-  lc_local.stopAcquisition() 
-  #lc.waitForReady(100) # wait till it returns to the idle state
-
-  # get the shotnumber 
-  if lc_local.getStatus() == 0:
-    if (lc_local.shots_number > 1):
-      cycles = lc_local.shots_number - 2 # WHY??!
-
-  # read from the TR triggered mem A
-  data_lsw = lc_local.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
-  data_msw = lc_local.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
-  
-  # combine, normalize an scale data to mV
-  data_accu,data_clip = lc_local.combineAnalogDatasets(data_lsw, data_msw)
-  data_phys = lc_local.normalizeData(data_accu,cycles)
-  data_mv = lc_local.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
-  
-  # close socket
-  lc_local.closeConnection()
-  # # DUMP THE DATA INTO A FILE
-  # with open('analog.txt', 'w') as file: # or analog.dat 'wb'
-  #   np.savetxt(file,data_mv,delimiter=',')
-
-  #----------- RANGE CORRECTION ---------------
-
-  lidar_data = np.array(data_mv)
-
-  # lidarsignal class
-  # lidar = lidarSignal()
-  global lidar
-  lidar.loadSignal(lidar_data)
-  lidar.offsetCorrection(OFFSET_BINS)
-  lidar.rangeCorrection(THRESHOLD_METERS)
-  lidar.smoothSignal(level = 3)
-
-  #----------- RAYLEIGH-FIT ------------------
-
-  lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
-  lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"]) # optional?
-  lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
- 
-  print("Adj factor a(r,dr)=",np.format_float_scientific(lidar.adj_factor))
-  print("Err RMS =",np.format_float_scientific(lidar.rms_err))
- 
-  #-------------- PLOTING --------------------
-
-  #ploting
-  plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
-  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar,globalconfig["rc_limits_init"],globalconfig["rc_limits_final"])
-  plot_lidar_rms =  plotly_plot.plotly_empty_signal("rms")
-
-  # load dict context
-  context = {"number_bins": lidar.bin_long_trace,
-             "plot_lidar_signal": plot_lidar_signal,
-             "plot_lidar_range_correction": plot_lidar_range_correction,
-             "plot_lidar_rms": plot_lidar_rms
-            }
-
-  # run html template
-  return render_template('adquisition.html', context=context)
-
-@app.route("/acquis", methods=['GET','POST'])
-def plot_acquis():
+@app.route("/record", methods=['GET','POST'])
+def licel_record_data():
   action_button = request.args['selected']
 
   # basic settings
@@ -178,8 +92,9 @@ def plot_acquis():
   THRESHOLD_METERS = globalconfig["bias_init"] # meters
 
 
-  if(action_button =="start"):
-      
+  if(action_button =="start" or action_button =="oneshot"):
+  #----------- LICEL ADQUISITION ---------------
+
     # initialization
     global lc
     tr=globalconfig["channel"]
@@ -215,16 +130,18 @@ def plot_acquis():
     # close socket
     # lc.closeConnection()
 
-    # rayleigh fit 
+    #----------- RANGE CORRECTION ---------------
     lidar.loadSignal(data_mv)
     lidar.offsetCorrection(OFFSET_BINS)
     lidar.rangeCorrection(THRESHOLD_METERS)
     lidar.smoothSignal(level = 3)
+
+    #----------- RAYLEIGH-FIT ------------------
     lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
     lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"]) # optional?
     lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
-  
-    # ploting
+    
+    #-------------- PLOTING --------------------
     plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
     plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar,globalconfig["rc_limits_init"],globalconfig["rc_limits_final"])
     plot_lidar_rms = plot_lidar_rms =  plotly_plot.plotly_empty_signal("rms")

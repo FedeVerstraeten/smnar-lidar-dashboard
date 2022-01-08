@@ -4,7 +4,7 @@ let interval;
 
 function requestPlots() {
   $.ajax({
-    url: "/acquis",
+    url: "/record",
     type: "GET",
     contentType: 'application/json;charset=UTF-8',
     data: {
@@ -48,7 +48,7 @@ function requestPlots() {
 $('#startbtn').on('click', function (e) {
 
     $.ajax({
-     url: "/acquis",
+     url: "/record",
       type: "GET",
       contentType: 'application/json;charset=UTF-8',
       data: {
@@ -83,7 +83,7 @@ $('#startbtn').on('click', function (e) {
 
 $('#stopbtn').on('click', function (e) {
   $.ajax({
-    url: "/acquis",
+    url: "/record",
     type: "GET",
     contentType: 'application/json;charset=UTF-8',
     data: {
@@ -96,6 +96,30 @@ $('#stopbtn').on('click', function (e) {
       console.log("STOP success",interval);
     }
   });
+})
+
+$('#oneshotbtn').on('click', function (e) {
+
+    $.ajax({
+     url: "/record",
+      type: "GET",
+      contentType: 'application/json;charset=UTF-8',
+      data: {
+        'selected': document.getElementById('oneshotbtn').value
+
+      },
+      dataType:"json",
+      success: function (context) {
+        
+        // Raw signal plot
+        var graph_raw = JSON.parse(context.plot_lidar_signal);
+        Plotly.newPlot('plotly-lidar-signal', graph_raw);
+        
+        // Range corrected plot
+        var graph_rc = JSON.parse(context.plot_lidar_range_correction);
+        Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
+      }
+   });
 })
 
 $('#channel_apply').on('click', function (e) {
