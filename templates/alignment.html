@@ -1,0 +1,406 @@
+{% extends "layout.html" %}
+{% block script %}
+<!-- 
+put your custom script or styling here
+-->
+{% endblock script %}
+
+<!-- Mode legend -->
+{% block mode %}
+<a class="d-block">
+    <i class="nav-icon fas fa-angle-right"></i>
+    <b>Alignment</b> Mode
+</a>
+{% endblock mode %}
+
+<!-- sidebar elements -->
+{% block sidebar %}
+<!-- Licel Menu -->
+<li class="nav-item has-treeview menu-open">
+    <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-desktop"></i>
+        <p>
+            Licel controls
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <!-- Control buttons -->
+        <li class="nav-item">
+            <a href="{{ url_for('plot_lidar_signal')}}" class="nav-link ">
+                <p>Manual single-shot</p>
+            </a>
+        </li>
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Channel</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Ch</div>
+                        </div>
+                        <input type="text" class="form-control " id="channel_input" placeholder="Channel">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="channel_apply" value="channel">Apply</button>
+                </div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Adq. Time</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Sec</div>
+                        </div>
+                        <input type="text" class="form-control " id="adq_time_input" placeholder="Adq. Time">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="adq_time_apply" value="adq_time">Apply</button>
+                </div>
+            </div>
+            <label for="bias-control">
+                <b style="color:white; padding-right: 15px;">Bias range [meters]:</b>
+            </label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Initial</label>
+                    <input type="text" class="form-control" id="bias_init_input" placeholder="Initial">
+                </div>
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Final</label>
+                    <input type="text" class="form-control" id="bias_final_input" placeholder="Final">
+                </div>
+                <div class="col-sm-1 my-1">
+                    <button type="submit" class="btn btn-primary" id="bias_apply" value="bias_range">Apply</button>
+                </div>
+            </div>
+        </li>
+        <li class="nav-item">
+            <button type="button" class="btn btn-outline-success" id="startbtn" value="start">START</button>
+            <button type="button" class="btn btn-outline-danger" id="stopbtn" value="stop">STOP</button>
+            <button type="button" class="btn btn-outline-primary" id="savebtn" value="save">SAVE</button>
+        </li>
+    </ul>
+</li>
+<!-- Plots control Menu -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-chart-line"></i>
+        <p>
+            Plots limits
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <label for="rclimits">
+                <b style="color:white">Range corrected signal [meters]:</b>
+            </label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Initial</label>
+                    <input type="text" class="form-control" id="rc_limits_init_input" placeholder="Initial">
+                </div>
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Final</label>
+                    <input type="text" class="form-control" id="rc_limits_final_input" placeholder="Final">
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="rc_limits_apply" value="rc_limits">Apply</button>
+                </div>
+            </div>
+            <div class="fform-row align-items-center">
+                <label for="rawlimits">
+                    <b style="color:white">Raw signal [meters]:</b>
+                </label>
+                <div class="form-row align-items-center">
+                    <div class="col-sm-4 my-1">
+                        <label class="sr-only" for="inlineFormInputName">Initial</label>
+                        <input type="text" class="form-control" id="raw_limits_init_input" placeholder="Initial">
+                    </div>
+                    <div class="col-sm-4 my-1">
+                        <label class="sr-only" for="inlineFormInputName">Final</label>
+                        <input type="text" class="form-control" id="raw_limits_final_input" placeholder="Final">
+                    </div>
+                    <div class="col-sm-2 my-1">
+                        <button type="submit" class="btn btn-primary" id="raw_limits_apply" value="raw_limits">Apply</button>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ul>
+</li>
+<!-- Load ini Menu -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-file-upload"></i>
+        <p>
+            Load INI files
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <form id="upload-form" method="POST" enctype=multipart/form-data action="{{url_for('load_ini_files')}}">
+        <li>
+            <div class="form-group">
+                <label for="acquisini">
+                    <b style="color:white">Acquis file:</b>
+                </label>
+                <input type="file" class="form-control-file" name="acquisini" id="AcquisINI">
+            </div>
+            <div class="form-group">
+                <label for="globalinfoini">
+                    <b style="color:white">Global Info file:</b>
+                </label>
+                <input type="file" class="form-control-file" name="globalinfoini" id="GlobalInfoINI">
+            </div>
+        </li>
+        <li>
+            <input type="submit" class="btn btn-primary" id="ini_files" value="Load config">
+        </li>
+        </form>
+</li>
+</ul>
+</li>
+<!-- Rayleigh-Fit Menu -->
+<li class="nav-item has-treeview menu-close">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-square-root-alt"></i>
+        <p>
+            Rayleigh-Fit controls
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <!-- Rayleigh-Fit controls -->
+        <li class="nav-item">
+            <label for="surface-conditions-control">
+                <b style="color:white">Surface conditions:</b>
+            </label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Temperature</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">ºC</div>
+                        </div>
+                        <input type="text" class="form-control" id="temperature_input" placeholder="Temperature">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="temperature_apply" value="temperature">Apply</button>
+                </div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Pressure</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">hPa</div>
+                        </div>
+                        <input type="text" class="form-control" id="pressure_input" placeholder="Pressure">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="pressure_apply" value="pressure">Apply</button>
+                </div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">MASL</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">m</div>
+                        </div>
+                        <input type="text" class="form-control" id="masl_input" placeholder="MASL">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button>
+                </div>
+            </div>
+            <label for="rayleighfit-control">
+                <b style="color:white">Rayleigh-Fit range (meters):</b>
+            </label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Initial</label>
+                    <input type="text" class="form-control" id="fit_init_input" placeholder="Initial">
+                </div>
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Final</label>
+                    <input type="text" class="form-control" id="fit_final_input" placeholder="Final">
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button>
+                </div>
+            </div>
+        </li>
+    </ul>
+</li>
+<!-- Sounding Menu -->
+<li class="nav-item has-treeview menu-close">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-satellite-dish"></i>
+        <p>
+            Sounding controls
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <!-- Sounding controls -->
+        <li class="nav-item">
+            <form method="POST" action="{{url_for('sounding_data')}}">
+                <div class="form-group">
+                    <label for="usstdmodel">
+                        <b style="color:white">U.S. Standard Atmosphere: </b>
+                    </label>
+                    <input type="checkbox" name="ussdt_checkbox" id="ussdt_checkbox" />
+                </div>
+                <a href="https://rucsoundings.noaa.gov/airports.html">
+                    <p>
+                        <b style="color:white">Station Number list (NOAA Airports)</b>
+                    </p>
+                </a>
+                <div class="form-row align-items-center">
+                    <div class="col-sm-10 my-1">
+                        <label class="sr-only" for="station_number">Station number</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">ST</div>
+                            </div>
+                            <input type="text" class="form-control" name="station_number" id="station_number" placeholder="Station number">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row align-items-center">
+                    <select name="region_sounding" id="region_sounding" required="required" style="width:200px">
+                        <option value="" label="Select a region ... " selected="selected">Select a region... </option>
+                        <option value="naconf">North America</option>
+                        <option value="samer">South America</option>
+                        <option value="pac">South Pacific</option>
+                        <option value="ant">Antarctica</option>
+                        <option value="np">Arctic</option>
+                        <option value="europe">Europe</option>
+                        <option value="africa">Africa</option>
+                        <option value="seasia">Southeast Asia</option>
+                        <option value="mideast">Mideast</option>
+                    </select>
+                </div>
+                <div class="input-group date" data-provide="datepicker">
+                    <input type="date" id="date_sounding" name="date_sounding" class="datepicker" data-date-format="dd/mm/yyyy" value='2022-01-01'>
+                </div>
+        <li>
+            <input type="submit" value="Submit" class="btn btn-primary"></input>
+        </li>
+        </form>
+</li>
+</ul>
+</li>
+<!-- Laser controls -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-atom"></i>
+        <p>
+            Laser controls
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-sm-7 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Laser shoot</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">></div>
+                        </div>
+                        <input type="text" class="form-control " id="serial_port_input" placeholder="Serial port">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="button" class="btn btn-outline-success btn-sm" id="laser_startbtn" value="laser_start">ON</button>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="laser_stopbtn" value="laser_stop">OFF</button>
+                </div>
+            </div>
+        </li>
+    </ul>
+</li>
+<!-- ./Laser controls -->
+{% endblock sidebar %}
+
+{% block my_content %}
+<!-- HEADER PAGE -->
+<div class="row">
+    <!-- ./col -->
+    <!-- ./col -->
+</div>
+<!-- Plotly plot placeholder -->
+<div class="container-fluid">
+    <div class="row">
+        <div class="column">
+            <!-- LiDAR signal with range correction plot-->
+            <div id="plotly-lidar-range-correction"></div>
+        </div>
+        <div class="column">
+            <!-- RMS error fitting plot-->
+            <div id="plotly-lidar-rms"></div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <!-- LiDAR signal plot-->
+        <div class="chart" id="plotly-lidar-signal">
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Script to execute the Json ( we can create it also with looping) -->
+<script>
+//Parse your Json variable here
+var graphs = {{ context.plot_lidar_signal | safe }};
+Plotly.plot('plotly-lidar-signal', graphs, {});
+</script>
+
+<script>
+//Parse your Json variable here
+var graphs = {{ context.plot_lidar_range_correction | safe }};
+Plotly.plot('plotly-lidar-range-correction', graphs, {});
+</script>
+
+<script>
+//Parse your Json variable here
+var graphs = {{ context.plot_lidar_rms | safe }};
+Plotly.plot('plotly-lidar-rms', graphs, {});
+</script>
+
+<script>
+// Loading initial globalconfig of variable dashboard
+var globalconfig = {{ context.globalconfig | safe }};
+
+// Licel controls
+document.getElementById('channel_input').value = globalconfig["channel"];
+document.getElementById('adq_time_input').value = globalconfig["adq_time"];
+document.getElementById('bias_init_input').value = globalconfig["bias_init"];
+document.getElementById('bias_final_input').value = globalconfig["bias_final"];
+
+// Plots limits
+document.getElementById('rc_limits_init_input').value = globalconfig["rc_limits_init"];
+document.getElementById('rc_limits_final_input').value = globalconfig["rc_limits_final"];
+document.getElementById('raw_limits_init_input').value = globalconfig["raw_limits_init"];
+document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
+
+// Rayleigh-Fit controls
+document.getElementById('temperature_input').value = globalconfig["temperature"];
+document.getElementById('pressure_input').value = globalconfig["pressure"];
+document.getElementById('masl_input').value = globalconfig["masl"];
+document.getElementById('fit_init_input').value = globalconfig["fit_init"];
+document.getElementById('fit_final_input').value = globalconfig["fit_final"];
+</script>
+{% endblock my_content %}

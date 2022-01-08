@@ -62,7 +62,23 @@ def homepage():
             }
 
   # run html template
-  return render_template('lidar.html', context=context)
+  return render_template('alignment.html', context=context)
+
+@app.route("/adquisition")
+def adquisition_mode():
+
+  # empty plot
+  plot_lidar_signal = plotly_plot.plotly_empty_signal("raw")
+  plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
+
+  # load dict context
+  context = {"plot_lidar_signal": plot_lidar_signal,
+             "plot_lidar_range_correction": plot_lidar_range_correction,
+             "globalconfig" : globalconfig
+            }
+
+  # run html template
+  return render_template('adquisition.html', context=context)
 
 @app.route("/lidar")
 def plot_lidar_signal():
@@ -149,7 +165,7 @@ def plot_lidar_signal():
             }
 
   # run html template
-  return render_template('lidar.html', context=context)
+  return render_template('adquisition.html', context=context)
 
 @app.route("/acquis", methods=['GET','POST'])
 def plot_acquis():
