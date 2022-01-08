@@ -144,13 +144,13 @@ put your custom script or styling here
                 <label for="acquisini">
                     <b style="color:white">Acquis file:</b>
                 </label>
-                <input type="file" class="form-control-file" name="acquisini" id="AcquisINI">
+                <input type="file" class="form-control-file" accept=".ini,.txt" name="acquisini" id="acquisini_input" style="color:white">
             </div>
             <div class="form-group">
                 <label for="globalinfoini">
                     <b style="color:white">Global Info file:</b>
                 </label>
-                <input type="file" class="form-control-file" name="globalinfoini" id="GlobalInfoINI">
+                <input type="file" class="form-control-file" accept=".ini,.txt" name="globalinfoini" id="globalinfoini_input" style="color:white">
             </div>
         </li>
         <li>
@@ -400,4 +400,5 @@ document.getElementById('masl_input').value = globalconfig["masl"];
 document.getElementById('fit_init_input').value = globalconfig["fit_init"];
 document.getElementById('fit_final_input').value = globalconfig["fit_final"];
 </script>
+
 {% endblock my_content %}

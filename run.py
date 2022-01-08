@@ -307,12 +307,21 @@ def allowed_file(filename):
 @app.route('/inifiles', methods=['POST'])
 def load_ini_files():
 
-  # create dir
+  # define ini files path
   APP_ROOT = os.path.dirname(os.path.abspath(__file__))
   target = os.path.join(APP_ROOT, 'inifiles')
 
+  # create dir
   if not os.path.isdir(target):
     os.mkdir(target)
+
+  # remove old files
+  if os.path.exists(target):
+    for file in os.listdir(target):
+      os.remove(os.path.join(target,file))
+      print(file)
+  else:
+    print("Can not delete the file as it doesn't exists")
 
   # load ini files
   file=request.files.get("acquisini")
