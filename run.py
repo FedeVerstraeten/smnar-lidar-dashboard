@@ -34,7 +34,7 @@ globalconfig = {
                   "bias_final" : 30000, # m (4000 bins)
                   "temperature" : 300,  # K
                   "pressure" : 1023,    # hPa
-                  "masl" : 0,           # m
+                  "masl" : 5.0,           # m
                   "wavelength" : 532,   # nm
                   "fit_init" : 5000,    # m
                   "fit_final" : 10000,  # m
@@ -200,13 +200,13 @@ def licel_controls():
       else:
         globalconfig["bias_init"] = 0
 
-      if(int(bias_range[1]) < MAX_BINS):
+      if(int(bias_range[1]) < MAX_BINS*BIN_METERS):
         globalconfig["bias_final"] = int(bias_range[1])
       else:
         globalconfig["bias_final"] = MAX_BINS*BIN_METERS
 
     # Max bins
-    if(0 < int(bias_range[0]) < MAX_BINS):
+    if(0 < int(bias_range[1]) < MAX_BINS*BIN_METERS):
       globalconfig["max_bins"] = round(int(bias_range[1])/BIN_METERS)
     else:
       globalconfig["max_bins"] = MAX_BINS
@@ -233,7 +233,7 @@ def rayleighfit_controls():
 
   # MASL
   if(field_selected == "masl" and data_input.replace('.','',1).isdigit()):
-    if float(data_input) > 0:
+    if float(data_input) >= 0:
       globalconfig[field_selected] = float(data_input)
   
   # Fitting range
