@@ -132,7 +132,6 @@ class lidarSignal:
 
     # AMSL correction
     index_masl = (np.abs(height_highres - self.masl)).argmin() 
-
     # Profile scaling with current surface temperature and pressure conditions
     temperature_highres = self.surface_temperature * (temperature_highres/temperature_highres[index_masl])
     pressure_highres = self.surface_pressure * (pressure_highres/pressure_highres[index_masl])
@@ -146,7 +145,11 @@ class lidarSignal:
     alpha_mol = beta_mol * (8*np.pi/3)
 
     # Cumulative trapezoidal numerical integration
-    range_lidar = height_highres[:-index_masl]
+    range_lidar=[]
+    for height in height_highres[:len(height_highres)-index_masl]:
+      range_lidar.append(height)
+    # range_lidar = height_highres[:-index_masl]
+    
     cumtrapz = integrate.cumtrapz(alpha_mol, range_lidar, initial=0)
     tm2r_mol = np.exp(-2*cumtrapz)
 
