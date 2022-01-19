@@ -77,9 +77,9 @@ def get_htp(sounding_data):
   parsed_data = parse_sounding(sounding_data)
 
   for line in parsed_data:
-    pressure.append(line.split(',')[0])
-    height.append(line.split(',')[1])
-    temperature.append(line.split(',')[2])
+    pressure.append(float(line.split(',')[0]))
+    height.append(float(line.split(',')[1]))
+    temperature.append(float(line.split(',')[2]))
 
   return height,temperature,pressure
 
