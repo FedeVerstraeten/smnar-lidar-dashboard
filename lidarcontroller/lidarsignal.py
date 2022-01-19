@@ -48,8 +48,9 @@ class lidarSignal:
 
   def loadSignal(self,signal):
     if len(signal)>0:
+      signal = np.insert(signal,0,0) # set zero signal
       self.raw_signal = np.array(signal)
-      self.bin_long_trace = len(signal)
+      self.bin_long_trace = len(self.raw_signal) 
 
   def offsetCorrection(self,bin_offset):
     if bin_offset > 0:
@@ -70,7 +71,7 @@ class lidarSignal:
       self.setThreshold(threshold_meters)
 
     # Height range on bins
-    self.range = self.__BIN_METERS * np.arange(0, len(self.raw_signal), 1)
+    self.range = self.__BIN_METERS * np.arange(0,self.bin_long_trace,1)
     
     # bias calculation
     self.bias = np.mean(self.raw_signal[self.bin_threshold:])
@@ -120,7 +121,7 @@ class lidarSignal:
       pressure_lowres = self.__us_std_model["pressure"]
 
     # Defining high resolution Height vector
-    height_highres = np.arange(height_lowres[0], (self.bin_long_trace+1)*self.__BIN_METERS, self.__BIN_METERS)
+    height_highres = np.arange(height_lowres[0], self.bin_long_trace*self.__BIN_METERS, self.__BIN_METERS)
 
     # Interpolation Spline 1D cubic
     temperature_spline = interp1d(height_lowres, temperature_lowres, kind='cubic')
@@ -145,21 +146,29 @@ class lidarSignal:
     alpha_mol = beta_mol * (8*np.pi/3)
 
     # Cumulative trapezoidal numerical integration
-    range_lidar=[]
-    for height in height_highres[:len(height_highres)-index_masl]:
-      range_lidar.append(height)
-    # range_lidar = height_highres[:-index_masl]
-    
+    if index_masl > 0:
+      range_lidar = height_highres[:-index_masl]
+    else:
+      range_lidar = height_highres[:]
+  
     cumtrapz = integrate.cumtrapz(alpha_mol, range_lidar, initial=0)
     tm2r_mol = np.exp(-2*cumtrapz)
 
     # Purely molecular atmosphere profile
     self.pr2_mol = beta_mol*tm2r_mol
 
+    # Truncate vectors according to index_masl
+    # TO-DO: check min height according sounding
+    if index_masl>0:
+      self.range = self.range[:-index_masl]
+      self.rc_signal = self.rc_signal[:-index_masl]
+      self.raw_signal = self.raw_signal[:-index_masl]
+
   def loadSoundingData(self,height,temperature,pressure):
     
     if height!=[] and temperature!=[] and pressure!=[]:
       
+      print(height[0],type(height[0]))  
       self.sounding_data["height"]=height
       self.sounding_data["temperature"]=temperature
       self.sounding_data["pressure"]=pressure
@@ -186,7 +195,6 @@ class lidarSignal:
     sum_sm_square = np.dot(self.pr2_mol[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
 
     self.adj_factor = sum_sel_sm/sum_sm_square
-    # print("Adj factor a(r,dr)=",np.format_float_scientific(adj_factor))
    
     # area low height 
     bin_lh_offset = int(500/self.__BIN_METERS)
@@ -196,5 +204,4 @@ class lidarSignal:
     sum_diff = self.rc_signal[bin_init:bin_fin+1] - self.adj_factor * self.pr2_mol[bin_init:bin_fin+1]
     dr = fit_final - fit_init
     self.rms_err = (np.sqrt((1/dr) * np.dot(sum_diff,sum_diff)))/area_lh
-    # print("RMS error =",np.format_float_scientific(rms_err))
     
