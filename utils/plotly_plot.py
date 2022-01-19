@@ -45,11 +45,6 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
   bin_init = int(limit_init/7.5)
   bin_final = int(limit_final/7.5)
 
-  print("bin_final",bin_final)
-  print("len lidar_signal.range",len(lidar_signal.range))
-  print("len lidar_signal.rc_signal",len(lidar_signal.rc_signal))
-  print("len lidar_signal.pr2_mol",len(lidar_signal.pr2_mol))
-
   df=pd.DataFrame({
                   'meters':lidar_signal.range[bin_init:bin_final],
                   'TR0_500mV':lidar_signal.rc_signal[bin_init:bin_final],
