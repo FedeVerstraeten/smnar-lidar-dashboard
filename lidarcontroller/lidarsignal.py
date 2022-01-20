@@ -197,7 +197,8 @@ class lidarSignal:
     self.adj_factor = sum_sel_sm/sum_sm_square
    
     # area low height 
-    bin_lh_offset = int(500/self.__BIN_METERS)
+    LH_OFFSET = 500 # meters
+    bin_lh_offset = int(LH_OFFSET/self.__BIN_METERS)
     area_lh = np.sum(np.abs(self.rc_signal[bin_lh_offset:bin_init] - self.adj_factor * self.pr2_mol[bin_lh_offset:bin_init]))
 
     # Minimizing the RMS error
