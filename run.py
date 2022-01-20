@@ -32,7 +32,7 @@ globalconfig = {
                   "max_bins" : 4000,    #bin
                   "bias_init" : 22500,  # m (3000 bins)
                   "bias_final" : 30000, # m (4000 bins)
-                  "temperature" : 300,  # K
+                  "temperature" : 25,  # C deg
                   "pressure" : 1023,    # hPa
                   "masl" : 5.0,           # m
                   "wavelength" : 532,   # nm
@@ -220,11 +220,12 @@ def rayleighfit_controls():
 
   field_selected = request.args['selected']
   data_input = request.args['input']
+  ZERO_KELVIN = 273.15
 
   # Temperature
   if(field_selected == "temperature" and (data_input.replace('.','',1).isdigit() or data_input.replace('-','',1).isdigit())):
-    if float(data_input) + 273 > 0:
-      globalconfig[field_selected] = float(data_input) + 273
+    if float(data_input) + ZERO_KELVIN > 0:
+      globalconfig[field_selected] = float(data_input)
   
   # Pressure
   if(field_selected == "pressure" and data_input.replace('.','',1).isdigit()):
