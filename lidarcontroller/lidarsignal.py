@@ -91,9 +91,10 @@ class lidarSignal:
     self.rc_signal = np.convolve(self.rc_signal, box, mode='same')
 
   def setSurfaceConditions(self,temperature,pressure):
-    # Temperature on Kelvin degrees
-    if temperature > 0:
-      self.surface_temperature = temperature
+    # Input temperature on Celsius to Kelvin degrees
+    temp_kelvin = constants.convert_temperature(temperature,'Celsius','Kelvin')
+    if temp_kelvin > 0:
+      self.surface_temperature = temp_kelvin
 
     # Pressure on hecto Pascal
     if pressure > 0:
@@ -121,11 +122,11 @@ class lidarSignal:
       pressure_lowres = self.__us_std_model["pressure"]
 
     # Defining high resolution Height vector
-    height_highres = np.arange(height_lowres[0], self.bin_long_trace*self.__BIN_METERS, self.__BIN_METERS)
+    height_highres = np.arange(0, self.bin_long_trace*self.__BIN_METERS, self.__BIN_METERS)
 
     # Interpolation Spline 1D cubic
-    temperature_spline = interp1d(height_lowres, temperature_lowres, kind='cubic')
-    pressure_spline = interp1d(height_lowres, pressure_lowres, kind='cubic')
+    temperature_spline = interp1d(height_lowres, temperature_lowres, kind='cubic',fill_value='extrapolate')
+    pressure_spline = interp1d(height_lowres, pressure_lowres, kind='cubic',fill_value='extrapolate')
     
     # Defining high resolution Temperature & Pressure vectors
     temperature_highres = temperature_spline(height_highres)
@@ -205,4 +206,4 @@ class lidarSignal:
     sum_diff = self.rc_signal[bin_init:bin_fin+1] - self.adj_factor * self.pr2_mol[bin_init:bin_fin+1]
     dr = fit_final - fit_init
     self.rms_err = (np.sqrt((1/dr) * np.dot(sum_diff,sum_diff)))/area_lh
-    
+
