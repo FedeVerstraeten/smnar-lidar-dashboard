@@ -299,3 +299,47 @@ class licelcontroller:
 
   # def waitForReady(self,wait):
   #   pass
+
+  def unselectTR(self):
+    command = "SELECT -1"
+    waitsecs = 0
+    response = self.runCommand(command,waitsecs)
+  
+    if "executed" not in response:
+      print("Licel_TCPIP_SelectTR - Error 5083:", command)
+      return -5083
+    else:
+      return 0
+
+  def multipleClearMemory(self):
+    command = "MCLEAR"
+    waitsecs = 0
+    response = self.runCommand(command,waitsecs)
+
+    if "executed" not in response:
+      print("Licel_TCPIP_MultipleClearMemory - Error 5080", response)
+      return -5080
+    else:
+      return 0
+
+  def multipleStart(self):
+    command = "MSTART"
+    waitsecs = 0
+    response = self.runCommand(command,waitsecs)
+
+    if "executed" not in response:
+      print("Licel_TCPIP_MultipleStart - Error 5086:", response)
+      return -5086
+    else:
+      return 0
+
+  def multipleStop(self):
+    command = "MSTOP"
+    waitsecs = 0
+    response = self.runCommand(command,waitsecs)
+
+    if "executed" not in response:
+      print("Licel_TCPIP_MultipleStopAcqusition - Error 5082:", response)
+      return -5082
+    else:
+      return 0

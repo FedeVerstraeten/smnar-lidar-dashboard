@@ -68,6 +68,21 @@ def homepage():
 @app.route("/adquisition")
 def adquisition_mode():
 
+  # crear licelcontroller
+  # verificar acquis.ini y globalinfo.ini
+  # leer cantidad de tr y params correspondientes
+  # configurar
+  # unselectTR
+  # selectTR segun acquis.ini
+  # mtart
+  # delay
+  # mstop
+  # adquirir por cada TR activo
+  # corregir en rango
+  # almacenar temporalmente o netCDF?
+  # graficar solo las señales corregidas en rango para cada TR
+  # no fiteo, no rms, no raw
+
   # empty plot
   plot_lidar_signal = plotly_plot.plotly_empty_signal("raw")
   plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
