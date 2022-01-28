@@ -371,16 +371,13 @@ def sounding_data():
     region = request.form["region_sounding"]
     date = request.form["date_sounding"]
 
-    header_info,sounding_data = sounding.download_sounding(station,region,date)
-    height,temperature,pressure = sounding.get_htp(sounding_data)
-    lidar.loadSoundingData(height,temperature,pressure)
-
     # create sounding dir
     APP_ROOT = os.path.dirname(os.path.abspath(__file__))
     target = os.path.join(APP_ROOT, 'sounding')
     if not os.path.isdir(target):
       os.mkdir(target)
 
+    header_info,sounding_data = sounding.download_sounding(station,region,date)
 
     if sounding_data == "":
       resp = "No data available for ST" + station + " on " + date
@@ -388,7 +385,11 @@ def sounding_data():
 
     else:
       resp = "Radiosonde download successful!"
-      
+
+      # Load sounding
+      height,temperature,pressure = sounding.get_htp(sounding_data)
+      lidar.loadSoundingData(height,temperature,pressure)
+
       # print to file
       filename='UWyoming_'+date+'_'+station+'.txt'
       destination = os.path.join(target,filename)
