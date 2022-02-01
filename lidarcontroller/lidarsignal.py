@@ -81,12 +81,12 @@ class lidarSignal:
 
   def smoothSignal(self,level):
     # smooth with square box
-    box_pts=3 # default smooth
-
     if level > 0:
       box_points = int(level)
+    else:
+      box_points = 3 # default smooth
     
-    # convulution 
+    # convolution 
     box = np.ones(box_points)/box_points
     self.rc_signal = np.convolve(self.rc_signal, box, mode='same')
 
@@ -121,8 +121,7 @@ class lidarSignal:
       temperature_lowres = self.__us_std_model["temperature"]
       pressure_lowres = self.__us_std_model["pressure"]
 
-    # Defining high resolution Height vector since MASL
-    # height_highres = np.arange(0, self.bin_long_trace*self.__BIN_METERS, self.__BIN_METERS)
+    # High resolution height vector definition from MASL
     height_highres = self.masl + np.arange(0, self.bin_long_trace*self.__BIN_METERS, self.__BIN_METERS)
 
     # Interpolation Spline 1D cubic
@@ -133,32 +132,19 @@ class lidarSignal:
     temperature_highres = temperature_spline(height_highres)
     pressure_highres = pressure_spline(height_highres)
 
-    # AMSL correction
-    # index_masl = (np.abs(height_highres - self.masl)).argmin() 
-
     # Profile scaling with current surface temperature and pressure conditions
-    # temperature_highres = self.surface_temperature * (temperature_highres/temperature_highres[index_masl])
-    # pressure_highres = self.surface_pressure * (pressure_highres/pressure_highres[index_masl])
     temperature_highres = self.surface_temperature * (temperature_highres/temperature_highres[0])
-    pressure_highres = self.surface_pressure * (pressure_highres/pressure_highres[0])
-    
+    pressure_highres = self.surface_pressure * (pressure_highres/pressure_highres[0])    
 
     # atmospheric molecular concentration
     kboltz = constants.k
-    # nmol = (100*pressure_highres[index_masl:])/(temperature_highres[index_masl:]*kboltz) 
     nmol = (100*pressure_highres)/(temperature_highres*kboltz)
 
     # alpha & beta coefficients
     beta_mol = nmol * ((550/self.wavelength)**4.09) * 5.45e-32
     alpha_mol = beta_mol * (8*np.pi/3)
-
-    # Cumulative trapezoidal numerical integration
-    # if index_masl > 0:
-    #   range_lidar = height_highres[:-index_masl]
-    # else:
-    #   range_lidar = height_highres[:]
   
-    # VECTOR DE RANGO REFERENCIADO AL NIVEL DEL LIDAR --> range_lidar
+    # Range vector referenced to the LiDAR level
     range_lidar = height_highres - self.masl
 
     cumtrapz = integrate.cumtrapz(alpha_mol, range_lidar, initial=0)
@@ -166,13 +152,6 @@ class lidarSignal:
 
     # Purely molecular atmosphere profile
     self.pr2_mol = beta_mol*tm2r_mol
-
-    # Truncate vectors according to index_masl
-    # TO-DO: check min height according sounding
-    # if index_masl>0:
-    #   self.range = self.range[:-index_masl]
-    #   self.rc_signal = self.rc_signal[:-index_masl]
-    #   self.raw_signal = self.raw_signal[:-index_masl]
 
   def loadSoundingData(self,height,temperature,pressure):
     
