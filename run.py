@@ -202,6 +202,10 @@ def licel_controls():
       globalconfig[field_selected] = int(data_input)
     else:
       globalconfig[field_selected] = MAX_ADQ_TIME
+
+  # Bias offset
+  if(field_selected == "bin_offset" and data_input.isdigit()):
+    globalconfig[field_selected] = int(data_input)
   
   # Bias range and max bins
   bias_range=json.loads(data_input)
