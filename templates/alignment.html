@@ -27,6 +27,26 @@ put your custom script or styling here
     <ul class="nav nav-treeview">
         <!-- Control buttons -->
         <li class="nav-item">
+            <label for="tcpip-control">
+                <b style="color:white; padding-right: 15px;">TCP/IP connection:</b>
+            </label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-5 my-1">
+                    <label class="sr-only" for="inlineFormInputName">IP</label>
+                    <input type="text" class="form-control" id="licel_ip_input" placeholder="IP">
+                </div>
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Port</label>
+                    <input type="text" class="form-control" id="licel_port_input" placeholder="Port">
+                </div>
+                <div class="col-sm-1 my-1">
+                    <button type="submit" class="btn btn-primary" id="tcpip_apply" value="tcpip_port">OK</button>
+                    <!-- <input type="checkbox" data-toggle="toggle" data-onstyle="success" data-offstyle="danger" id="tcpip_apply" value="tcpip_port"> -->
+                </div>
+            </div>
+            <label for="licel-parameters">
+                <b style="color:white; padding-right: 15px;">Licel parameters:</b>
+            </label>
             <div class="form-row align-items-center">
                 <div class="col-sm-8 my-1">
                     <label class="sr-only" for="inlineFormInputGroup">Channel</label>
@@ -417,6 +437,8 @@ Plotly.plot('plotly-lidar-rms', graphs, {});
 var globalconfig = {{ context.globalconfig | safe }};
 
 // Licel controls
+document.getElementById('licel_ip_input').value = globalconfig["ip"];
+document.getElementById('licel_port_input').value = globalconfig["port"];
 document.getElementById('channel_input').value = globalconfig["channel"];
 document.getElementById('adq_time_input').value = globalconfig["adq_time"];
 document.getElementById('bin_offset_input').value = globalconfig["bin_offset"];

@@ -18,15 +18,16 @@ from lidarcontroller.lasercontroller import laserController
 app = Flask(__name__)
 app.config.from_object('config.Config')
 
-# global
+# global variables
 lidar = lidarSignal()
-lc = None
-#lc = licelcontroller()
-#lc.openConnection('10.49.234.234',2055)
+lc = licelcontroller()
+
 acquis_ini = configparser.ConfigParser()
 globalinfo_ini = configparser.ConfigParser()
 
 globalconfig = {
+                  "ip" : '10.49.234.234',
+                  "port" : 2055,
                   "channel" : 0,
                   "adq_time" : 10,      # 10s = 300shots/30Hz(laser)
                   "bin_offset" : 10,    # bin (default)
@@ -118,9 +119,9 @@ def licel_record_data():
     tr=globalconfig["channel"]
 
     # TODO mejorar esto
-    if lc is None:
-      lc = licelcontroller()
-      lc.openConnection('10.49.234.234',2055)
+    if lc.sock is None:
+      # lc = licelcontroller()
+      lc.openConnection(globalconfig["ip"],globalconfig["port"])
 
     lc.selectTR(tr)
     lc.setInputRange(licelsettings.MILLIVOLT500)
@@ -196,12 +197,14 @@ def licel_controls():
   # Adquisition time
   if(field_selected == "adq_time" and data_input.isdigit()):
     MAX_ADQ_TIME = 600 # 600s = 10min
-    MIN_ADQ_TIME = 1 
+    MIN_ADQ_TIME = 0
    
-    if(MIN_ADQ_TIME <= int(data_input) < MAX_ADQ_TIME):
-      globalconfig[field_selected] = int(data_input)
-    else:
+    if(int(data_input) > MAX_ADQ_TIME):
       globalconfig[field_selected] = MAX_ADQ_TIME
+    elif(int(data_input) <= MIN_ADQ_TIME):
+      globalconfig[field_selected] = MIN_ADQ_TIME
+    else:
+      globalconfig[field_selected] = int(data_input)
 
   # Bias offset
   if(field_selected == "bin_offset" and data_input.isdigit()):
