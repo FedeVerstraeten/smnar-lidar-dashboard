@@ -105,7 +105,8 @@ class lidarSignal:
     self.wavelength = wavelength
     self.masl = masl
 
-    self.setSurfaceConditions(surface_temperature,surface_pressure)
+    if surface_temperature!=0 and surface_pressure!=0:
+      self.setSurfaceConditions(surface_temperature,surface_pressure)
 
     # Loading low resolution atmosphere profile data
     if( self.sounding_data["height"] \
