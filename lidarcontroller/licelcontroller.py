@@ -86,7 +86,9 @@ class licelcontroller:
   def closeConnection(self):
     try:
       print('Closing connecting to: ', (self.host,self.port))
+      self.sock.shutdown(socket.SHUT_RDWR)
       self.sock.close()
+      self.sock = None
       print('Connection closed')
     except Exception as e:
       raise ValueError("Connection to server failed")
