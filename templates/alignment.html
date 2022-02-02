@@ -55,6 +55,20 @@ put your custom script or styling here
                     <button type="submit" class="btn btn-primary" id="adq_time_apply" value="adq_time">Apply</button>
                 </div>
             </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Bin offset</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Bin</div>
+                        </div>
+                        <input type="text" class="form-control " id="bin_offset_input" placeholder="Bin offset">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="bin_offset_apply" value="bin_offset">Apply</button>
+                </div>
+            </div>
             <label for="bias-control">
                 <b style="color:white; padding-right: 15px;">Bias range [meters]:</b>
             </label>
@@ -384,6 +398,7 @@ var globalconfig = {{ context.globalconfig | safe }};
 // Licel controls
 document.getElementById('channel_input').value = globalconfig["channel"];
 document.getElementById('adq_time_input').value = globalconfig["adq_time"];
+document.getElementById('bin_offset_input').value = globalconfig["bin_offset"];
 document.getElementById('bias_init_input').value = globalconfig["bias_init"];
 document.getElementById('bias_final_input').value = globalconfig["bias_final"];
 

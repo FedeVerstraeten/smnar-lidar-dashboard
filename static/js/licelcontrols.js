@@ -154,6 +154,22 @@ $('#adq_time_apply').on('click', function (e) {
   });
 })
 
+$('#bin_offset_apply').on('click', function (e) {
+  $.ajax({
+    url: "/licelcontrols",
+    type: "GET",
+    contentType: 'application/json;charset=UTF-8',
+    data: {
+      'selected': document.getElementById('bin_offset_apply').value,
+      'input': document.getElementById('bin_offset_input').value
+    },
+    dataType:"json",
+    success: function (data) {
+      console.log(data);
+    }
+  });
+})
+
 $('#bias_apply').on('click', function (e) {
   $.ajax({
     url: "/licelcontrols",

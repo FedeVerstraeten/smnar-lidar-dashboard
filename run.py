@@ -29,19 +29,20 @@ globalinfo_ini = configparser.ConfigParser()
 globalconfig = {
                   "channel" : 0,
                   "adq_time" : 10,      # 10s = 300shots/30Hz(laser)
-                  "max_bins" : 4000,    #bin
+                  "bin_offset" : 10,    # bin (default)
+                  "max_bins" : 4000,    # bin
                   "bias_init" : 22500,  # m (3000 bins)
                   "bias_final" : 30000, # m (4000 bins)
-                  "temperature" : 25,  # C deg
+                  "temperature" : 25,   # C deg
                   "pressure" : 1023,    # hPa
-                  "masl" : 5.0,           # m
+                  "masl" : 5.0,         # m
                   "wavelength" : 532,   # nm
                   "fit_init" : 5000,    # m
                   "fit_final" : 10000,  # m
                   "rc_limits_init" : 0,       # m 
                   "rc_limits_final" : 30000,  # m
                   "raw_limits_init" : 0,      # m 
-                  "raw_limits_final" : 30000,  # m
+                  "raw_limits_final" : 30000, # m
                   "laser_port" : 'COM3',
                  }
 
@@ -104,7 +105,7 @@ def licel_record_data():
   # basic settings
   BIN_LONG_TRANCE = globalconfig["max_bins"]
   SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds 
-  OFFSET_BINS = 10
+  OFFSET_BINS = globalconfig["bin_offset"]
   THRESHOLD_METERS = globalconfig["bias_init"] # meters
 
 
