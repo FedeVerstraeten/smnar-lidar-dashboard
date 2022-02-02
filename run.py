@@ -43,6 +43,7 @@ globalconfig = {
                   "rc_limits_final" : 30000,  # m
                   "raw_limits_init" : 0,      # m 
                   "raw_limits_final" : 30000, # m
+                  "smooth_level" : 5,
                   "laser_port" : 'COM3',
                  }
 
@@ -151,7 +152,7 @@ def licel_record_data():
     lidar.loadSignal(data_mv)
     lidar.offsetCorrection(OFFSET_BINS)
     lidar.rangeCorrection(THRESHOLD_METERS)
-    lidar.smoothSignal(level = 3)
+    lidar.smoothSignal(level = globalconfig["smooth_level"])
 
     #----------- RAYLEIGH-FIT ------------------
     lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
@@ -287,6 +288,16 @@ def plots_limits():
       globalconfig["raw_limits_init"] = int(raw_limits[0])
       globalconfig["raw_limits_final"] = int(raw_limits[1])
   
+  #noise smoothing level  
+  if(field_selected == "smooth_level" and data_input.isdigit()):
+    MAX_SMOOTH_LEVEL = 50
+    MIN_SMOOTH_LEVEL = 0 
+   
+    if(MIN_SMOOTH_LEVEL <= int(data_input) <= MAX_SMOOTH_LEVEL):
+      globalconfig[field_selected] = int(data_input)
+    else:
+      globalconfig[field_selected] = MAX_SMOOTH_LEVEL
+
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'
   return response

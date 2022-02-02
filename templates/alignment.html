@@ -98,12 +98,13 @@ put your custom script or styling here
     <a href="#" class="nav-link ">
         <i class="nav-icon fas fa-chart-line"></i>
         <p>
-            Plots limits
+            Plots controls
             <i class="right fas fa-angle-left"></i>
         </p>
     </a>
     <ul class="nav nav-treeview">
         <li class="nav-item">
+            <!-- RC signal limits -->
             <label for="rclimits">
                 <b style="color:white">Range corrected signal [meters]:</b>
             </label>
@@ -120,24 +121,44 @@ put your custom script or styling here
                     <button type="submit" class="btn btn-primary" id="rc_limits_apply" value="rc_limits">Apply</button>
                 </div>
             </div>
-            <div class="fform-row align-items-center">
-                <label for="rawlimits">
-                    <b style="color:white">Raw signal [meters]:</b>
-                </label>
-                <div class="form-row align-items-center">
-                    <div class="col-sm-4 my-1">
-                        <label class="sr-only" for="inlineFormInputName">Initial</label>
-                        <input type="text" class="form-control" id="raw_limits_init_input" placeholder="Initial">
-                    </div>
-                    <div class="col-sm-4 my-1">
-                        <label class="sr-only" for="inlineFormInputName">Final</label>
-                        <input type="text" class="form-control" id="raw_limits_final_input" placeholder="Final">
-                    </div>
-                    <div class="col-sm-2 my-1">
-                        <button type="submit" class="btn btn-primary" id="raw_limits_apply" value="raw_limits">Apply</button>
-                    </div>
+            <!-- ./RC signal limits -->
+            <!-- Raw signal limits -->
+            <label for="rawlimits">
+                <b style="color:white">Raw signal [meters]:</b>
+            </label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Initial</label>
+                    <input type="text" class="form-control" id="raw_limits_init_input" placeholder="Initial">
+                </div>
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Final</label>
+                    <input type="text" class="form-control" id="raw_limits_final_input" placeholder="Final">
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="raw_limits_apply" value="raw_limits">Apply</button>
                 </div>
             </div>
+            <!-- ./Raw signal limits -->
+            <!-- Noise smoothing level -->
+            <label for="smoothlevel">
+                <b style="color:white">Noise smoothing level [0 - 50]:</b>
+            </label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Smooth level</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">></div>
+                        </div>
+                        <input type="text" class="form-control " id="smooth_level_input" placeholder="Smooth level">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="smooth_level_apply" value="smooth_level">Apply</button>
+                </div>
+            </div>
+            <!-- ./Noise smoothing level -->
         </li>
     </ul>
 </li>
@@ -402,11 +423,12 @@ document.getElementById('bin_offset_input').value = globalconfig["bin_offset"];
 document.getElementById('bias_init_input').value = globalconfig["bias_init"];
 document.getElementById('bias_final_input').value = globalconfig["bias_final"];
 
-// Plots limits
+// Plots controls
 document.getElementById('rc_limits_init_input').value = globalconfig["rc_limits_init"];
 document.getElementById('rc_limits_final_input').value = globalconfig["rc_limits_final"];
 document.getElementById('raw_limits_init_input').value = globalconfig["raw_limits_init"];
 document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
+document.getElementById('smooth_level_input').value = globalconfig["smooth_level"];
 
 // Rayleigh-Fit controls
 document.getElementById('temperature_input').value = globalconfig["temperature"];

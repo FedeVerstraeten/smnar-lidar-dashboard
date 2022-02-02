@@ -37,3 +37,19 @@ $('#rc_limits_apply').on('click', function (e) {
     }
   });
 })
+
+$('#smooth_level_apply').on('click', function (e) {
+  $.ajax({
+    url: "/plots",
+    type: "GET",
+    contentType: 'application/json;charset=UTF-8',
+    data: {
+      'selected': document.getElementById('smooth_level_apply').value,
+      'input': document.getElementById('smooth_level_input').value
+    },
+    dataType:"json",
+    success: function (data) {
+      console.log(data);
+    }
+  });
+})
