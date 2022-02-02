@@ -315,7 +315,7 @@ put your custom script or styling here
                         <div class="input-group-prepend">
                             <div class="input-group-text">></div>
                         </div>
-                        <input type="text" class="form-control " id="serial_port_input" placeholder="Serial port">
+                        <input type="text" class="form-control " id="laser_port_input" placeholder="Serial port">
                     </div>
                 </div>
                 <div class="col-sm-2 my-1">
@@ -399,6 +399,9 @@ document.getElementById('pressure_input').value = globalconfig["pressure"];
 document.getElementById('masl_input').value = globalconfig["masl"];
 document.getElementById('fit_init_input').value = globalconfig["fit_init"];
 document.getElementById('fit_final_input').value = globalconfig["fit_final"];
+
+// Laser controls
+document.getElementById('laser_port_input').value = globalconfig["laser_port"];
 </script>
 
 {% endblock my_content %}

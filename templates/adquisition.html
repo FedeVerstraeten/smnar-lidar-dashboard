@@ -132,38 +132,6 @@ put your custom script or styling here
 </ul>
 </li>
 <!-- ./Load ini Menu -->
-<!-- Laser controls -->
-<li class="nav-item has-treeview menu-closed">
-    <a href="#" class="nav-link ">
-        <i class="nav-icon fas fa-atom"></i>
-        <p>
-            Laser controls
-            <i class="right fas fa-angle-left"></i>
-        </p>
-    </a>
-    <ul class="nav nav-treeview">
-        <li class="nav-item">
-            <div class="form-row align-items-center">
-                <div class="col-sm-7 my-1">
-                    <label class="sr-only" for="inlineFormInputGroup">Laser shoot</label>
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <div class="input-group-text">></div>
-                        </div>
-                        <input type="text" class="form-control " id="serial_port_input" placeholder="Serial port">
-                    </div>
-                </div>
-                <div class="col-sm-2 my-1">
-                    <button type="button" class="btn btn-outline-success btn-sm" id="laser_startbtn" value="laser_start">ON</button>
-                </div>
-                <div class="col-sm-2 my-1">
-                    <button type="button" class="btn btn-outline-danger btn-sm" id="laser_stopbtn" value="laser_stop">OFF</button>
-                </div>
-            </div>
-        </li>
-    </ul>
-</li>
-<!-- ./Laser controls -->
 <!-- netCDF export -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
@@ -194,6 +162,38 @@ put your custom script or styling here
     </ul>
 </li>
 <!-- ./netCDF export -->
+<!-- Laser controls -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-atom"></i>
+        <p>
+            Laser controls
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-sm-7 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Laser shoot</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">></div>
+                        </div>
+                        <input type="text" class="form-control " id="laser_port_input" placeholder="Serial port">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="button" class="btn btn-outline-success btn-sm" id="laser_startbtn" value="laser_start">ON</button>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="laser_stopbtn" value="laser_stop">OFF</button>
+                </div>
+            </div>
+        </li>
+    </ul>
+</li>
+<!-- ./Laser controls -->
 {% endblock sidebar %}
 
 {% block my_content %}
@@ -246,6 +246,8 @@ document.getElementById('rc_limits_final_input').value = globalconfig["rc_limits
 document.getElementById('raw_limits_init_input').value = globalconfig["raw_limits_init"];
 document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
 
+// Laser controls
+document.getElementById('laser_port_input').value = globalconfig["laser_port"];
 </script>
 
 

@@ -41,7 +41,8 @@ globalconfig = {
                   "rc_limits_init" : 0,       # m 
                   "rc_limits_final" : 30000,  # m
                   "raw_limits_init" : 0,      # m 
-                  "raw_limits_final" : 30000  # m
+                  "raw_limits_final" : 30000,  # m
+                  "laser_port" : 'COM3',
                  }
 
 # Defining routes
@@ -289,26 +290,31 @@ def plots_limits():
   response.content_type = 'application/json'
   return response
 
-@app.route("/laser")
+@app.route("/laser",methods=['GET','POST'])
 def laser_controls():
   
   action_button = request.args['selected']
   serial_port = request.args['input']
+  data = ""
 
-  if(action_button =="laser_start"):
-    laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
-    laser.connect()
-    laser.startLaser()
-    laser.disconnect()
-    data ="Laser START"
-  
-  if(action_button =="laser_stop"):
-    laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
-    laser.connect()
-    laser.stopLaser()
-    laser.disconnect()
-    data="Laser STOP"
-  
+  if serial_port:
+    if serial_port != globalconfig["laser_port"]:
+      globalconfig["laser_port"] = serial_port
+
+    if(action_button =="laser_start"):
+        laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
+        laser.connect()
+        laser.startLaser()
+        laser.disconnect()
+        data ="Laser START"
+      
+    if(action_button =="laser_stop"):
+      laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
+      laser.connect()
+      laser.stopLaser()
+      laser.disconnect()
+      data="Laser STOP"
+    
   response = make_response(json.dumps(data))
   response.content_type = 'application/json'
   print(response)
