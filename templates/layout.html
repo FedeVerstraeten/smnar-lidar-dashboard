@@ -47,8 +47,8 @@ scratch. This page gets rid of all links and provides the needed markup only.
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('adquisition_mode') }}">
-                        <button class="btn btn-outline-secondary" ata-toggle="button" aria-pressed="false" type="button">Adquisition Mode</button>
+                    <a class="nav-link" href="{{ url_for('acquisition_mode') }}">
+                        <button class="btn btn-outline-secondary" ata-toggle="button" aria-pressed="false" type="button">Acquisition Mode</button>
                     </a>
                 </li> 
             </ul>
@@ -140,6 +140,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lasercontrols.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sounding.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tcpipconnection.js') }}"></script>
 </body>
 
 </html>

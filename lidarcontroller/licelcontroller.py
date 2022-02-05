@@ -101,7 +101,7 @@ class licelcontroller:
       self.sock.settimeout(self.timeout)
       
       if wait!=0:
-        time.sleep(wait) # wait TCP adquisition
+        time.sleep(wait) # wait TCP acquisition
       
       response = self.sock.recv(self.buffersize).decode()
       print(f"Received from server: {response} msg len: {len(response)}")
@@ -232,7 +232,7 @@ class licelcontroller:
       while(len(databuff) < 2*bins and delay<10): # 1bin = 2 bytes = 16 bits
         self.sock.send(bytes(command + '\r\n','utf-8'))
         self.sock.settimeout(self.timeout)
-        time.sleep(delay) # wait TCP adquisition 
+        time.sleep(delay) # wait TCP acquisition 
       
         databuff = self.sock.recv(self.buffersize)
         print("databuff len:",len(databuff))
@@ -301,6 +301,23 @@ class licelcontroller:
 
   # def waitForReady(self,wait):
   #   pass
+
+  def getSignalmV(self,tr,bin,memory,inputrange):
+    pass
+    # # get the shotnumber 
+    # if lc.getStatus() == 0:
+    #   if (lc.shots_number > 1):
+    #     cycles = lc.shots_number - 2 # WHY??!
+
+    # # read from the TR triggered mem A
+    # data_lsw = lc.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
+    # data_msw = lc.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
+
+    # # combine, normalize an scale data to mV
+    # data_accu,data_clip = lc.combineAnalogDatasets(data_lsw, data_msw)
+    # data_phys = lc.normalizeData(data_accu,cycles)
+    # data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
+    # return data_mv
 
   def unselectTR(self):
     command = "SELECT -1"

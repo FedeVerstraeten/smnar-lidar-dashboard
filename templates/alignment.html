@@ -27,24 +27,7 @@ put your custom script or styling here
     <ul class="nav nav-treeview">
         <!-- Control buttons -->
         <li class="nav-item">
-            <label for="tcpip-control">
-                <b style="color:white; padding-right: 15px;">TCP/IP connection:</b>
-            </label>
-            <div class="form-row align-items-center">
-                <div class="col-sm-5 my-1">
-                    <label class="sr-only" for="inlineFormInputName">IP</label>
-                    <input type="text" class="form-control" id="licel_ip_input" placeholder="IP">
-                </div>
-                <div class="col-sm-4 my-1">
-                    <label class="sr-only" for="inlineFormInputName">Port</label>
-                    <input type="text" class="form-control" id="licel_port_input" placeholder="Port">
-                </div>
-                <div class="col-sm-1 my-1">
-                    <button type="submit" class="btn btn-primary" id="tcpip_apply" value="tcpip_port">OK</button>
-                    <!-- <input type="checkbox" data-toggle="toggle" data-onstyle="success" data-offstyle="danger" id="tcpip_apply" value="tcpip_port"> -->
-                </div>
-            </div>
-            <label for="licel-parameters">
+            <label for="bias-control">
                 <b style="color:white; padding-right: 15px;">Licel parameters:</b>
             </label>
             <div class="form-row align-items-center">
@@ -63,16 +46,16 @@ put your custom script or styling here
             </div>
             <div class="form-row align-items-center">
                 <div class="col-sm-8 my-1">
-                    <label class="sr-only" for="inlineFormInputGroup">Adq. Time</label>
+                    <label class="sr-only" for="inlineFormInputGroup">Acq. Time</label>
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <div class="input-group-text">Sec</div>
                         </div>
-                        <input type="text" class="form-control " id="adq_time_input" placeholder="Adq. Time">
+                        <input type="text" class="form-control " id="acq_time_input" placeholder="Acq. Time">
                     </div>
                 </div>
                 <div class="col-sm-2 my-1">
-                    <button type="submit" class="btn btn-primary" id="adq_time_apply" value="adq_time">Apply</button>
+                    <button type="submit" class="btn btn-primary" id="acq_time_apply" value="acq_time">Apply</button>
                 </div>
             </div>
             <div class="form-row align-items-center">
@@ -107,9 +90,9 @@ put your custom script or styling here
             </div>
         </li>
         <li class="nav-item">
-            <button type="button" class="btn btn-outline-success" id="startbtn" value="start">START</button>
-            <button type="button" class="btn btn-outline-danger" id="stopbtn" value="stop">STOP</button>
-            <button type="button" class="btn btn-outline-primary" id="oneshotbtn" value="oneshot">ONE SHOT</button>
+            <button type="button" class="btn btn-outline-success btn-sm" id="startbtn" value="start">START</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="stopbtn" value="stop">STOP</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="oneshotbtn" value="oneshot">SINGLE SHOT</button>
         </li>
     </ul>
 </li>
@@ -182,39 +165,6 @@ put your custom script or styling here
         </li>
     </ul>
 </li>
-<!-- Load ini Menu -->
-<li class="nav-item has-treeview menu-closed">
-    <a href="#" class="nav-link ">
-        <i class="nav-icon fas fa-file-upload"></i>
-        <p>
-            Load INI files
-            <i class="right fas fa-angle-left"></i>
-        </p>
-    </a>
-    <ul class="nav nav-treeview">
-        <li class="nav-item">
-            <form id="upload-form" method="POST" enctype=multipart/form-data action="{{url_for('load_ini_files')}}">
-        <li>
-            <div class="form-group">
-                <label for="acquisini">
-                    <b style="color:white">Acquis file:</b>
-                </label>
-                <input type="file" class="form-control-file" accept=".ini" name="acquisini" id="acquisini_input" style="color:white">
-            </div>
-            <div class="form-group">
-                <label for="globalinfoini">
-                    <b style="color:white">Global Info file:</b>
-                </label>
-                <input type="file" class="form-control-file" accept=".ini" name="globalinfoini" id="globalinfoini_input" style="color:white">
-            </div>
-        </li>
-        <li>
-            <input type="submit" class="btn btn-primary" id="ini_files" value="Load config">
-        </li>
-        </form>
-</li>
-</ul>
-</li>
 <!-- Rayleigh-Fit Menu -->
 <li class="nav-item has-treeview menu-close">
     <a href="#" class="nav-link ">
@@ -273,7 +223,7 @@ put your custom script or styling here
                 </div>
             </div>
             <label for="rayleighfit-control">
-                <b style="color:white">Rayleigh-Fit range (meters):</b>
+                <b style="color:white">Rayleigh-Fit range [meters]:</b>
             </label>
             <div class="form-row align-items-center">
                 <div class="col-sm-4 my-1">
@@ -343,7 +293,7 @@ put your custom script or styling here
                     </select>
                 </div>
                 <div class="input-group date" data-provide="datepicker">
-                    <input type="date" id="date_sounding" name="date_sounding" class="datepicker" data-date-format="dd/mm/yyyy" value='2022-01-01'>
+                    <p><b style="color:white">Date :</b> <input type="date" id="date_sounding" name="date_sounding" class="datepicker"data-date-format="dd/mm/yyyy" value='2022-01-01'style="width:150px"/></p>
                 </div>
         <li>
             <input type="submit" value="Submit" class="btn btn-primary"></input>
@@ -352,6 +302,86 @@ put your custom script or styling here
 </li>
 </ul>
 </li>
+<!-- Load ini Menu -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-file-upload"></i>
+        <p>
+            Load INI files
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <form id="upload-form" method="POST" enctype=multipart/form-data action="{{url_for('load_ini_files')}}">
+        <li>
+            <div class="form-group">
+                <label for="acquisini">
+                    <b style="color:white">Acquis file:</b>
+                </label>
+                <input type="file" class="form-control-file" accept=".ini" name="acquisini" id="acquisini_input" style="color:white">
+            </div>
+            <div class="form-group">
+                <label for="globalinfoini">
+                    <b style="color:white">Global Info file:</b>
+                </label>
+                <input type="file" class="form-control-file" accept=".ini" name="globalinfoini" id="globalinfoini_input" style="color:white">
+            </div>
+        </li>
+        <li>
+            <input type="submit" class="btn btn-primary" id="ini_files" value="Load config">
+        </li>
+        </form>
+</li>
+</ul>
+</li>
+<!-- ./Load ini Menu -->
+<!-- TCP/IP connection -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-network-wired"></i>
+        <p>
+            TCP/IP connection
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">IP</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">IP</div>
+                        </div>
+                        <input type="text" class="form-control " id="licel_ip_input" placeholder="Licel IP">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="licel_ip_apply" value="ip">Apply</button>
+                </div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Port</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Port</div>
+                        </div>
+                        <input type="text" class="form-control " id="licel_port_input" placeholder="Licel Port">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="licel_port_apply" value="port">Apply</button>
+                </div>
+                <!-- <div class="col-sm-1 my-1">
+                    <input type="checkbox" data-toggle="toggle" data-onstyle="success" data-offstyle="danger" id="tcpip_apply" value="tcpip_port">
+                </div> -->
+            </div>
+        </li>
+    </ul>
+</li>
+<!-- ./TCP/IP connection -->
 <!-- Laser controls -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
@@ -440,7 +470,7 @@ var globalconfig = {{ context.globalconfig | safe }};
 document.getElementById('licel_ip_input').value = globalconfig["ip"];
 document.getElementById('licel_port_input').value = globalconfig["port"];
 document.getElementById('channel_input').value = globalconfig["channel"];
-document.getElementById('adq_time_input').value = globalconfig["adq_time"];
+document.getElementById('acq_time_input').value = globalconfig["acq_time"];
 document.getElementById('bin_offset_input').value = globalconfig["bin_offset"];
 document.getElementById('bias_init_input').value = globalconfig["bias_init"];
 document.getElementById('bias_final_input').value = globalconfig["bias_final"];

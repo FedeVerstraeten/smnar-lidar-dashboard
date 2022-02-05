@@ -9,7 +9,7 @@ put your custom script or styling here
 {% block mode %}
 <a class="d-block">
     <i class="nav-icon fas fa-angle-right"></i>
-    <b>Adquisition</b> Mode
+    <b>Acquisition</b> Mode
 </a>
 {% endblock mode %}
 
@@ -29,16 +29,16 @@ put your custom script or styling here
         <li class="nav-item">
             <div class="form-row align-items-center">
                 <div class="col-sm-8 my-1">
-                    <label class="sr-only" for="inlineFormInputGroup">Adq. Time</label>
+                    <label class="sr-only" for="inlineFormInputGroup">Acq. Time</label>
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <div class="input-group-text">Sec</div>
                         </div>
-                        <input type="text" class="form-control " id="adq_time_input" placeholder="Adq. Time">
+                        <input type="text" class="form-control " id="acq_time_input" placeholder="Acq. Time">
                     </div>
                 </div>
                 <div class="col-sm-2 my-1">
-                    <button type="submit" class="btn btn-primary" id="adq_time_apply" value="adq_time">Apply</button>
+                    <button type="submit" class="btn btn-primary" id="acq_time_apply" value="acq_time">Apply</button>
                 </div>
             </div>
         </li>
@@ -238,7 +238,7 @@ Plotly.plot('plotly-lidar-range-correction', graphs, {});
 var globalconfig = {{ context.globalconfig | safe }};
 
 // Licel controls
-document.getElementById('adq_time_input').value = globalconfig["adq_time"];
+document.getElementById('acq_time_input').value = globalconfig["acq_time"];
 
 // Plots limits
 document.getElementById('rc_limits_init_input').value = globalconfig["rc_limits_init"];

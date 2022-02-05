@@ -138,14 +138,14 @@ $('#channel_apply').on('click', function (e) {
   });
 })
 
-$('#adq_time_apply').on('click', function (e) {
+$('#acq_time_apply').on('click', function (e) {
   $.ajax({
     url: "/licelcontrols",
     type: "GET",
     contentType: 'application/json;charset=UTF-8',
     data: {
-      'selected': document.getElementById('adq_time_apply').value,
-      'input': document.getElementById('adq_time_input').value
+      'selected': document.getElementById('acq_time_apply').value,
+      'input': document.getElementById('acq_time_input').value
     },
     dataType:"json",
     success: function (data) {
