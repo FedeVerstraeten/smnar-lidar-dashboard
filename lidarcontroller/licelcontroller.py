@@ -49,8 +49,8 @@ class licelcontroller:
     self.host = '10.49.234.234'
     self.port = 2055
     self.sock = None
-    self.buffersize = 8192 # 4096*2 = 8192 bytes = 8kbytes
-    
+    self.buffersize = 2*(4096+1) # 2bytes/bin * 4096+1 bin = 8194 bytes = 8kb + 2kb
+
     # Licel parameters
     #self.transient_recorder = 0 
     self.bin_long_trace = 4000
@@ -155,7 +155,6 @@ class licelcontroller:
     else:
       return 0
 
-
   def clearMemory(self):
     command = "CLEAR"
     waitsecs = 0
@@ -228,6 +227,10 @@ class licelcontroller:
     delay = 0.25 # seconds
     databuff=b'0'
     
+    # resize buffer
+    if self.buffersize < 2*bins:
+      self.buffersize = 2*bins
+
     try:
       while(len(databuff) < 2*bins and delay<10): # 1bin = 2 bytes = 16 bits
         self.sock.send(bytes(command + '\r\n','utf-8'))
@@ -302,7 +305,7 @@ class licelcontroller:
   # def waitForReady(self,wait):
   #   pass
 
-  def getSignalmV(self,tr,bin,memory,inputrange):
+  def getAnalogSignalmV(self,tr,bin,memory,inputrange):
     pass
     # # get the shotnumber 
     # if lc.getStatus() == 0:
