@@ -305,22 +305,25 @@ class licelcontroller:
   # def waitForReady(self,wait):
   #   pass
 
-  def getAnalogSignalmV(self,tr,bin,memory,inputrange):
-    pass
-    # # get the shotnumber 
-    # if lc.getStatus() == 0:
-    #   if (lc.shots_number > 1):
-    #     cycles = lc.shots_number - 2 # WHY??!
+  def getAnalogSignalmV(self,tr,bins,memory,inputrange):
+    
+    data_mv=[]
 
-    # # read from the TR triggered mem A
-    # data_lsw = lc.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
-    # data_msw = lc.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
+    # get the shotnumber 
+    if self.getStatus() == 0:
+      if (self.shots_number > 1):
+        cycles = self.shots_number - 2 # WHY 2??! TO-DO
 
-    # # combine, normalize an scale data to mV
-    # data_accu,data_clip = lc.combineAnalogDatasets(data_lsw, data_msw)
-    # data_phys = lc.normalizeData(data_accu,cycles)
-    # data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
-    # return data_mv
+      # read from the TR triggered mem A
+      data_lsw = self.getDatasets(tr,"LSW",bins+1,memory)
+      data_msw = self.getDatasets(tr,"MSW",bins+1,memory)
+
+      # combine, normalize an scale data to mV
+      data_accu,data_clip = self.combineAnalogDatasets(data_lsw, data_msw)
+      data_phys = self.normalizeData(data_accu,cycles)
+      data_mv = self.scaleAnalogData(data_phys,inputrange) 
+    
+    return data_mv
 
   def unselectTR(self):
     command = "SELECT -1"
@@ -344,7 +347,7 @@ class licelcontroller:
     else:
       return 0
 
-  def multipleStart(self):
+  def multipleStartAcquisition(self):
     command = "MSTART"
     waitsecs = 0
     response = self.runCommand(command,waitsecs)
@@ -355,7 +358,7 @@ class licelcontroller:
     else:
       return 0
 
-  def multipleStop(self):
+  def multipleStopAcquisition(self):
     command = "MSTOP"
     waitsecs = 0
     response = self.runCommand(command,waitsecs)
