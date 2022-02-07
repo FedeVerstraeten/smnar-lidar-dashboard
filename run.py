@@ -73,7 +73,7 @@ def acquisition_mode():
   # check acquis.ini and globalinfo.ini was loaded
   if acquis_ini.sections()==[] and globalinfo_ini.sections()==[]:
     
-    error_message = "INI files was not loaded."
+    error_message = "INI files did not loaded."
     warning_message = "Please, you must load the INI files with the <b>Load INI Files</b> menu in the side bar."
     context = { "error_message" : error_message,
                 "warning_message" : warning_message
@@ -121,26 +121,6 @@ def licel_acquis_data():
     # open licel connection
     if lc.sock is None:
       lc.openConnection(LICEL_IP,LICEL_PORT)
-    
-    # select all transient recorder and config parameters
-
-    for section in acquis_ini.sections():
-      
-      if 'TR' in section:
-        # Listing TR
-        new_tr = section.split('TR')[1]
-        if new_tr.isdigit():
-          tr_list += new_tr + " "
-
-        # Save acquis configuration
-        tr_acquis_config[section]={"Discriminator" : acquis_ini[section]["Discriminator"]}
-        tr_acquis_config[section]={"Range" : acquis_ini[section]["Range"]}
-        tr_acquis_config[section]={"PM" : acquis_ini[section]["PM"]}
-        tr_acquis_config[section]={"WavelengthA" : acquis_ini[section]["WavelengthA"]}
-        tr_acquis_config[section]={"PolarisationA" : acquis_ini[section]["PolarisationA"]}
-        tr_acquis_config[section]={"A-binsA" : acquis_ini[section]["A-binsA"]}
-
-    tr_list.strip()
 
     # select all transient recorder and config parameters
     tr_list=""
@@ -221,7 +201,6 @@ def licel_record_data():
 
     # TODO mejorar esto
     if lc.sock is None:
-      # lc = licelcontroller()
       lc.openConnection(LICEL_IP,LICEL_PORT)
 
     lc.selectTR(tr)
@@ -233,20 +212,7 @@ def licel_record_data():
     lc.msDelay(SHOTS_DELAY)
     lc.stopAcquisition() 
 
-    # get the shotnumber 
-    # if lc.getStatus() == 0:
-    #   if (lc.shots_number > 1):
-    #     cycles = lc.shots_number - 2 # WHY??!
-
-    # # read from the TR triggered mem A
-    # data_lsw = lc.getDatasets(tr,"LSW",BIN_LONG_TRANCE+1,"A")
-    # data_msw = lc.getDatasets(tr,"MSW",BIN_LONG_TRANCE+1,"A")
-
-    # # combine, normalize an scale data to mV
-    # data_accu,data_clip = lc.combineAnalogDatasets(data_lsw, data_msw)
-    # data_phys = lc.normalizeData(data_accu,cycles)
-    # data_mv = lc.scaleAnalogData(data_phys,licelsettings.MILLIVOLT500) 
-    
+    # get signall in mV
     data_mv = lc.getAnalogSignalmV(tr,BIN_LONG_TRANCE,"A",licelsettings.MILLIVOLT500)
 
     # close socket
