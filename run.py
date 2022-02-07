@@ -2,8 +2,6 @@ import os
 import sys
 from flask import Flask, render_template, url_for, flash, redirect, request, make_response, jsonify, abort
 from werkzeug.utils import secure_filename
-import pandas as pd
-import numpy as np
 import json
 import configparser
 
@@ -29,7 +27,7 @@ globalconfig = {
                   "ip" : '10.49.234.234',
                   "port" : 2055,
                   "channel" : 0,
-                  "adq_time" : 10,      # 10s = 300shots/30Hz(laser)
+                  "acq_time" : 10,      # 10s = 300shots/30Hz(laser)
                   "bin_offset" : 10,    # bin (default)
                   "max_bins" : 4000,    # bin
                   "bias_init" : 22500,  # m (3000 bins)
@@ -69,50 +67,115 @@ def homepage():
   # run html template
   return render_template('alignment.html', context=context)
 
-@app.route("/adquisition")
-def adquisition_mode():
+@app.route("/acquisition")
+def acquisition_mode():
 
-  # crear licelcontroller
-  # verificar acquis.ini y globalinfo.ini
-  # leer cantidad de tr y params correspondientes
-  # configurar
-  # unselectTR
-  # selectTR segun acquis.ini
-  # mtart
-  # delay
-  # mstop
-  # adquirir por cada TR activo
-  # corregir en rango
-  # almacenar temporalmente o netCDF?
-  # graficar solo las señales corregidas en rango para cada TR
-  # no fiteo, no rms, no raw
+  # check acquis.ini and globalinfo.ini was loaded
+  if acquis_ini.sections()==[] and globalinfo_ini.sections()==[]:
+    
+    error_message = "INI files was not loaded."
+    warning_message = "Please, you must load the INI files with the <b>Load INI Files</b> menu in the side bar."
+    context = { "error_message" : error_message,
+                "warning_message" : warning_message
+              }
+    
+    return render_template('error.html',context=context)
 
-  # empty plot
-  plot_lidar_signal = plotly_plot.plotly_empty_signal("raw")
-  plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
+  else:
+    # empty plot
+    plot_lidar_signal = plotly_plot.plotly_empty_signal("raw")
+    plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
 
-  # load dict context
-  context = {"plot_lidar_signal": plot_lidar_signal,
-             "plot_lidar_range_correction": plot_lidar_range_correction,
-             "globalconfig" : globalconfig
-            }
+    # load dict context
+    context = {"plot_lidar_signal": plot_lidar_signal,
+               "plot_lidar_range_correction": plot_lidar_range_correction,
+               "globalconfig" : globalconfig
+              }
 
-  # run html template
-  return render_template('adquisition.html', context=context)
+    # run html template
+    return render_template('acquisition.html', context=context)
+
+@app.route("/acquisdata")
+def licel_acquis_data():
+
+  action_button = request.args['selected']
+
+  # basic settings
+  LICEL_IP = globalconfig["ip"]
+  LICEL_PORT = globalconfig["port"]
+  SHOTS_DELAY = globalconfig["acq_time"]*1000 # milliseconds
+
+  # check acquis.ini and globalinfo.ini was loaded
+  if acquis_ini.sections()==[] and globalinfo_ini.sections()==[]:
+    
+    error_message = "INI files was not loaded."
+    warning_message = "Please, you must load the INI files with the <b>Load INI Files</b> menu in the side bar."
+    context = { "error_message" : error_message,
+                "warning_message" : warning_message
+              }
+    
+    return render_template('error.html',context=context)
+
+  else:
+
+    # open licel connection
+    if lc.sock is None:
+      lc.openConnection(LICEL_IP,LICEL_PORT)
+    
+    # select all transient recorder and config parameters
+    # leer cantidad de tr y params correspondientes
+    tr_list=""
+    tr_config={}
+
+    # Listing TR
+    for section in acquis_ini.sections():
+      if 'TR' in section:
+        new_tr = section.split('TR')[1]
+        if new_tr.isdigit():
+          tr_list += new_tr + " "
+    tr_list.strip()
+
+
+    # configurar
+    # unselectTR
+    # selectTR segun acquis.ini
+    # mtart
+    # delay
+    # mstop
+    # adquirir por cada TR activo
+    # corregir en rango
+    # almacenar temporalmente o netCDF?
+    # graficar solo las señales corregidas en rango para cada TR
+    # no fiteo, no rms, no raw
+
+    # empty plot
+    plot_lidar_signal = plotly_plot.plotly_empty_signal("raw")
+    plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
+
+    # load dict context
+    context = {"plot_lidar_signal": plot_lidar_signal,
+               "plot_lidar_range_correction": plot_lidar_range_correction,
+               "globalconfig" : globalconfig
+              }
+
+    # run html template
+    return render_template('acquisition.html', context=context)
 
 @app.route("/record", methods=['GET','POST'])
 def licel_record_data():
   action_button = request.args['selected']
 
   # basic settings
+  LICEL_IP = globalconfig["ip"]
+  LICEL_PORT = globalconfig["port"]
   BIN_LONG_TRANCE = globalconfig["max_bins"]
-  SHOTS_DELAY = globalconfig["adq_time"]*1000 # milliseconds 
+  SHOTS_DELAY = globalconfig["acq_time"]*1000 # milliseconds 
   OFFSET_BINS = globalconfig["bin_offset"]
   THRESHOLD_METERS = globalconfig["bias_init"] # meters
 
 
   if(action_button =="start" or action_button =="oneshot"):
-  #----------- LICEL ADQUISITION ---------------
+    #----------- LICEL ACQUISITION ---------------
 
     # initialization
     global lc
@@ -121,7 +184,7 @@ def licel_record_data():
     # TODO mejorar esto
     if lc.sock is None:
       # lc = licelcontroller()
-      lc.openConnection(globalconfig["ip"],globalconfig["port"])
+      lc.openConnection(LICEL_IP,LICEL_PORT)
 
     lc.selectTR(tr)
     lc.setInputRange(licelsettings.MILLIVOLT500)
@@ -194,15 +257,15 @@ def licel_controls():
   if(field_selected == "channel" and data_input.isdigit()):
     globalconfig[field_selected] = int(data_input)
   
-  # Adquisition time
-  if(field_selected == "adq_time" and data_input.isdigit()):
-    MAX_ADQ_TIME = 600 # 600s = 10min
-    MIN_ADQ_TIME = 0
+  # Acquisition time
+  if(field_selected == "acq_time" and data_input.isdigit()):
+    MAX_ACQ_TIME = 600 # 600s = 10min
+    MIN_ACQ_TIME = 0
    
-    if(int(data_input) > MAX_ADQ_TIME):
-      globalconfig[field_selected] = MAX_ADQ_TIME
-    elif(int(data_input) <= MIN_ADQ_TIME):
-      globalconfig[field_selected] = MIN_ADQ_TIME
+    if(int(data_input) > MAX_ACQ_TIME):
+      globalconfig[field_selected] = MAX_ACQ_TIME
+    elif(int(data_input) <= MIN_ACQ_TIME):
+      globalconfig[field_selected] = MIN_ACQ_TIME
     else:
       globalconfig[field_selected] = int(data_input)
 
@@ -309,6 +372,27 @@ def plots_limits():
   response.content_type = 'application/json'
   return response
 
+@app.route("/tcpip",methods=['GET','POST'])
+def tcpip_connection():
+  field_selected = request.args['selected']
+  data_input = request.args['input']
+
+  # IP
+  if(field_selected == "ip" and len(data_input.split('.'))==4):
+    ip_list = list(map(str,data_input.split('.')))
+    ip_digits = [i for i in ip_list if i.isdigit() and int(i)<256]
+
+    if len(ip_digits)==4:
+      globalconfig[field_selected] = str(data_input)
+  
+  # Port
+  if(field_selected == "port" and data_input.isdigit()):
+    globalconfig[field_selected] = int(data_input)
+
+  response = make_response(json.dumps(globalconfig))
+  response.content_type = 'application/json'
+  return response
+
 @app.route("/laser",methods=['GET','POST'])
 def laser_controls():
   
@@ -357,27 +441,31 @@ def load_ini_files():
     os.mkdir(target)
 
   # remove old files
-  if os.path.exists(target):
-    for file in os.listdir(target):
-      os.remove(os.path.join(target,file))
-      print(file)
-  else:
-    print("Can not delete the file as it doesn't exists")
+  acquis_file=request.files.get("acquisini")
+  globalinfo_file=request.files.get("globalinfoini")
 
-  # load ini files
-  file=request.files.get("acquisini")
-  if file and allowed_file(file.filename):
-    filename = secure_filename(file.filename)
-    destination = os.path.join(target, file.filename)
-    file.save(destination)
-    acquis_ini.read(destination)
+  if acquis_file and globalinfo_file:
+    
+    # Remove old files
+    if os.path.exists(target):
+      for file in os.listdir(target):
+        os.remove(os.path.join(target,file))
+        print(file)
+    else:
+      print("Can not delete the file as it doesn't exists")
 
-  file=request.files.get("globalinfoini")
-  if file and allowed_file(file.filename):
-    filename = secure_filename(file.filename)
-    destination = os.path.join(target, file.filename)
-    file.save(destination)
-    globalinfo_ini.read(destination)
+    # load ini files
+    if acquis_file and allowed_file(acquis_file.filename):
+      filename = secure_filename(acquis_file.filename)
+      destination = os.path.join(target, acquis_file.filename)
+      acquis_file.save(destination)
+      acquis_ini.read(destination)
+
+    if globalinfo_file and allowed_file(globalinfo_file.filename):
+      filename = secure_filename(globalinfo_file.filename)
+      destination = os.path.join(target, globalinfo_file.filename)
+      globalinfo_file.save(destination)
+      globalinfo_ini.read(destination)
 
   return render_template('inifiles.html')
 
