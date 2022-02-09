@@ -228,7 +228,8 @@ def licel_record_data():
     lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
     lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"]) # optional?
     lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
-    
+    lidar.overlapFitting()
+
     #-------------- PLOTING --------------------
     plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
     plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar,globalconfig["rc_limits_init"],globalconfig["rc_limits_final"])
@@ -248,6 +249,7 @@ def licel_record_data():
   
   if(action_button =="stop"):
     data=[]
+    lidar.resetAlignmentFactorRef()
     response = make_response(json.dumps(data))
     response.content_type = 'application/json'
     print(response)
