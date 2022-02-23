@@ -4,6 +4,7 @@ from flask import Flask, render_template, url_for, flash, redirect, request, mak
 from werkzeug.utils import secure_filename
 import json
 import configparser
+import datetime
 
 from utils import plotly_plot
 from utils import sounding
@@ -105,19 +106,7 @@ def licel_acquis_data():
   LICEL_PORT = globalconfig["port"]
   SHOTS_DELAY = globalconfig["acq_time"]*1000 # milliseconds
 
-  # check acquis.ini and globalinfo.ini was loaded
-  if acquis_ini.sections()==[] and globalinfo_ini.sections()==[]:
-    
-    error_message = "INI files are not loaded."
-    warning_message = "Please, you must load the INI files with the <b>Load INI Files</b> menu in the side bar."
-    context = { "error_message" : error_message,
-                "warning_message" : warning_message
-              }
-    
-    return render_template('error.html',context=context)
-
-  else:
-
+  if(action_button =="start"):
     # open licel connection
     if lc.sock is None:
       lc.openConnection(LICEL_IP,LICEL_PORT)
@@ -129,7 +118,7 @@ def licel_acquis_data():
     for section in acquis_ini.sections():
 
       if 'TR' in section:
-        # Listing TR
+        # Listing TR channel
         tr_number = section.split('TR')[1]
         if tr_number.isdigit():
           tr_list += tr_number + " "
@@ -143,10 +132,10 @@ def licel_acquis_data():
                                     }
 
     # setting Licel for each channel
-    for channel in acquis_settings:
-      lc.selectTR(channel)
-      lc.setDiscriminatorLevel(acquis_settings[channel]["Discriminator"])
-      lc.setInputRange(acquis_settings[channel]["Range"])
+    for tr in acquis_settings:
+      lc.selectTR(tr)
+      lc.setDiscriminatorLevel(acquis_settings[tr]["Discriminator"])
+      lc.setInputRange(acquis_settings[tr]["Range"])
 
     # unselectTR
     lc.unselectTR()
@@ -161,23 +150,38 @@ def licel_acquis_data():
     lc.multiplestopAcquisition() 
 
     # adquirir por cada TR activo
-    # corregir en rango
+    # corregir en rango?
+    acquis_data_mv={}
+    for tr in acquis_settings:
+      data_mv = lc.getAnalogSignalmV(tr,acquis_settings[tr_number]["A-binsA"],"A",licelsettings.MILLIVOLT500)
+      acquis_data_mv[tr]={ 
+                            "timestamp" : datetime.datetime.now().isoformat(),
+                            "bins"      : acquis_settings[tr_number]["A-binsA"],
+                            "data_mv"   : data_mv.tolist()
+                          }
+
     # almacenar temporalmente o netCDF?
+    # define data files path
+    APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+    target = os.path.join(APP_ROOT, 'data')
+
+    # create dir
+    if not os.path.isdir(target):
+      os.mkdir(target)
+
+    filename = "lidar_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
+    filepath = os.path.join(target,filename)
+    with open(filepath,'w') as file:
+      file.write(json.dumps(acquis_data_mv))
+
     # graficar solo las señales corregidas en rango para cada TR
     # no fiteo, no rms, no raw
 
-    # empty plot
-    plot_lidar_signal = plotly_plot.plotly_empty_signal("raw")
-    plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
-
-    # load dict context
-    context = {"plot_lidar_signal": plot_lidar_signal,
-               "plot_lidar_range_correction": plot_lidar_range_correction,
-               "globalconfig" : globalconfig
-              }
-
-    # run html template
-    return render_template('acquisition.html', context=context)
+  if(action_button =="stop"):
+    data=[]
+    response = make_response(json.dumps(data))
+    response.content_type = 'application/json'
+    return response
 
 @app.route("/record", methods=['GET','POST'])
 def licel_record_data():
