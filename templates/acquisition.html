@@ -40,11 +40,23 @@ put your custom script or styling here
                 <div class="col-sm-2 my-1">
                     <button type="submit" class="btn btn-primary" id="acq_time_apply" value="acq_time">Apply</button>
                 </div>
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Period time</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Sec</div>
+                        </div>
+                        <input type="text" class="form-control " id="period_time_input" placeholder="Period time">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="acq_time_apply" value="acq_time">Apply</button>
+                </div>
             </div>
         </li>
         <li class="nav-item">
-            <button type="button" class="btn btn-outline-success" id="startbtn" value="start">START</button>
-            <button type="button" class="btn btn-outline-danger" id="stopbtn" value="stop">STOP</button>
+            <button type="button" class="btn btn-outline-success" id="acq_startbtn" value="start">START</button>
+            <button type="button" class="btn btn-outline-danger" id="acq_stopbtn" value="stop">STOP</button>
         </li>
     </ul>
 </li>

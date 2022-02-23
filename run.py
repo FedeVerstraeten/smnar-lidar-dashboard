@@ -96,7 +96,7 @@ def acquisition_mode():
     # run html template
     return render_template('acquisition.html', context=context)
 
-@app.route("/acquisdata")
+@app.route("/acquisdata", methods=['GET','POST'])
 def licel_acquis_data():
 
   action_button = request.args['selected']
@@ -163,7 +163,7 @@ def licel_acquis_data():
     # almacenar temporalmente o netCDF?
     # define data files path
     APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-    target = os.path.join(APP_ROOT, 'data')
+    target = os.path.join(APP_ROOT, 'acquisdata')
 
     # create dir
     if not os.path.isdir(target):
@@ -173,6 +173,10 @@ def licel_acquis_data():
     filepath = os.path.join(target,filename)
     with open(filepath,'w') as file:
       file.write(json.dumps(acquis_data_mv))
+
+    response = make_response(json.dumps(acquis_data_mv))
+    response.content_type = 'application/json'
+    return response
 
     # graficar solo las señales corregidas en rango para cada TR
     # no fiteo, no rms, no raw
