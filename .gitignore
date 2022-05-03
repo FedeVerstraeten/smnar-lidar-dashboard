@@ -1,6 +1,8 @@
 # smnar-lidar-dashboard
 inifiles/
 sounding/
+packages/
+pkg/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
