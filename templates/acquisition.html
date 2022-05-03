@@ -218,10 +218,21 @@ put your custom script or styling here
 <!-- Plotly plot placeholder -->
 <div class="container-fluid">
       <div class="row">
-        <div class="column">
-          <!-- LiDAR signal with range correction plot-->
-          <div id="plotly-lidar-range-correction"></div>
-        </div>
+          <!-- LiDAR signal plot-->
+          <div class="chart" id="plotly-lidar-signal">
+          </div>
+      </div>
+      <hr>
+      <div class="row">
+          <!-- LiDAR signal plot-->
+          <div class="chart" id="plotly-lidar-signal">
+          </div>
+      </div>
+      <hr>
+      <div class="row">
+          <!-- LiDAR signal plot-->
+          <div class="chart" id="plotly-lidar-signal">
+          </div>
       </div>
       <hr>
       <div class="row">
@@ -237,12 +248,6 @@ put your custom script or styling here
 //Parse your Json variable here
 var graphs = {{ context.plot_lidar_signal | safe }};
 Plotly.plot('plotly-lidar-signal', graphs, {});
-</script>
-
-<script>
-//Parse your Json variable here
-var graphs = {{ context.plot_lidar_range_correction | safe }};
-Plotly.plot('plotly-lidar-range-correction', graphs, {});
 </script>
 
 <script>

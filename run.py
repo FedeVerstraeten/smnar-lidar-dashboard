@@ -106,36 +106,43 @@ def licel_acquis_data():
   LICEL_PORT = globalconfig["port"]
   SHOTS_DELAY = globalconfig["acq_time"]*1000 # milliseconds
 
+  # define data files path
+  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+  acquisdata_path = os.path.join(APP_ROOT, 'acquisdata')
+
+   # create dir
+  if not os.path.isdir(acquisdata_path):
+    os.mkdir(acquisdata_path)
+
+  # select all transient recorder and config parameters
+  tr_list=""
+  acquis_settings={}
+
+  for section in acquis_ini.sections():
+    if 'TR' in section:
+      # Listing TR channel
+      tr_number = section.split('TR')[1]
+      if tr_number.isdigit():
+        tr_list += tr_number + " "
+
+      # Save acquis configuration
+      acquis_settings[tr_number]={
+                                  "Discriminator" : acquis_ini[section]["Discriminator"],
+                                  "Range" : acquis_ini[section]["Range"],
+                                  "WavelengthA" : acquis_ini[section]["WavelengthA"],
+                                  "A-binsA" : acquis_ini[section]["A-binsA"]
+                                  }
   if(action_button =="start"):
     # open licel connection
     if lc.sock is None:
       lc.openConnection(LICEL_IP,LICEL_PORT)
 
-    # select all transient recorder and config parameters
-    tr_list=""
-    acquis_settings={}
-
-    for section in acquis_ini.sections():
-
-      if 'TR' in section:
-        # Listing TR channel
-        tr_number = section.split('TR')[1]
-        if tr_number.isdigit():
-          tr_list += tr_number + " "
-
-        # Save acquis configuration
-        acquis_settings[tr_number]={
-                                    "Discriminator" : acquis_ini[section]["Discriminator"],
-                                    "Range" : acquis_ini[section]["Range"],
-                                    "WavelengthA" : acquis_ini[section]["WavelengthA"],
-                                    "A-binsA" : acquis_ini[section]["A-binsA"]
-                                    }
 
     # setting Licel for each channel
-    for tr in acquis_settings:
-      lc.selectTR(tr)
-      lc.setDiscriminatorLevel(acquis_settings[tr]["Discriminator"])
-      lc.setInputRange(acquis_settings[tr]["Range"])
+    # for tr in acquis_settings:
+    #   lc.selectTR(tr)
+    #   lc.setDiscriminatorLevel(acquis_settings[tr]["Discriminator"])
+    #   lc.setInputRange(acquis_settings[tr]["Range"])
 
     # unselectTR
     lc.unselectTR()
@@ -145,38 +152,46 @@ def licel_acquis_data():
 
     # start the acquisition
     lc.multipleClearMemory()
-    lc.multiplestartAcquisition()
+    lc.multipleStartAcquisition()
     lc.msDelay(SHOTS_DELAY)
-    lc.multiplestopAcquisition() 
+    lc.multipleStopAcquisition()
+    
 
     # adquirir por cada TR activo
     # corregir en rango?
     acquis_data_mv={}
     for tr in acquis_settings:
-      data_mv = lc.getAnalogSignalmV(tr,acquis_settings[tr_number]["A-binsA"],"A",licelsettings.MILLIVOLT500)
+
+      data_mv = lc.getAnalogSignalmV(tr,int(acquis_settings[tr]["A-binsA"]),"A",licelsettings.MILLIVOLT500)
       acquis_data_mv[tr]={ 
                             "timestamp" : datetime.datetime.now().isoformat(),
-                            "bins"      : acquis_settings[tr_number]["A-binsA"],
+                            "bins"      : acquis_settings[tr]["A-binsA"],
                             "data_mv"   : data_mv.tolist()
                           }
 
     # almacenar temporalmente o netCDF?
-    # define data files path
-    APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-    target = os.path.join(APP_ROOT, 'acquisdata')
-
-    # create dir
-    if not os.path.isdir(target):
-      os.mkdir(target)
 
     filename = "lidar_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
-    filepath = os.path.join(target,filename)
+    filepath = os.path.join(acquisdata_path,filename)
     with open(filepath,'w') as file:
       file.write(json.dumps(acquis_data_mv))
 
-    response = make_response(json.dumps(acquis_data_mv))
-    response.content_type = 'application/json'
-    return response
+
+    context = {
+    #            "number_bins": lidar.bin_long_trace,
+    #            "plot_lidar_signal": plot_lidar_signal,
+    #            "plot_lidar_range_correction": plot_lidar_range_correction,
+    #            "plot_lidar_rms": plot_lidar_rms,
+                 "shots_delay": SHOTS_DELAY
+    #            "rms_error" : lidar.rms_err
+              }
+ 
+    # # run html template
+    return context
+
+    # response = make_response(json.dumps(acquis_data_mv))
+    # response.content_type = 'application/json'
+    # return response
 
     # graficar solo las señales corregidas en rango para cada TR
     # no fiteo, no rms, no raw

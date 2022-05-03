@@ -21,25 +21,6 @@ function requestAcquisData() {
       // var graph_rc = JSON.parse(context.plot_lidar_range_correction);
       // Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
       
-      // // Continuous RMS error plot
-      // var time = new Date();
-      // var update = {
-      //   x: [[time]],
-      //   y: [[context.rms_error]]
-      // }
-      // console.log(update);
-      // var olderTime = time.setMinutes(time.getMinutes() - 1);
-      // var futureTime = time.setMinutes(time.getMinutes() + 1);
-  
-      // var minuteView = {
-      //   xaxis: {
-      //       type: 'date',
-      //       range: [olderTime,futureTime]
-      //     }
-      //   };
-
-      // Plotly.relayout('plotly-lidar-rms', minuteView);
-      // Plotly.extendTraces('plotly-lidar-rms', update, [0])
       console.log(context);
     },
     cache: false
@@ -61,9 +42,10 @@ $('#acq_startbtn').on('click', function (e) {
         
         var DELTA_TIME_MS = 1000
         var delay_ms = context.shots_delay + DELTA_TIME_MS;
-
+        console.log("Delay ms",delay_ms)
+        
         if (!acqinterval) {
-          acqinterval = setacqinterval(requestAcquisData,delay_ms);
+          acqinterval = setInterval(requestAcquisData,delay_ms);
           console.log("ACQ START success",acqinterval);
         }
       }
@@ -80,7 +62,7 @@ $('#acq_stopbtn').on('click', function (e) {
     },
     dataType:"json",
     success: function (context) {
-      clearacqinterval(acqinterval);
+      clearInterval(acqinterval);
       acqinterval=null;
       console.log("ACQ STOP success",acqinterval);
     }

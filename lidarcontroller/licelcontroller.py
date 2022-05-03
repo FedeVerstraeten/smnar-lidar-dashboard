@@ -307,7 +307,7 @@ class licelcontroller:
 
   def getAnalogSignalmV(self,tr,bins,memory,inputrange):
     
-    data_mv=[]
+    data_mv=np.zeros(bins+1)
 
     # get the shotnumber 
     if self.getStatus() == 0:
