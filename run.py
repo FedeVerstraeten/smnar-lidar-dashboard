@@ -45,6 +45,7 @@ globalconfig = {
                   "raw_limits_final" : 30000, # m
                   "smooth_level" : 5,
                   "laser_port" : 'COM3',
+                  "pediod_time" : 1 # min
                  }
 
 # Defining routes
@@ -105,6 +106,7 @@ def licel_acquis_data():
   LICEL_IP = globalconfig["ip"]
   LICEL_PORT = globalconfig["port"]
   SHOTS_DELAY = globalconfig["acq_time"]*1000 # milliseconds
+  PERIOD_DELAY = globalconfig["pediod_time"]*60*1000 # milliseconds
 
   # define data files path
   APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -144,12 +146,12 @@ def licel_acquis_data():
     #   lc.setDiscriminatorLevel(acquis_settings[tr]["Discriminator"])
     #   lc.setInputRange(acquis_settings[tr]["Range"])
 
+
     # unselectTR
     lc.unselectTR()
-
     # select TR acording acquis list
     lc.selectTR(tr_list.strip())
-
+    
     # start the acquisition
     lc.multipleClearMemory()
     lc.multipleStartAcquisition()
@@ -182,7 +184,8 @@ def licel_acquis_data():
     #            "plot_lidar_signal": plot_lidar_signal,
     #            "plot_lidar_range_correction": plot_lidar_range_correction,
     #            "plot_lidar_rms": plot_lidar_rms,
-                 "shots_delay": SHOTS_DELAY
+                 "shots_delay": SHOTS_DELAY,
+                 "period_delay": PERIOD_DELAY
     #            "rms_error" : lidar.rms_err
               }
  

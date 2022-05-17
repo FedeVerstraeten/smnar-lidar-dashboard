@@ -27,6 +27,23 @@ function requestAcquisData() {
   });
 }
 
+$('#period_time_apply').on('click', function (e) {
+  $.ajax({
+    url: "/licelcontrols",
+    type: "GET",
+    contentType: 'application/json;charset=UTF-8',
+    data: {
+      'selected': document.getElementById('period_time_apply').value,
+      'input': document.getElementById('period_time_input').value
+    },
+    dataType:"json",
+    success: function (data) {
+      console.log(data);
+    }
+  });
+})
+
+
 $('#acq_startbtn').on('click', function (e) {
 
     $.ajax({
@@ -40,12 +57,11 @@ $('#acq_startbtn').on('click', function (e) {
       dataType:"json",
       success: function (context) {
         
-        var DELTA_TIME_MS = 1000
-        var delay_ms = context.shots_delay + DELTA_TIME_MS;
-        console.log("Delay ms",delay_ms)
+        // var DELTA_TIME_MS = 2000
+        console.log("Period delay ms",context.period_delay)
         
         if (!acqinterval) {
-          acqinterval = setInterval(requestAcquisData,delay_ms);
+          acqinterval = setInterval(requestAcquisData,context.period_delay);
           console.log("ACQ START success",acqinterval);
         }
       }
