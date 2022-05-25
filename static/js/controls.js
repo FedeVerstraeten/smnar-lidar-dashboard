@@ -5,7 +5,7 @@ var yArray = [];
 
 function requestData() {
   $.ajax({
-    url: "/acquis",
+    url: "/record",
     type: "GET",
     contentType: 'application/json;charset=UTF-8',
     data: {

@@ -49,8 +49,8 @@ class licelcontroller:
     self.host = '10.49.234.234'
     self.port = 2055
     self.sock = None
-    self.buffersize = 8192 # 4096*2 = 8192 bytes = 8kbytes
-    
+    self.buffersize = 2*(4096+1) # 2bytes/bin * 4096+1 bin = 8194 bytes = 8kb + 2kb
+
     # Licel parameters
     #self.transient_recorder = 0 
     self.bin_long_trace = 4000
@@ -86,7 +86,9 @@ class licelcontroller:
   def closeConnection(self):
     try:
       print('Closing connecting to: ', (self.host,self.port))
+      self.sock.shutdown(socket.SHUT_RDWR)
       self.sock.close()
+      self.sock = None
       print('Connection closed')
     except Exception as e:
       raise ValueError("Connection to server failed")
@@ -99,7 +101,7 @@ class licelcontroller:
       self.sock.settimeout(self.timeout)
       
       if wait!=0:
-        time.sleep(wait) # wait TCP adquisition
+        time.sleep(wait) # wait TCP acquisition
       
       response = self.sock.recv(self.buffersize).decode()
       print(f"Received from server: {response} msg len: {len(response)}")
@@ -152,7 +154,6 @@ class licelcontroller:
       return -5096
     else:
       return 0
-
 
   def clearMemory(self):
     command = "CLEAR"
@@ -226,11 +227,15 @@ class licelcontroller:
     delay = 0.25 # seconds
     databuff=b'0'
     
+    # resize buffer
+    if self.buffersize < 2*bins:
+      self.buffersize = 2*bins
+
     try:
       while(len(databuff) < 2*bins and delay<10): # 1bin = 2 bytes = 16 bits
         self.sock.send(bytes(command + '\r\n','utf-8'))
         self.sock.settimeout(self.timeout)
-        time.sleep(delay) # wait TCP adquisition 
+        time.sleep(delay) # wait TCP acquisition 
       
         databuff = self.sock.recv(self.buffersize)
         print("databuff len:",len(databuff))
@@ -299,3 +304,67 @@ class licelcontroller:
 
   # def waitForReady(self,wait):
   #   pass
+
+  def getAnalogSignalmV(self,tr,bins,memory,inputrange):
+    
+    data_mv=np.zeros(bins+1)
+
+    # get the shotnumber 
+    if self.getStatus() == 0:
+      if (self.shots_number > 1):
+        cycles = self.shots_number - 2 # WHY 2??! TO-DO
+
+      # read from the TR triggered mem A
+      data_lsw = self.getDatasets(tr,"LSW",bins+1,memory)
+      data_msw = self.getDatasets(tr,"MSW",bins+1,memory)
+
+      # combine, normalize an scale data to mV
+      data_accu,data_clip = self.combineAnalogDatasets(data_lsw, data_msw)
+      data_phys = self.normalizeData(data_accu,cycles)
+      data_mv = self.scaleAnalogData(data_phys,inputrange) 
+    
+    return data_mv
+
+  def unselectTR(self):
+    command = "SELECT -1"
+    waitsecs = 0
+    response = self.runCommand(command,waitsecs)
+  
+    if "executed" not in response:
+      print("Licel_TCPIP_SelectTR - Error 5083:", command)
+      return -5083
+    else:
+      return 0
+
+  def multipleClearMemory(self):
+    command = "MCLEAR"
+    waitsecs = 0
+    response = self.runCommand(command,waitsecs)
+
+    if "executed" not in response:
+      print("Licel_TCPIP_MultipleClearMemory - Error 5080", response)
+      return -5080
+    else:
+      return 0
+
+  def multipleStartAcquisition(self):
+    command = "MSTART"
+    waitsecs = 0
+    response = self.runCommand(command,waitsecs)
+
+    if "executed" not in response:
+      print("Licel_TCPIP_MultipleStart - Error 5086:", response)
+      return -5086
+    else:
+      return 0
+
+  def multipleStopAcquisition(self):
+    command = "MSTOP"
+    waitsecs = 0
+    response = self.runCommand(command,waitsecs)
+
+    if "executed" not in response:
+      print("Licel_TCPIP_MultipleStopAcqusition - Error 5082:", response)
+      return -5082
+    else:
+      return 0

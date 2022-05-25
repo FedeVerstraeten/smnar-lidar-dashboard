@@ -68,18 +68,19 @@ def parse_sounding(sounding_data):
 
   return parsed_data
 
-# get radiosonde data: height, temperature, pressure
+# get radiosonde data: height [m], temperature [K], pressure [hPa]
 def get_htp(sounding_data):
-  pressure = []
-  height = []
-  temperature = []
+  pressure = []    # hPa
+  height = []      # m
+  temperature = [] # K
+  ZERO_KELVIN = 273.15
 
   parsed_data = parse_sounding(sounding_data)
 
   for line in parsed_data:
-    pressure.append(line.split(',')[0])
-    height.append(line.split(',')[1])
-    temperature.append(line.split(',')[2])
+   pressure.append(float(line.split(',')[0]))
+   height.append(float(line.split(',')[1]))
+   temperature.append(float(line.split(',')[2])-ZERO_KELVIN)
 
   return height,temperature,pressure
 

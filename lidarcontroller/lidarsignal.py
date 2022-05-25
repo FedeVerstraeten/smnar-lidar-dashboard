@@ -31,8 +31,12 @@ class lidarSignal:
     self.fit_init = 0 # [m]
     self.fit_final = 0 # [m]
     self.pr2_mol = []
+    self.pr_mol = []
     self.rms_err = 0
     self.adj_factor = 0
+    self.alignment_factor = 0
+    self.alignment_factor_ref = -1
+
 
     self.__us_std_model = {
                             "height" : [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 5200, 5400, 5600, 5800, 6000, 6200, 6400, 6600, 6800, 7000, 7200, 7400, 7600, 7800, 8000, 8200, 8400, 8600, 8800, 9000, 9200, 9400, 9600, 9800, 10000, 10200, 10400, 10600, 10800, 11000, 11200, 11400, 11600, 11800, 12000, 12200, 12400, 12600, 12800, 13000, 13200, 13400, 13600, 13800, 14000, 14200, 14400, 14600, 14800, 15000, 15200, 15400, 15600, 15800, 16000, 16200, 16400, 16600, 16800, 17000, 17200, 17400, 17600, 17800, 18000, 18200, 18400, 18600, 18800, 19000, 19200, 19400, 19600, 19800, 20000, 20200, 20400, 20600, 20800, 21000, 21200, 21400, 21600, 21800, 22000, 22200, 22400, 22600, 22800, 23000, 23200, 23400, 23600, 23800, 24000, 24200, 24400, 24600, 24800, 25000, 25200, 25400, 25600, 25800, 26000, 26200, 26400, 26600, 26800, 27000, 27200, 27400, 27600, 27800, 28000, 28200, 28400, 28600, 28800, 29000, 29200, 29400, 29600, 29800, 30000],
@@ -48,8 +52,9 @@ class lidarSignal:
 
   def loadSignal(self,signal):
     if len(signal)>0:
+      signal = np.insert(signal,0,0) # set zero signal
       self.raw_signal = np.array(signal)
-      self.bin_long_trace = len(signal)
+      self.bin_long_trace = len(self.raw_signal) 
 
   def offsetCorrection(self,bin_offset):
     if bin_offset > 0:
@@ -70,7 +75,7 @@ class lidarSignal:
       self.setThreshold(threshold_meters)
 
     # Height range on bins
-    self.range = self.__BIN_METERS * np.arange(0, len(self.raw_signal), 1)
+    self.range = self.__BIN_METERS * np.arange(0,self.bin_long_trace,1)
     
     # bias calculation
     self.bias = np.mean(self.raw_signal[self.bin_threshold:])
@@ -80,19 +85,20 @@ class lidarSignal:
 
   def smoothSignal(self,level):
     # smooth with square box
-    box_pts=3 # default smooth
-
     if level > 0:
       box_points = int(level)
+    else:
+      box_points = 3 # default smooth
     
-    # convulution 
+    # convolution 
     box = np.ones(box_points)/box_points
     self.rc_signal = np.convolve(self.rc_signal, box, mode='same')
 
   def setSurfaceConditions(self,temperature,pressure):
-    # Temperature on Kelvin degrees
-    if temperature > 0:
-      self.surface_temperature = temperature
+    # Input temperature on Celsius to Kelvin degrees
+    temp_kelvin = constants.convert_temperature(temperature,'Celsius','Kelvin')
+    if temp_kelvin > 0:
+      self.surface_temperature = temp_kelvin
 
     # Pressure on hecto Pascal
     if pressure > 0:
@@ -103,7 +109,8 @@ class lidarSignal:
     self.wavelength = wavelength
     self.masl = masl
 
-    self.setSurfaceConditions(surface_temperature,surface_pressure)
+    if surface_temperature!=0 and surface_pressure!=0:
+      self.setSurfaceConditions(surface_temperature,surface_pressure)
 
     # Loading low resolution atmosphere profile data
     if( self.sounding_data["height"] \
@@ -119,44 +126,45 @@ class lidarSignal:
       temperature_lowres = self.__us_std_model["temperature"]
       pressure_lowres = self.__us_std_model["pressure"]
 
-    # Defining high resolution Height vector
-    height_highres = np.arange(height_lowres[0], (self.bin_long_trace+1)*self.__BIN_METERS, self.__BIN_METERS)
+    # High resolution height vector definition from MASL
+    height_highres = self.masl + np.arange(0, self.bin_long_trace*self.__BIN_METERS, self.__BIN_METERS)
 
     # Interpolation Spline 1D cubic
-    temperature_spline = interp1d(height_lowres, temperature_lowres, kind='cubic')
-    pressure_spline = interp1d(height_lowres, pressure_lowres, kind='cubic')
+    temperature_spline = interp1d(height_lowres, temperature_lowres, kind='cubic',fill_value='extrapolate')
+    pressure_spline = interp1d(height_lowres, pressure_lowres, kind='cubic',fill_value='extrapolate')
     
-    # Defining high resolution Temperature & Pressure vectors
+    # Defining high resolution Temperature & Pressure vectors since MASL (LiDAR)
     temperature_highres = temperature_spline(height_highres)
     pressure_highres = pressure_spline(height_highres)
 
-    # AMSL correction
-    index_masl = (np.abs(height_highres - self.masl)).argmin() 
-
     # Profile scaling with current surface temperature and pressure conditions
-    temperature_highres = self.surface_temperature * (temperature_highres/temperature_highres[index_masl])
-    pressure_highres = self.surface_pressure * (pressure_highres/pressure_highres[index_masl])
+    temperature_highres = self.surface_temperature * (temperature_highres/temperature_highres[0])
+    pressure_highres = self.surface_pressure * (pressure_highres/pressure_highres[0])    
 
     # atmospheric molecular concentration
     kboltz = constants.k
-    nmol = (100*pressure_highres[index_masl:])/(temperature_highres[index_masl:]*kboltz) 
+    nmol = (100*pressure_highres)/(temperature_highres*kboltz)
 
     # alpha & beta coefficients
     beta_mol = nmol * ((550/self.wavelength)**4.09) * 5.45e-32
     alpha_mol = beta_mol * (8*np.pi/3)
+  
+    # Range vector referenced to the LiDAR level
+    range_lidar = height_highres - self.masl
 
-    # Cumulative trapezoidal numerical integration
-    range_lidar = height_highres[:-index_masl]
     cumtrapz = integrate.cumtrapz(alpha_mol, range_lidar, initial=0)
     tm2r_mol = np.exp(-2*cumtrapz)
 
     # Purely molecular atmosphere profile
     self.pr2_mol = beta_mol*tm2r_mol
+    range_lidar[0]=1
+    self.pr_mol = self.pr2_mol/(range_lidar**2)
 
   def loadSoundingData(self,height,temperature,pressure):
     
     if height!=[] and temperature!=[] and pressure!=[]:
       
+      print(height[0],type(height[0]))  
       self.sounding_data["height"]=height
       self.sounding_data["temperature"]=temperature
       self.sounding_data["pressure"]=pressure
@@ -174,24 +182,56 @@ class lidarSignal:
     bin_init = int(fit_init/self.__BIN_METERS)
     bin_fin = int(fit_final/self.__BIN_METERS)
     
-
     # Adjusment factor calculus between elastic LiDAR and molecular signals
     # a = sum(Sel*Sm)/sum(Sm^2)
-
 
     sum_sel_sm = np.dot(self.rc_signal[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
     sum_sm_square = np.dot(self.pr2_mol[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
 
     self.adj_factor = sum_sel_sm/sum_sm_square
-    # print("Adj factor a(r,dr)=",np.format_float_scientific(adj_factor))
    
-    # area low height 
-    bin_lh_offset = int(500/self.__BIN_METERS)
-    area_lh = np.sum(np.abs(self.rc_signal[bin_lh_offset:bin_init] - self.adj_factor * self.pr2_mol[bin_lh_offset:bin_init]))
+    # # area low height 
+    # LH_OFFSET = 500 # meters
+    # bin_lh_offset = int(LH_OFFSET/self.__BIN_METERS)
+    # area_lh = np.sum(np.abs(self.rc_signal[bin_lh_offset:bin_init] - self.adj_factor * self.pr2_mol[bin_lh_offset:bin_init]))
 
-    # Minimizing the RMS error
-    sum_diff = self.rc_signal[bin_init:bin_fin+1] - self.adj_factor * self.pr2_mol[bin_init:bin_fin+1]
-    dr = fit_final - fit_init
-    self.rms_err = (np.sqrt((1/dr) * np.dot(sum_diff,sum_diff)))/area_lh
-    # print("RMS error =",np.format_float_scientific(rms_err))
+    # # Minimizing the RMS error
+    # sum_diff = self.rc_signal[bin_init:bin_fin+1] - self.adj_factor * self.pr2_mol[bin_init:bin_fin+1]
+    # dr = fit_final - fit_init
+    # self.rms_err = (np.sqrt((1/dr) * np.dot(sum_diff,sum_diff)))/area_lh
+
+  def overlapFitting(self):
+
+    bin_init = int(self.fit_init/self.__BIN_METERS)
+    bin_fin = int(self.fit_final/self.__BIN_METERS)
+  
+    raw_signal_nobias = self.raw_signal - self.bias
+
+    # RMS raw signal  
+    sum_sel_sm = np.dot(raw_signal_nobias[bin_init:bin_fin+1],self.pr_mol[bin_init:bin_fin+1])
+    sum_sm_square = np.dot(self.pr_mol[bin_init:bin_fin+1],self.pr_mol[bin_init:bin_fin+1])
+
+    adj_factor = sum_sel_sm/sum_sm_square
+
+    # area low height 
+    LH_OFFSET = 50 # meters
+    bin_lh_offset = int(LH_OFFSET/self.__BIN_METERS)
+    area_lh = np.sum(np.abs(self.raw_signal[bin_lh_offset:bin_init] - adj_factor * self.pr_mol[bin_lh_offset:bin_init]))
+  
+    sum_diff = raw_signal_nobias[bin_init:bin_fin+1] - adj_factor * self.pr_mol[bin_init:bin_fin+1]
+    # dr = self.fit_final - self.fit_init
+    dr = bin_fin - bin_init
+
+    rms_err_aux = np.sqrt((1/dr) * np.dot(sum_diff,sum_diff))
+    self.alignment_factor = rms_err_aux/area_lh
+  
+    # TO-DO: improve this shit
+    if self.alignment_factor_ref == -1:
+      self.alignment_factor_ref = self.alignment_factor
     
+    self.rms_err=self.alignment_factor/self.alignment_factor_ref # CAMBIAR NOMBRE DE ATRIBUTO O AGREGAR OTRO!!!
+
+
+  def resetAlignmentFactorRef(self):
+    if self.alignment_factor_ref != -1:
+      self.alignment_factor_ref = -1
