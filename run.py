@@ -275,7 +275,6 @@ def licel_record_data():
   
   if(action_button =="stop"):
     data=[]
-    lidar.resetAlignmentFactorRef()
     response = make_response(json.dumps(data))
     response.content_type = 'application/json'
     print(response)

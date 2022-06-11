@@ -35,8 +35,6 @@ class lidarSignal:
     self.rms_err = 0
     self.adj_factor = 0
     self.alignment_factor = 0
-    self.alignment_factor_ref = -1
-
 
     self.__us_std_model = {
                             "height" : [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 5200, 5400, 5600, 5800, 6000, 6200, 6400, 6600, 6800, 7000, 7200, 7400, 7600, 7800, 8000, 8200, 8400, 8600, 8800, 9000, 9200, 9400, 9600, 9800, 10000, 10200, 10400, 10600, 10800, 11000, 11200, 11400, 11600, 11800, 12000, 12200, 12400, 12600, 12800, 13000, 13200, 13400, 13600, 13800, 14000, 14200, 14400, 14600, 14800, 15000, 15200, 15400, 15600, 15800, 16000, 16200, 16400, 16600, 16800, 17000, 17200, 17400, 17600, 17800, 18000, 18200, 18400, 18600, 18800, 19000, 19200, 19400, 19600, 19800, 20000, 20200, 20400, 20600, 20800, 21000, 21200, 21400, 21600, 21800, 22000, 22200, 22400, 22600, 22800, 23000, 23200, 23400, 23600, 23800, 24000, 24200, 24400, 24600, 24800, 25000, 25200, 25400, 25600, 25800, 26000, 26200, 26400, 26600, 26800, 27000, 27200, 27400, 27600, 27800, 28000, 28200, 28400, 28600, 28800, 29000, 29200, 29400, 29600, 29800, 30000],
@@ -187,18 +185,7 @@ class lidarSignal:
 
     sum_sel_sm = np.dot(self.rc_signal[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
     sum_sm_square = np.dot(self.pr2_mol[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
-
     self.adj_factor = sum_sel_sm/sum_sm_square
-   
-    # # area low height 
-    # LH_OFFSET = 500 # meters
-    # bin_lh_offset = int(LH_OFFSET/self.__BIN_METERS)
-    # area_lh = np.sum(np.abs(self.rc_signal[bin_lh_offset:bin_init] - self.adj_factor * self.pr2_mol[bin_lh_offset:bin_init]))
-
-    # # Minimizing the RMS error
-    # sum_diff = self.rc_signal[bin_init:bin_fin+1] - self.adj_factor * self.pr2_mol[bin_init:bin_fin+1]
-    # dr = fit_final - fit_init
-    # self.rms_err = (np.sqrt((1/dr) * np.dot(sum_diff,sum_diff)))/area_lh
 
   def overlapFitting(self):
 
@@ -207,31 +194,18 @@ class lidarSignal:
   
     raw_signal_nobias = self.raw_signal - self.bias
 
-    # RMS raw signal  
+    # Adjustment factor on raw signal without bias
     sum_sel_sm = np.dot(raw_signal_nobias[bin_init:bin_fin+1],self.pr_mol[bin_init:bin_fin+1])
     sum_sm_square = np.dot(self.pr_mol[bin_init:bin_fin+1],self.pr_mol[bin_init:bin_fin+1])
-
     adj_factor = sum_sel_sm/sum_sm_square
 
-    # area low height 
-    LH_OFFSET = 50 # meters
-    bin_lh_offset = int(LH_OFFSET/self.__BIN_METERS)
-    area_lh = np.sum(np.abs(self.raw_signal[bin_lh_offset:bin_init] - adj_factor * self.pr_mol[bin_lh_offset:bin_init]))
-  
-    sum_diff = raw_signal_nobias[bin_init:bin_fin+1] - adj_factor * self.pr_mol[bin_init:bin_fin+1]
-    # dr = self.fit_final - self.fit_init
-    dr = bin_fin - bin_init
+    # Molecular fit signal
+    prMol_Fit = adj_factor * self.pr_mol
 
-    rms_err_aux = np.sqrt((1/dr) * np.dot(sum_diff,sum_diff))
-    self.alignment_factor = rms_err_aux/area_lh
-  
-    # TO-DO: improve this shit
-    if self.alignment_factor_ref == -1:
-      self.alignment_factor_ref = self.alignment_factor
     
-    self.rms_err=self.alignment_factor/self.alignment_factor_ref # CAMBIAR NOMBRE DE ATRIBUTO O AGREGAR OTRO!!!
+    # Fitting using Pearson's correlation coefficient, values between [-1,1]
+    # maximum correlation with r=1 --> optimal alignment
+    r = np.corrcoef(prMol_Fit[bin_init:bin_fin+1], raw_signal_nobias[bin_init:bin_fin+1])
+    self.alignment_factor = r[0,1]
 
-
-  def resetAlignmentFactorRef(self):
-    if self.alignment_factor_ref != -1:
-      self.alignment_factor_ref = -1
+    self.rms_err=self.alignment_factor
