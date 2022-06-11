@@ -45,7 +45,7 @@ globalconfig = {
                   "raw_limits_final" : 30000, # m
                   "smooth_level" : 5,
                   "laser_port" : 'COM3',
-                  "pediod_time" : 1 # min
+                  "period_time" : 1 # min
                  }
 
 # Defining routes
@@ -331,6 +331,21 @@ def licel_controls():
       globalconfig["max_bins"] = round(int(bias_range[1])/BIN_METERS)
     else:
       globalconfig["max_bins"] = MAX_BINS
+
+   # Period time on Acquisition Mode
+  if(field_selected == "period_time" and data_input.isdigit()):
+    MAX_PERIOD_TIME = 60 # 1 hour
+    MIN_PERIOD_TIME = 1 # 1 min
+   
+
+    if(int(data_input)*60 <= globalconfig["acq_time"]):
+      globalconfig["period_time"] = round(globalconfig["acq_time"]/60 + MIN_PERIOD_TIME)
+    elif(int(data_input) > MAX_PERIOD_TIME):
+      globalconfig["period_time"] = MAX_PERIOD_TIME
+    elif(int(data_input) <= MIN_PERIOD_TIME):
+      globalconfig["period_time"] = MIN_PERIOD_TIME
+    else:
+      globalconfig["period_time"] = int(data_input)
 
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'
