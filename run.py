@@ -8,7 +8,7 @@ import datetime
 
 from utils import plotly_plot
 from utils import sounding
-from lidarcontroller.licelcontroller import licelcontroller
+from lidarcontroller.licelController import licelController
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
@@ -19,7 +19,7 @@ app.config.from_object('config.Config')
 
 # global variables
 lidar = lidarSignal()
-lc = licelcontroller()
+lc = licelController()
 
 acquis_ini = configparser.ConfigParser()
 globalinfo_ini = configparser.ConfigParser()
