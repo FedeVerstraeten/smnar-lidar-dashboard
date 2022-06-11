@@ -48,8 +48,21 @@ $('#masl_apply').on('click', function (e) {
   });
 })
 
-// var fit1 = document.getElementById('fit_input').value
-
+$('#wavelength_apply').on('click', function (e) {
+  $.ajax({
+    url: "/rayleighfit",
+    type: "GET",
+    contentType: 'application/json;charset=UTF-8',
+    data: {
+      'selected': document.getElementById('wavelength_apply').value,
+      'input': document.getElementById('wavelength_input').value
+    },
+    dataType:"json",
+    success: function (data) {
+      console.log(data);
+    }
+  });
+})
 
 $('#fit_apply').on('click', function (e) {
   $.ajax({

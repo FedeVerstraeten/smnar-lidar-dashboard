@@ -251,8 +251,8 @@ def licel_record_data():
     lidar.smoothSignal(level = globalconfig["smooth_level"])
 
     #----------- RAYLEIGH-FIT ------------------
-    lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
-    lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"]) # optional?
+    lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"])
+    lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"])
     lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
     lidar.overlapFitting()
 
@@ -344,7 +344,7 @@ def rayleighfit_controls():
   ZERO_KELVIN = 273.15
 
   # Temperature
-  if(field_selected == "temperature" and (data_input.replace('.','',1).isdigit() or data_input.replace('-','',1).isdigit())):
+  if(field_selected == "temperature" and data_input.replace('.','',1).replace('-','',1).isdigit()):
     if float(data_input) + ZERO_KELVIN > 0:
       globalconfig[field_selected] = float(data_input)
   
@@ -355,6 +355,11 @@ def rayleighfit_controls():
 
   # MASL
   if(field_selected == "masl" and data_input.replace('.','',1).isdigit()):
+    if float(data_input) >= 0:
+      globalconfig[field_selected] = float(data_input)
+  
+  # Wavelength source
+  if(field_selected == "wavelength" and data_input.replace('.','',1).isdigit()):
     if float(data_input) >= 0:
       globalconfig[field_selected] = float(data_input)
   
