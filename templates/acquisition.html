@@ -247,7 +247,7 @@ put your custom script or styling here
 <!-- Script to execute the Json ( we can create it also with looping) -->
 <script>
 //Parse your Json variable here
-var graphs = {{ context.plot_lidar_signal | safe }};
+var graphs = {{ context.plot_multiple_lidar_signal | safe }};
 Plotly.plot('plotly-lidar-signal', graphs, {});
 </script>
 

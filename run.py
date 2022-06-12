@@ -8,7 +8,7 @@ import datetime
 
 from utils import plotly_plot
 from utils import sounding
-from lidarcontroller.licelController import licelController
+from lidarcontroller.licelcontroller import licelController
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
@@ -90,7 +90,6 @@ def acquisition_mode():
 
     # load dict context
     context = {"plot_lidar_signal": plot_lidar_signal,
-               "plot_lidar_range_correction": plot_lidar_range_correction,
                "globalconfig" : globalconfig
               }
 
@@ -161,43 +160,34 @@ def licel_acquis_data():
 
     # adquirir por cada TR activo
     # corregir en rango?
-    acquis_data_mv={}
+    lidar_data_mv={}
     for tr in acquis_settings:
 
       data_mv = lc.getAnalogSignalmV(tr,int(acquis_settings[tr]["A-binsA"]),"A",licelsettings.MILLIVOLT500)
-      acquis_data_mv[tr]={ 
+      lidar_data_mv[tr]={ 
                             "timestamp" : datetime.datetime.now().isoformat(),
                             "bins"      : acquis_settings[tr]["A-binsA"],
                             "data_mv"   : data_mv.tolist()
                           }
 
-    # almacenar temporalmente o netCDF?
+    # dump data to local directory in JSON format
 
     filename = "lidar_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
     filepath = os.path.join(acquisdata_path,filename)
     with open(filepath,'w') as file:
-      file.write(json.dumps(acquis_data_mv))
+      file.write(json.dumps(lidar_data_mv))
 
+    # Plotting
+    plot_multiple_lidar_signal = plotly_plot.plot_multiple_lidar_signal(lidar_data_mv,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
 
     context = {
-    #            "number_bins": lidar.bin_long_trace,
-    #            "plot_lidar_signal": plot_lidar_signal,
-    #            "plot_lidar_range_correction": plot_lidar_range_correction,
-    #            "plot_lidar_rms": plot_lidar_rms,
+                 "plot_muliple_lidar_signal": plot_multiple_lidar_signal,
                  "shots_delay": SHOTS_DELAY,
                  "period_delay": PERIOD_DELAY
-    #            "rms_error" : lidar.rms_err
               }
  
     # # run html template
     return context
-
-    # response = make_response(json.dumps(acquis_data_mv))
-    # response.content_type = 'application/json'
-    # return response
-
-    # graficar solo las señales corregidas en rango para cada TR
-    # no fiteo, no rms, no raw
 
   if(action_button =="stop"):
     data=[]

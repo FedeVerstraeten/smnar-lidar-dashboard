@@ -13,15 +13,10 @@ function requestAcquisData() {
     dataType:"json",
     success: function (context) {
       
-      // // Raw signal plot
-      // var graph_raw = JSON.parse(context.plot_lidar_signal);
-      // Plotly.newPlot('plotly-lidar-signal', graph_raw);
+      // Raw signal plot
+      var graph_raw = JSON.parse(context.plot_multiple_lidar_signal);
+      Plotly.newPlot('plotly-lidar-signal', graph_raw);
       
-      // // Range corrected plot
-      // var graph_rc = JSON.parse(context.plot_lidar_range_correction);
-      // Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
-      
-      console.log(context);
     },
     cache: false
   });
