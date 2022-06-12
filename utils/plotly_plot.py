@@ -267,10 +267,10 @@ def plot_multiple_lidar_signal(lidar_data_mv,limit_init,limit_final):
   # create data frame
   df = pd.DataFrame({'meters':range_meters})
 
-  for i in lidar_json:
+  for i in lidar_data_mv:
     tr='TR' + str(i)
     other=pd.DataFrame({
-              tr:lidar_json[i]["data_mv"][bin_init:bin_final]
+              tr:lidar_data_mv[i]["data_mv"][bin_init:bin_final]
               })
     df=df.join(other)
 
