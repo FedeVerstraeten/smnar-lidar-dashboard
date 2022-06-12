@@ -181,7 +181,7 @@ def licel_acquis_data():
     plot_multiple_lidar_signal = plotly_plot.plot_multiple_lidar_signal(lidar_data_mv,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
 
     context = {
-                 "plot_muliple_lidar_signal": plot_multiple_lidar_signal,
+                 "plot_multiple_lidar_signal": plot_multiple_lidar_signal,
                  "shots_delay": SHOTS_DELAY,
                  "period_delay": PERIOD_DELAY
               }
