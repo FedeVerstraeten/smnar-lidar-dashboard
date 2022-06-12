@@ -105,7 +105,7 @@ def licel_acquis_data():
   LICEL_IP = globalconfig["ip"]
   LICEL_PORT = globalconfig["port"]
   SHOTS_DELAY = globalconfig["acq_time"]*1000 # milliseconds
-  PERIOD_DELAY = globalconfig["pediod_time"]*60*1000 # milliseconds
+  PERIOD_DELAY = globalconfig["period_time"]*60*1000 # milliseconds
 
   # define data files path
   APP_ROOT = os.path.dirname(os.path.abspath(__file__))
