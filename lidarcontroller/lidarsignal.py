@@ -6,7 +6,6 @@ from scipy import constants
 from scipy import integrate
 from scipy.interpolate import interp1d
 
-
 class lidarSignal:
   
   def __init__(self):
@@ -14,8 +13,8 @@ class lidarSignal:
     # raw signal
     self.__BIN_METERS = 7.5 # meters for each bin
     self.raw_signal=[]
-    self.range = []
     self.bin_long_trace=0
+    self.range = []
 
     # range correction
     self.bin_offset = 0
@@ -51,8 +50,13 @@ class lidarSignal:
   def loadSignal(self,signal):
     if len(signal)>0:
       signal = np.insert(signal,0,0) # set zero signal
+
+      # Load raw signal
       self.raw_signal = np.array(signal)
       self.bin_long_trace = len(self.raw_signal) 
+  
+      # Height range on bins
+      self.range = self.__BIN_METERS * np.arange(0,self.bin_long_trace,1)
 
   def offsetCorrection(self,bin_offset):
     if bin_offset > 0:
@@ -72,8 +76,6 @@ class lidarSignal:
     else:
       self.setThreshold(threshold_meters)
 
-    # Height range on bins
-    self.range = self.__BIN_METERS * np.arange(0,self.bin_long_trace,1)
     
     # bias calculation
     self.bias = np.mean(self.raw_signal[self.bin_threshold:])
