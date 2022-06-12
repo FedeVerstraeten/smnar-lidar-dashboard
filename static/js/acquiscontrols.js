@@ -79,3 +79,24 @@ $('#acq_stopbtn').on('click', function (e) {
     }
   });
 })
+
+$('#acq_oneshotbtn').on('click', function (e) {
+
+    $.ajax({
+     url: "/acquisdata",
+      type: "GET",
+      contentType: 'application/json;charset=UTF-8',
+      data: {
+        'selected': document.getElementById('acq_oneshotbtn').value
+
+      },
+      dataType:"json",
+      success: function (context) {
+        
+        // Raw signal plot
+        var graph_raw = JSON.parse(context.plot_multiple_lidar_signal);
+        Plotly.newPlot('plotly-lidar-signal', graph_raw);
+        
+      }
+   });
+})

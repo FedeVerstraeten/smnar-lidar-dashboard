@@ -89,7 +89,7 @@ def acquisition_mode():
     plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
 
     # load dict context
-    context = {"plot_lidar_signal": plot_lidar_signal,
+    context = {"plot_multiple_lidar_signal": plot_lidar_signal,
                "globalconfig" : globalconfig
               }
 
@@ -133,7 +133,7 @@ def licel_acquis_data():
                                   "WavelengthA" : acquis_ini[section]["WavelengthA"],
                                   "A-binsA" : acquis_ini[section]["A-binsA"]
                                   }
-  if(action_button =="start"):
+  if(action_button =="start" or action_button =="oneshot"):
     # open licel connection
     if lc.sock is None:
       lc.openConnection(LICEL_IP,LICEL_PORT)
