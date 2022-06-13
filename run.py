@@ -1,3 +1,5 @@
+#----------- LIBRARIES -----------
+
 import os
 import sys
 from flask import Flask, render_template, url_for, flash, redirect, request, make_response, jsonify, abort
@@ -6,6 +8,8 @@ import json
 import configparser
 import datetime
 
+#----------- CUSTOM LIBS -----------
+
 from utils import plotly_plot
 from utils import sounding
 from lidarcontroller.licelcontroller import licelController
@@ -13,16 +17,16 @@ from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
 
-#configuration
+#----------- FLASK CONFIG -----------
+
 app = Flask(__name__)
 app.config.from_object('config.Config')
 
-# global variables
+#----------- GLOBAL VARIABLES -----------
+
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 lidar = lidarSignal()
 lc = licelController()
-
-acquis_ini = configparser.ConfigParser()
-globalinfo_ini = configparser.ConfigParser()
 
 globalconfig = {
                   "ip" : '10.49.234.234',
@@ -48,7 +52,18 @@ globalconfig = {
                   "period_time" : 1 # min
                  }
 
-# Defining routes
+#----------- INI FILES -----------
+
+acquis_ini = configparser.ConfigParser()
+globalinfo_ini = configparser.ConfigParser()
+acquis_dir = os.path.join(APP_ROOT, 'inifiles','acquis.ini')
+globalinfo_dir = os.path.join(APP_ROOT, 'inifiles','globalinfo.ini')
+
+if os.path.exists(acquis_dir) and os.path.exists(globalinfo_dir):
+  acquis_ini.read(acquis_dir)
+  globalinfo_ini.read(globalinfo_dir)
+
+#----------- END-POINT ROUTES -----------
 
 @app.route("/")
 @app.route("/alignment")
@@ -108,7 +123,6 @@ def licel_acquis_data():
   PERIOD_DELAY = globalconfig["period_time"]*60*1000 # milliseconds
 
   # define data files path
-  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
   acquisdata_path = os.path.join(APP_ROOT, 'acquisdata')
 
    # create dir
@@ -148,6 +162,7 @@ def licel_acquis_data():
 
     # unselectTR
     lc.unselectTR()
+
     # select TR acording acquis list
     lc.selectTR(tr_list.strip())
     
@@ -158,8 +173,7 @@ def licel_acquis_data():
     lc.multipleStopAcquisition()
     
 
-    # adquirir por cada TR activo
-    # corregir en rango?
+    # acquisition for each active TR
     lidar_data_mv={}
     for tr in acquis_settings:
 
@@ -171,7 +185,6 @@ def licel_acquis_data():
                           }
 
     # dump data to local directory in JSON format
-
     filename = "lidar_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
     filepath = os.path.join(acquisdata_path,filename)
     with open(filepath,'w') as file:
@@ -209,7 +222,6 @@ def licel_record_data():
 
 
   if(action_button =="start" or action_button =="oneshot"):
-    #----------- LICEL ACQUISITION ---------------
 
     # initialization
     global lc
@@ -234,19 +246,19 @@ def licel_record_data():
     # close socket
     # lc.closeConnection()
 
-    #----------- RANGE CORRECTION ---------------
+    # range correction
     lidar.loadSignal(data_mv)
     lidar.offsetCorrection(OFFSET_BINS)
     lidar.rangeCorrection(THRESHOLD_METERS)
     lidar.smoothSignal(level = globalconfig["smooth_level"])
 
-    #----------- RAYLEIGH-FIT ------------------
+    # Rayleigh-fit
     lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"])
     lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"])
     lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
     lidar.overlapFitting()
 
-    #-------------- PLOTING --------------------
+    # plotting
     plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
     plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar,globalconfig["rc_limits_init"],globalconfig["rc_limits_final"])
     plot_lidar_rms = plot_lidar_rms =  plotly_plot.plotly_empty_signal("rms")
@@ -267,7 +279,6 @@ def licel_record_data():
     data=[]
     response = make_response(json.dumps(data))
     response.content_type = 'application/json'
-    print(response)
     return response
 
 @app.route("/licelcontrols", methods=['GET','POST'])
@@ -463,7 +474,6 @@ def laser_controls():
     
   response = make_response(json.dumps(data))
   response.content_type = 'application/json'
-  print(response)
   
   return response
 
@@ -476,37 +486,35 @@ def allowed_file(filename):
 def load_ini_files():
 
   # define ini files path
-  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
   target = os.path.join(APP_ROOT, 'inifiles')
 
   # create dir
   if not os.path.isdir(target):
     os.mkdir(target)
 
-  # remove old files
+  # request from frontend
   acquis_file=request.files.get("acquisini")
   globalinfo_file=request.files.get("globalinfoini")
 
   if acquis_file and globalinfo_file:
     
-    # Remove old files
+    # remove old files
     if os.path.exists(target):
       for file in os.listdir(target):
         os.remove(os.path.join(target,file))
-        print(file)
     else:
       print("Can not delete the file as it doesn't exists")
 
     # load ini files
     if acquis_file and allowed_file(acquis_file.filename):
-      filename = secure_filename(acquis_file.filename)
-      destination = os.path.join(target, acquis_file.filename)
+      filename = secure_filename('acquis.ini')
+      destination = os.path.join(target,'acquis.ini')
       acquis_file.save(destination)
       acquis_ini.read(destination)
 
     if globalinfo_file and allowed_file(globalinfo_file.filename):
-      filename = secure_filename(globalinfo_file.filename)
-      destination = os.path.join(target, globalinfo_file.filename)
+      filename = secure_filename('globalinfo.ini')
+      destination = os.path.join(target,'globalinfo.ini')
       globalinfo_file.save(destination)
       globalinfo_ini.read(destination)
 
@@ -560,6 +568,8 @@ def sounding_data():
             }
 
   return render_template('sounding.html',context=context)
+
+#----------- MAIN RUN -----------
 
 if __name__ == '__main__':
   app.run(debug=True)
