@@ -166,7 +166,7 @@ put your custom script or styling here
     </ul>
 </li>
 <!-- Rayleigh-Fit Menu -->
-<li class="nav-item has-treeview menu-close">
+<li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
         <i class="nav-icon fas fa-square-root-alt"></i>
         <p>
@@ -177,6 +177,39 @@ put your custom script or styling here
     <ul class="nav nav-treeview">
         <!-- Rayleigh-Fit controls -->
         <li class="nav-item">
+            <label for="rayleighfit-control">
+                <b style="color:white">Rayleigh-Fit range [meters]:</b>
+            </label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Initial</label>
+                    <input type="text" class="form-control" id="fit_init_input" placeholder="Initial">
+                </div>
+                <div class="col-sm-4 my-1">
+                    <label class="sr-only" for="inlineFormInputName">Final</label>
+                    <input type="text" class="form-control" id="fit_final_input" placeholder="Final">
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button>
+                </div>
+            </div>
+            <label for="wavelength-control">
+                <b style="color:white">Wavelength source:</b>
+            </label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Wavelength</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">nm</div>
+                        </div>
+                        <input type="text" class="form-control" id="wavelength_input" placeholder="Wavelength">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="wavelength_apply" value="wavelength">Apply</button>
+                </div>
+            </div>
             <label for="surface-conditions-control">
                 <b style="color:white">Surface conditions:</b>
             </label>
@@ -222,27 +255,11 @@ put your custom script or styling here
                     <button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button>
                 </div>
             </div>
-            <label for="rayleighfit-control">
-                <b style="color:white">Rayleigh-Fit range [meters]:</b>
-            </label>
-            <div class="form-row align-items-center">
-                <div class="col-sm-4 my-1">
-                    <label class="sr-only" for="inlineFormInputName">Initial</label>
-                    <input type="text" class="form-control" id="fit_init_input" placeholder="Initial">
-                </div>
-                <div class="col-sm-4 my-1">
-                    <label class="sr-only" for="inlineFormInputName">Final</label>
-                    <input type="text" class="form-control" id="fit_final_input" placeholder="Final">
-                </div>
-                <div class="col-sm-2 my-1">
-                    <button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button>
-                </div>
-            </div>
         </li>
     </ul>
 </li>
 <!-- Sounding Menu -->
-<li class="nav-item has-treeview menu-close">
+<li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
         <i class="nav-icon fas fa-satellite-dish"></i>
         <p>
@@ -429,6 +446,7 @@ put your custom script or styling here
             <!-- LiDAR signal with range correction plot-->
             <div id="plotly-lidar-range-correction"></div>
         </div>
+        <!-- <hr class="vertical" /> -->
         <div class="column">
             <!-- RMS error fitting plot-->
             <div id="plotly-lidar-rms"></div>
@@ -483,11 +501,12 @@ document.getElementById('raw_limits_final_input').value = globalconfig["raw_limi
 document.getElementById('smooth_level_input').value = globalconfig["smooth_level"];
 
 // Rayleigh-Fit controls
+document.getElementById('fit_init_input').value = globalconfig["fit_init"];
+document.getElementById('fit_final_input').value = globalconfig["fit_final"];
+document.getElementById('wavelength_input').value = globalconfig["wavelength"];
 document.getElementById('temperature_input').value = globalconfig["temperature"];
 document.getElementById('pressure_input').value = globalconfig["pressure"];
 document.getElementById('masl_input').value = globalconfig["masl"];
-document.getElementById('fit_init_input').value = globalconfig["fit_init"];
-document.getElementById('fit_final_input').value = globalconfig["fit_final"];
 
 // Laser controls
 document.getElementById('laser_port_input').value = globalconfig["laser_port"];

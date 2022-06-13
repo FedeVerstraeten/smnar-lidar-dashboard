@@ -39,7 +39,7 @@ MSW    = 2
 MEM_A = 0
 MEM_B = 1
 
-class licelcontroller:
+class licelController:
 
   # ATTRIBUTES:
 

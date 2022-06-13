@@ -73,22 +73,6 @@ put your custom script or styling here
     </a>
     <ul class="nav nav-treeview">
         <li class="nav-item">
-            <label for="rclimits">
-                <b style="color:white">Range corrected signal [meters]:</b>
-            </label>
-            <div class="form-row align-items-center">
-                <div class="col-sm-4 my-1">
-                    <label class="sr-only" for="inlineFormInputName">Initial</label>
-                    <input type="text" class="form-control" id="rc_limits_init_input" placeholder="Initial">
-                </div>
-                <div class="col-sm-4 my-1">
-                    <label class="sr-only" for="inlineFormInputName">Final</label>
-                    <input type="text" class="form-control" id="rc_limits_final_input" placeholder="Final">
-                </div>
-                <div class="col-sm-2 my-1">
-                    <button type="submit" class="btn btn-primary" id="rc_limits_apply" value="rc_limits">Apply</button>
-                </div>
-            </div>
             <div class="fform-row align-items-center">
                 <label for="rawlimits">
                     <b style="color:white">Raw signal [meters]:</b>
@@ -224,30 +208,13 @@ put your custom script or styling here
           </div>
       </div>
       <hr>
-      <div class="row">
-          <!-- LiDAR signal plot-->
-          <div class="chart" id="plotly-lidar-signal">
-          </div>
-      </div>
-      <hr>
-      <div class="row">
-          <!-- LiDAR signal plot-->
-          <div class="chart" id="plotly-lidar-signal">
-          </div>
-      </div>
-      <hr>
-      <div class="row">
-          <!-- LiDAR signal plot-->
-          <div class="chart" id="plotly-lidar-signal">
-          </div>
-      </div>
   </div>
 </div>
 
 <!-- Script to execute the Json ( we can create it also with looping) -->
 <script>
 //Parse your Json variable here
-var graphs = {{ context.plot_lidar_signal | safe }};
+var graphs = {{ context.plot_multiple_lidar_signal | safe }};
 Plotly.plot('plotly-lidar-signal', graphs, {});
 </script>
 
@@ -261,8 +228,6 @@ document.getElementById('period_time_input').value = globalconfig["period_time"]
 
 
 // Plots limits
-document.getElementById('rc_limits_init_input').value = globalconfig["rc_limits_init"];
-document.getElementById('rc_limits_final_input').value = globalconfig["rc_limits_final"];
 document.getElementById('raw_limits_init_input').value = globalconfig["raw_limits_init"];
 document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
 

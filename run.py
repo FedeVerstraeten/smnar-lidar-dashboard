@@ -1,3 +1,5 @@
+#----------- LIBRARIES -----------
+
 import os
 import sys
 from flask import Flask, render_template, url_for, flash, redirect, request, make_response, jsonify, abort
@@ -6,23 +8,25 @@ import json
 import configparser
 import datetime
 
+#----------- CUSTOM LIBS -----------
+
 from utils import plotly_plot
 from utils import sounding
-from lidarcontroller.licelcontroller import licelcontroller
+from lidarcontroller.licelcontroller import licelController
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
 
-#configuration
+#----------- FLASK CONFIG -----------
+
 app = Flask(__name__)
 app.config.from_object('config.Config')
 
-# global variables
-lidar = lidarSignal()
-lc = licelcontroller()
+#----------- GLOBAL VARIABLES -----------
 
-acquis_ini = configparser.ConfigParser()
-globalinfo_ini = configparser.ConfigParser()
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+lidar = lidarSignal()
+lc = licelController()
 
 globalconfig = {
                   "ip" : '10.49.234.234',
@@ -45,10 +49,21 @@ globalconfig = {
                   "raw_limits_final" : 30000, # m
                   "smooth_level" : 5,
                   "laser_port" : 'COM3',
-                  "pediod_time" : 1 # min
+                  "period_time" : 1 # min
                  }
 
-# Defining routes
+#----------- INI FILES -----------
+
+acquis_ini = configparser.ConfigParser()
+globalinfo_ini = configparser.ConfigParser()
+acquis_dir = os.path.join(APP_ROOT, 'inifiles','acquis.ini')
+globalinfo_dir = os.path.join(APP_ROOT, 'inifiles','globalinfo.ini')
+
+if os.path.exists(acquis_dir) and os.path.exists(globalinfo_dir):
+  acquis_ini.read(acquis_dir)
+  globalinfo_ini.read(globalinfo_dir)
+
+#----------- END-POINT ROUTES -----------
 
 @app.route("/")
 @app.route("/alignment")
@@ -89,8 +104,7 @@ def acquisition_mode():
     plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
 
     # load dict context
-    context = {"plot_lidar_signal": plot_lidar_signal,
-               "plot_lidar_range_correction": plot_lidar_range_correction,
+    context = {"plot_multiple_lidar_signal": plot_lidar_signal,
                "globalconfig" : globalconfig
               }
 
@@ -106,10 +120,9 @@ def licel_acquis_data():
   LICEL_IP = globalconfig["ip"]
   LICEL_PORT = globalconfig["port"]
   SHOTS_DELAY = globalconfig["acq_time"]*1000 # milliseconds
-  PERIOD_DELAY = globalconfig["pediod_time"]*60*1000 # milliseconds
+  PERIOD_DELAY = globalconfig["period_time"]*60*1000 # milliseconds
 
   # define data files path
-  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
   acquisdata_path = os.path.join(APP_ROOT, 'acquisdata')
 
    # create dir
@@ -134,7 +147,7 @@ def licel_acquis_data():
                                   "WavelengthA" : acquis_ini[section]["WavelengthA"],
                                   "A-binsA" : acquis_ini[section]["A-binsA"]
                                   }
-  if(action_button =="start"):
+  if(action_button =="start" or action_button =="oneshot"):
     # open licel connection
     if lc.sock is None:
       lc.openConnection(LICEL_IP,LICEL_PORT)
@@ -149,6 +162,7 @@ def licel_acquis_data():
 
     # unselectTR
     lc.unselectTR()
+
     # select TR acording acquis list
     lc.selectTR(tr_list.strip())
     
@@ -159,45 +173,34 @@ def licel_acquis_data():
     lc.multipleStopAcquisition()
     
 
-    # adquirir por cada TR activo
-    # corregir en rango?
-    acquis_data_mv={}
+    # acquisition for each active TR
+    lidar_data_mv={}
     for tr in acquis_settings:
 
       data_mv = lc.getAnalogSignalmV(tr,int(acquis_settings[tr]["A-binsA"]),"A",licelsettings.MILLIVOLT500)
-      acquis_data_mv[tr]={ 
+      lidar_data_mv[tr]={ 
                             "timestamp" : datetime.datetime.now().isoformat(),
                             "bins"      : acquis_settings[tr]["A-binsA"],
                             "data_mv"   : data_mv.tolist()
                           }
 
-    # almacenar temporalmente o netCDF?
-
+    # dump data to local directory in JSON format
     filename = "lidar_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
     filepath = os.path.join(acquisdata_path,filename)
     with open(filepath,'w') as file:
-      file.write(json.dumps(acquis_data_mv))
+      file.write(json.dumps(lidar_data_mv))
 
+    # Plotting
+    plot_multiple_lidar_signal = plotly_plot.plot_multiple_lidar_signal(lidar_data_mv,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
 
     context = {
-    #            "number_bins": lidar.bin_long_trace,
-    #            "plot_lidar_signal": plot_lidar_signal,
-    #            "plot_lidar_range_correction": plot_lidar_range_correction,
-    #            "plot_lidar_rms": plot_lidar_rms,
+                 "plot_multiple_lidar_signal": plot_multiple_lidar_signal,
                  "shots_delay": SHOTS_DELAY,
                  "period_delay": PERIOD_DELAY
-    #            "rms_error" : lidar.rms_err
               }
  
     # # run html template
     return context
-
-    # response = make_response(json.dumps(acquis_data_mv))
-    # response.content_type = 'application/json'
-    # return response
-
-    # graficar solo las señales corregidas en rango para cada TR
-    # no fiteo, no rms, no raw
 
   if(action_button =="stop"):
     data=[]
@@ -219,7 +222,6 @@ def licel_record_data():
 
 
   if(action_button =="start" or action_button =="oneshot"):
-    #----------- LICEL ACQUISITION ---------------
 
     # initialization
     global lc
@@ -244,19 +246,19 @@ def licel_record_data():
     # close socket
     # lc.closeConnection()
 
-    #----------- RANGE CORRECTION ---------------
+    # range correction
     lidar.loadSignal(data_mv)
     lidar.offsetCorrection(OFFSET_BINS)
     lidar.rangeCorrection(THRESHOLD_METERS)
     lidar.smoothSignal(level = globalconfig["smooth_level"])
 
-    #----------- RAYLEIGH-FIT ------------------
-    lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"]) # optional?
-    lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"]) # optional?
+    # Rayleigh-fit
+    lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"])
+    lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"])
     lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
     lidar.overlapFitting()
 
-    #-------------- PLOTING --------------------
+    # plotting
     plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
     plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar,globalconfig["rc_limits_init"],globalconfig["rc_limits_final"])
     plot_lidar_rms = plot_lidar_rms =  plotly_plot.plotly_empty_signal("rms")
@@ -275,10 +277,8 @@ def licel_record_data():
   
   if(action_button =="stop"):
     data=[]
-    lidar.resetAlignmentFactorRef()
     response = make_response(json.dumps(data))
     response.content_type = 'application/json'
-    print(response)
     return response
 
 @app.route("/licelcontrols", methods=['GET','POST'])
@@ -333,6 +333,21 @@ def licel_controls():
     else:
       globalconfig["max_bins"] = MAX_BINS
 
+   # Period time on Acquisition Mode
+  if(field_selected == "period_time" and data_input.isdigit()):
+    MAX_PERIOD_TIME = 60 # 1 hour
+    MIN_PERIOD_TIME = 1 # 1 min
+   
+
+    if(int(data_input)*60 <= globalconfig["acq_time"]):
+      globalconfig["period_time"] = round(globalconfig["acq_time"]/60 + MIN_PERIOD_TIME)
+    elif(int(data_input) > MAX_PERIOD_TIME):
+      globalconfig["period_time"] = MAX_PERIOD_TIME
+    elif(int(data_input) <= MIN_PERIOD_TIME):
+      globalconfig["period_time"] = MIN_PERIOD_TIME
+    else:
+      globalconfig["period_time"] = int(data_input)
+
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'
   return response
@@ -345,7 +360,7 @@ def rayleighfit_controls():
   ZERO_KELVIN = 273.15
 
   # Temperature
-  if(field_selected == "temperature" and (data_input.replace('.','',1).isdigit() or data_input.replace('-','',1).isdigit())):
+  if(field_selected == "temperature" and data_input.replace('.','',1).replace('-','',1).isdigit()):
     if float(data_input) + ZERO_KELVIN > 0:
       globalconfig[field_selected] = float(data_input)
   
@@ -356,6 +371,11 @@ def rayleighfit_controls():
 
   # MASL
   if(field_selected == "masl" and data_input.replace('.','',1).isdigit()):
+    if float(data_input) >= 0:
+      globalconfig[field_selected] = float(data_input)
+  
+  # Wavelength source
+  if(field_selected == "wavelength" and data_input.replace('.','',1).isdigit()):
     if float(data_input) >= 0:
       globalconfig[field_selected] = float(data_input)
   
@@ -454,7 +474,6 @@ def laser_controls():
     
   response = make_response(json.dumps(data))
   response.content_type = 'application/json'
-  print(response)
   
   return response
 
@@ -467,37 +486,35 @@ def allowed_file(filename):
 def load_ini_files():
 
   # define ini files path
-  APP_ROOT = os.path.dirname(os.path.abspath(__file__))
   target = os.path.join(APP_ROOT, 'inifiles')
 
   # create dir
   if not os.path.isdir(target):
     os.mkdir(target)
 
-  # remove old files
+  # request from frontend
   acquis_file=request.files.get("acquisini")
   globalinfo_file=request.files.get("globalinfoini")
 
   if acquis_file and globalinfo_file:
     
-    # Remove old files
+    # remove old files
     if os.path.exists(target):
       for file in os.listdir(target):
         os.remove(os.path.join(target,file))
-        print(file)
     else:
       print("Can not delete the file as it doesn't exists")
 
     # load ini files
     if acquis_file and allowed_file(acquis_file.filename):
-      filename = secure_filename(acquis_file.filename)
-      destination = os.path.join(target, acquis_file.filename)
+      filename = secure_filename('acquis.ini')
+      destination = os.path.join(target,'acquis.ini')
       acquis_file.save(destination)
       acquis_ini.read(destination)
 
     if globalinfo_file and allowed_file(globalinfo_file.filename):
-      filename = secure_filename(globalinfo_file.filename)
-      destination = os.path.join(target, globalinfo_file.filename)
+      filename = secure_filename('globalinfo.ini')
+      destination = os.path.join(target,'globalinfo.ini')
       globalinfo_file.save(destination)
       globalinfo_ini.read(destination)
 
@@ -551,6 +568,8 @@ def sounding_data():
             }
 
   return render_template('sounding.html',context=context)
+
+#----------- MAIN RUN -----------
 
 if __name__ == '__main__':
   app.run(debug=True)

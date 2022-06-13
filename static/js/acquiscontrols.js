@@ -13,15 +13,10 @@ function requestAcquisData() {
     dataType:"json",
     success: function (context) {
       
-      // // Raw signal plot
-      // var graph_raw = JSON.parse(context.plot_lidar_signal);
-      // Plotly.newPlot('plotly-lidar-signal', graph_raw);
+      // Raw signal plot
+      var graph_raw = JSON.parse(context.plot_multiple_lidar_signal);
+      Plotly.newPlot('plotly-lidar-signal', graph_raw);
       
-      // // Range corrected plot
-      // var graph_rc = JSON.parse(context.plot_lidar_range_correction);
-      // Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
-      
-      console.log(context);
     },
     cache: false
   });
@@ -83,4 +78,25 @@ $('#acq_stopbtn').on('click', function (e) {
       console.log("ACQ STOP success",acqinterval);
     }
   });
+})
+
+$('#acq_oneshotbtn').on('click', function (e) {
+
+    $.ajax({
+     url: "/acquisdata",
+      type: "GET",
+      contentType: 'application/json;charset=UTF-8',
+      data: {
+        'selected': document.getElementById('acq_oneshotbtn').value
+
+      },
+      dataType:"json",
+      success: function (context) {
+        
+        // Raw signal plot
+        var graph_raw = JSON.parse(context.plot_multiple_lidar_signal);
+        Plotly.newPlot('plotly-lidar-signal', graph_raw);
+        
+      }
+   });
 })
