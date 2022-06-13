@@ -5,8 +5,8 @@
 1. Basic necessaty commands
 
 ```
-docker build . -t <image_name>:<version>smnar-dashboard-lidar:v1
-docker run --detach --network host -p 5000:5001 smnar-dashboard-lidar:v0
+docker build . -t <image_name>:<image_version>
+docker run --detach --network host -p 5000:5001 <image_name>:<image_version>
 docker ps
 docker exec -it <container_id> bash
 docker logs <container_id>
