@@ -311,7 +311,7 @@ def plot_multiple_lidar_signal(lidar_data_mv,limit_init,limit_final):
     'yanchor': 'top'},
     paper_bgcolor="#ffffff",
     plot_bgcolor="#ffffff",
-    width=1200, height=500
+    width=1280, height=720
   )
 
   # Set axes titles
