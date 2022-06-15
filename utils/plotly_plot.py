@@ -17,18 +17,18 @@ def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
 
   df=pd.DataFrame({
                   'meters':lidar_signal.range[bin_init:bin_final],
-                  'TR0_500mV':lidar_signal.raw_signal[bin_init:bin_final],
+                  'raw_signal':lidar_signal.raw_signal[bin_init:bin_final],
                   })
   df.index=df['meters']
 
   fig = px.line(df, 
                 x=df.index, 
-                y=df['TR0_500mV'], 
+                y=df['raw_signal'], 
                 title='LiDAR raw signal')
   
   # Set axes titles
   fig.update_xaxes(rangeslider_visible=True,title_text="Height [m]")
-  fig.update_yaxes(title_text="TR0 Raw [mV]",)
+  fig.update_yaxes(title_text="Raw signal [mV]",)
 
   fig.update_layout(width=1200, height=500)
 
@@ -45,8 +45,8 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
 
   df=pd.DataFrame({
                   'meters':lidar_signal.range[bin_init:bin_final],
-                  'TR0_500mV':lidar_signal.rc_signal[bin_init:bin_final],
-                  'TR0_500mV_RF':lidar_signal.adj_factor*lidar_signal.pr2_mol[bin_init:bin_final]
+                  'range_corrected':lidar_signal.rc_signal[bin_init:bin_final],
+                  'mol_profile':lidar_signal.adj_factor*lidar_signal.pr2_mol[bin_init:bin_final]
                   })
   df.index=df['meters']
   fig = go.Figure()
@@ -57,9 +57,9 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
   fig.add_trace(
     go.Scatter(
         x=df.index,
-        y=df["TR0_500mV"],
+        y=df["range_corrected"],
         mode="lines",
-        name="TR0 500mV",
+        name="Range corrected",
         marker_color='#39ac39',
         opacity=1
     ),
@@ -69,9 +69,9 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
   fig.add_trace(
     go.Scatter(
         x=df.index,
-        y=df["TR0_500mV_RF"],
+        y=df["mol_profile"],
         mode="lines",
-        name="TR0 500mV RF",
+        name="Molecular profile",
         marker_color='#b23434',
         opacity=0.7
     ),
@@ -104,9 +104,9 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
   fig.update_xaxes(tickangle=45,title_text="Height [m]")
   
   # Set y-axes titles
-  fig.update_yaxes(title_text="TR0 RC [mV x m^2] ",
+  fig.update_yaxes(title_text="Range corrected signal [mV x m^2] ",
                    secondary_y=False, showgrid=False)
-  fig.update_yaxes(title_text="TR0 RC 500mV RF", tickangle=45,
+  fig.update_yaxes(title_text="Molecular profile", tickangle=45,
                    secondary_y=True, showgrid=False)
   
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -122,10 +122,10 @@ def plotly_empty_signal(signal_type):
   if signal_type == "raw":
     df = pd.DataFrame(empty_signal)
     df.reset_index(inplace=True)
-    df.columns=["bin","TR0_500mV"]
+    df.columns=["bin","raw_signal"]
     fig = px.line(df, 
                   x='bin', 
-                  y=['TR0_500mV'], 
+                  y=['raw_signal'], 
                   title='LiDAR raw signal')
     
     fig.update_xaxes(rangeslider_visible=True)
@@ -141,7 +141,7 @@ def plotly_empty_signal(signal_type):
           x=df['sample'],
           y=df["rms_error"],
           mode="lines",
-          name="RMS error",
+          name="Pearson correlation coefficient",
           # title="RMS TMS",
           marker_color='#b23434',
           opacity=1
@@ -151,7 +151,7 @@ def plotly_empty_signal(signal_type):
       width=640,
       height=480,
       title={
-        'text': '<span style="font-size: 20px;">RMS Error</span>',
+        'text': '<span style="font-size: 20px;">Pearson correlation coefficient</span>',
         'y': 0.97,
         'x': 0.45,
         'xanchor': 'center',
@@ -159,17 +159,17 @@ def plotly_empty_signal(signal_type):
       )
       
     # Set x-axes titles
-    fig.update_xaxes(title_text="Sample",rangeslider_visible=False)
+    fig.update_xaxes(title_text="Datetime",rangeslider_visible=False)
 
     # Set y-axes titles
-    fig.update_yaxes(title_text="Error",showgrid=True)
+    fig.update_yaxes(title_text="Correlation",showgrid=True)
     
     plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
   elif signal_type == "rangecorrected":
     df = pd.DataFrame(empty_signal)
     df.reset_index(inplace=True)
-    df.columns=["bin","TR0_500mV"]
+    df.columns=["bin","range_corrected"]
     df.index=df['bin']
     fig = go.Figure()
     fig = make_subplots() # rayleigh-fit secondary curve?
@@ -179,9 +179,9 @@ def plotly_empty_signal(signal_type):
     fig.add_trace(
       go.Scatter(
           x=df.index,
-          y=df["TR0_500mV"],
+          y=df["range_corrected"],
           mode="lines",
-          name="TR0 500mV",
+          name="Range corrected",
           marker_color='#39ac39',
           opacity=1
       ),
@@ -211,7 +211,7 @@ def plotly_empty_signal(signal_type):
     fig.update_xaxes(tickangle=45,title_text="Height [m]")
   
     # Set y-axes titles
-    fig.update_yaxes(title_text="TR0 500mV",
+    fig.update_yaxes(title_text="Range corrected signal [mV x m^2]",
                      secondary_y=False, showgrid=False)
     
     plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -228,7 +228,7 @@ def plotly_lidar_rms(lidar_rms):
         x=df['sample'],
         y=df["rms_error"],
         mode="lines",
-        name="RMS error",
+        name="Pearson correlation coefficient",
         # title="RMS TMS",
         marker_color='#b23434',
         opacity=1
@@ -238,7 +238,7 @@ def plotly_lidar_rms(lidar_rms):
     width=640,
     height=480,
     title={
-      'text': '<span style="font-size: 20px;">RMS Error</span>',
+      'text': '<span style="font-size: 20px;">Pearson correlation coefficient</span>',
       'y': 0.97,
       'x': 0.45,
       'xanchor': 'center',
@@ -246,10 +246,10 @@ def plotly_lidar_rms(lidar_rms):
     )
     
   # Set x-axes titles
-  fig.update_xaxes(title_text="Sample",rangeslider_visible=False)
+  fig.update_xaxes(title_text="Datetime",rangeslider_visible=False)
 
   # Set y-axes titles
-  fig.update_yaxes(title_text="Error",showgrid=True)
+  fig.update_yaxes(title_text="Correlation",showgrid=True)
   
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
   

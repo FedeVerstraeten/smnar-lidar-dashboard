@@ -12,7 +12,7 @@ function requestPlots() {
     },
     dataType:"json",
     success: function (context) {
-      
+  
       // Raw signal plot
       var graph_raw = JSON.parse(context.plot_lidar_signal);
       Plotly.newPlot('plotly-lidar-signal', graph_raw);
@@ -34,7 +34,10 @@ function requestPlots() {
       var minuteView = {
         xaxis: {
             type: 'date',
-            range: [olderTime,futureTime]
+            range: [olderTime,futureTime],
+            title:{
+              text: "Datetime [hh:mm:ss]"
+            }
           }
         };
 
@@ -70,7 +73,22 @@ $('#startbtn').on('click', function (e) {
           line: {color: '#b23434'}
         }]
 
-        Plotly.newPlot('plotly-lidar-rms',initial_data);
+        var layout = {
+          title: "Pearson correlation coefficient",
+          xaxis: {
+            title:{
+              text: "Datetime [hh:mm:ss]"
+            }
+          },
+          yaxis: {
+            title:{
+              text: "Correlation [\u03C1]"
+            }
+          },
+          showlegend: false
+        };
+
+        Plotly.newPlot('plotly-lidar-rms',initial_data, layout);
         var delay_ms = context.shots_delay + DELTA_TIME_MS;
 
         if (!interval) {
