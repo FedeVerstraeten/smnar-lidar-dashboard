@@ -37,7 +37,7 @@ def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
   return plot_json
 
 
-def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
+def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final,wavelength):
 
   # meters to bins
   bin_init = int(limit_init/7.5)
@@ -59,7 +59,7 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
         x=df.index,
         y=df["range_corrected"],
         mode="lines",
-        name="Range corrected",
+        name="Range corrected " + str(wavelength) + " nm",
         marker_color='#39ac39',
         opacity=1
     ),
@@ -71,7 +71,7 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final):
         x=df.index,
         y=df["mol_profile"],
         mode="lines",
-        name="Molecular profile",
+        name="Molecular profile " + str(wavelength) + " nm",
         marker_color='#b23434',
         opacity=0.7
     ),
