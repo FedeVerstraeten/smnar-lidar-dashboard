@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 import json
 import configparser
 import datetime
+import numpy as np
 
 #----------- CUSTOM LIBS -----------
 
@@ -62,6 +63,11 @@ globalinfo_dir = os.path.join(APP_ROOT, 'inifiles','globalinfo.ini')
 if os.path.exists(acquis_dir) and os.path.exists(globalinfo_dir):
   acquis_ini.read(acquis_dir)
   globalinfo_ini.read(globalinfo_dir)
+
+#----------- LIDAR SIMULATION -----------
+simul_path = os.path.join(APP_ROOT, 'simul')
+laser_simul = "OFF"
+
 
 #----------- END-POINT ROUTES -----------
 
@@ -228,20 +234,35 @@ def licel_record_data():
     tr=globalconfig["channel"]
 
     # TODO mejorar esto
-    if lc.sock is None:
-      lc.openConnection(LICEL_IP,LICEL_PORT)
+    # if lc.sock is None:
+    #   lc.openConnection(LICEL_IP,LICEL_PORT)
 
-    lc.selectTR(tr)
-    lc.setInputRange(licelsettings.MILLIVOLT500)
+    # lc.selectTR(tr)
+    # lc.setInputRange(licelsettings.MILLIVOLT500)
    
-    # start the acquisition
-    lc.clearMemory()
-    lc.startAcquisition()
-    lc.msDelay(SHOTS_DELAY)
-    lc.stopAcquisition() 
+    # # start the acquisition
+    # lc.clearMemory()
+    # lc.startAcquisition()
+    # lc.msDelay(SHOTS_DELAY)
+    # lc.stopAcquisition() 
 
-    # get signall in mV
-    data_mv = lc.getAnalogSignalmV(tr,BIN_LONG_TRANCE,"A",licelsettings.MILLIVOLT500)
+    # # get signall in mV
+    # data_mv = lc.getAnalogSignalmV(tr,BIN_LONG_TRANCE,"A",licelsettings.MILLIVOLT500)
+
+    # ------------------------------------------------------------------
+    # LIDAR DATA SIMULATION
+    # ------------------------------------------------------------------
+    simul_file="lidar_simul_" + str(np.random.randint(0,10)) + ".json"
+
+    with open(os.path.join(simul_path,simul_file),'r') as json_file:
+      lidar_data_file = json.load(json_file)
+
+    print(laser_simul)
+    if lidar_data_file and laser_simul=="ON":
+      data_mv = lidar_data_file[str(tr)]["data_mv"]
+    else:
+      data_mv = np.zeros(BIN_LONG_TRANCE)
+    # ------------------------------------------------------------------
 
     # close socket
     # lc.closeConnection()
@@ -450,6 +471,8 @@ def tcpip_connection():
 @app.route("/laser",methods=['GET','POST'])
 def laser_controls():
   
+  global laser_simul
+  
   action_button = request.args['selected']
   serial_port = request.args['input']
   data = ""
@@ -459,18 +482,20 @@ def laser_controls():
       globalconfig["laser_port"] = serial_port
 
     if(action_button =="laser_start"):
-        laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
-        laser.connect()
-        laser.startLaser()
-        laser.disconnect()
-        data ="Laser START"
+        # laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
+        # laser.connect()
+        # laser.startLaser()
+        # laser.disconnect()
+        # data ="Laser START"
+        laser_simul="ON"
       
     if(action_button =="laser_stop"):
-      laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
-      laser.connect()
-      laser.stopLaser()
-      laser.disconnect()
-      data="Laser STOP"
+      # laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
+      # laser.connect()
+      # laser.stopLaser()
+      # laser.disconnect()
+      # data="Laser STOP"
+      laser_simul="OFF"
     
   response = make_response(json.dumps(data))
   response.content_type = 'application/json'
