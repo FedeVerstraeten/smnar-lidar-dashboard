@@ -33,7 +33,7 @@ globalconfig = {
                   "ip" : '10.49.234.234',
                   "port" : 2055,
                   "channel" : 0,
-                  "acq_time" : 10,      # 10s = 300shots/30Hz(laser)
+                  "acq_time" : 1,      # 10s = 300shots/30Hz(laser)
                   "bin_offset" : 10,    # bin (default)
                   "max_bins" : 4000,    # bin
                   "bias_init" : 22500,  # m (3000 bins)
@@ -257,7 +257,6 @@ def licel_record_data():
     with open(os.path.join(simul_path,simul_file),'r') as json_file:
       lidar_data_file = json.load(json_file)
 
-    print(laser_simul)
     if lidar_data_file and laser_simul=="ON":
       data_mv = lidar_data_file[str(tr)]["data_mv"]
     else:
@@ -472,7 +471,7 @@ def tcpip_connection():
 def laser_controls():
   
   global laser_simul
-  
+
   action_button = request.args['selected']
   serial_port = request.args['input']
   data = ""
