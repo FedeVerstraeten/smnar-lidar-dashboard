@@ -252,8 +252,8 @@ def licel_record_data():
     # ------------------------------------------------------------------
     # LIDAR DATA SIMULATION
     # ------------------------------------------------------------------
-    simul_file="lidar_simul_" + str(np.random.randint(0,10)) + ".json"
-
+    simul_file="lidar_simul_" + str(np.random.randint(0,33)) + ".json"
+    print(simul_file)
     with open(os.path.join(simul_path,simul_file),'r') as json_file:
       lidar_data_file = json.load(json_file)
 
@@ -596,4 +596,5 @@ def sounding_data():
 #----------- MAIN RUN -----------
 
 if __name__ == '__main__':
-  app.run(debug=True)
+  # app.run(debug=True)
+  app.run(debug=False)
