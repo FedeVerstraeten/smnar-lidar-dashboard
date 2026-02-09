@@ -49,7 +49,10 @@ globalconfig = {
                   "raw_limits_final" : 30000, # m
                   "smooth_level" : 5,
                   "laser_port" : 'COM3',
-                  "period_time" : 1 # min
+                  "period_time" : 1, # min
+                  "motor_port" : 'COM4',
+                  "motor_resolution" : 0.1, # mrad
+                  "motor_step" : 10 # mrad
                  }
 
 #----------- INI FILES -----------
@@ -568,6 +571,54 @@ def sounding_data():
             }
 
   return render_template('sounding.html',context=context)
+
+@app.route('/motor', methods=['GET','POST'])
+def motor_controls():
+  action_button = request.args['selected']
+  data_input = request.args['input']
+
+  # Serial port
+  if action_button == "motor_port" and data_input:
+    if(data_input != globalconfig["motor_port"]):  
+      globalconfig["motor_port"] = data_input
+
+  # Motor resolution
+  valid_resolutions = ["1","0.1","0.01"]  # mrad
+  if action_button == "motor_resolution" and data_input in valid_resolutions:
+    if(data_input != str(globalconfig["motor_resolution"])):
+      globalconfig["motor_resolution"] = float(data_input)
+  else:
+    print("Invalid motor resolution input: " + data_input + ". Valid options are: " + ", ".join(valid_resolutions))
+ 
+
+  # Motor step
+  if action_button == "motor_step" and data_input.isdigit():
+    if(int(data_input) > 0):
+      globalconfig["motor_step"] = int(data_input)
+    else:
+      print("Invalid motor step input: " + data_input + ". Step must be a positive integer.")
+
+  # Motor movements
+  if(action_button == "motor_left"):
+    print("Motor move LEFT command received.")
+  if(action_button == "motor_right"):
+    print("Motor move RIGHT command received.")
+  if(action_button == "motor_up"):
+    print("Motor move UP command received.")
+  if(action_button == "motor_down"):
+    print("Motor move DOWN command received.")
+  if(action_button == "motor_stop"):
+    print("Motor STOP command received.")
+
+  # Motor home
+  if(action_button == "motor_gethome"):
+    print("Motor to HOME.")
+  if(action_button == "motor_sethome"):
+    print("Motor set HOME position.")
+
+  response = make_response(json.dumps(globalconfig))
+  response.content_type = 'application/json'
+  return response
 
 #----------- MAIN RUN -----------
 
