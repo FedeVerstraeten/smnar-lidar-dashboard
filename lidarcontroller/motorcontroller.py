@@ -11,10 +11,11 @@ GCODES = {
     "abs": "G90",
     "inc": "G91",
     "feed": "F{f:.2f}",
-    "move_lin": "G1 X{x:.4f} Y{y:.4f}",
+    "move_lin": "G1 X{x:.4f} Y{y:.4f} Z{z:.4f}",
     "move_x": "G1 X{x:.4f}",
     "move_y": "G1 Y{y:.4f}",
-    "set_zero": "G92 X0 Y0",
+    "move_z": "G1 Z{z:.4f}",
+    "set_zero": "G92 X0 Y0 Z0",
 }
 
 class MotorController:
@@ -58,10 +59,37 @@ class MotorController:
         self.send(GCODES["inc"])
         self.send(GCODES["feed"].format(f=feed_mm_min))
 
-    def jog(self, dx: float = 0.0, dy: float = 0.0):
+    def jog(self, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0):
         # Movimiento incremental (G91 ya seteado)
-        cmd = GCODES["move_lin"].format(x=dx, y=dy)
+        cmd = GCODES["move_lin"].format(x=dx, y=dy, z=dz)
         return self.send(cmd)
+    
+    def set_zero(self):
+        return self.send(GCODES["set_zero"])
+    
+    def move_to(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+        # Movimiento absoluto (G90)
+        self.send(GCODES["abs"])
+        cmd = GCODES["move_lin"].format(x=x, y=y, z=z)
+        return self.send(cmd)
+    
+    def move_x(self, x: float):
+        self.send(GCODES["abs"])
+        cmd = GCODES["move_x"].format(x=x)
+        return self.send(cmd)
+    
+    def move_y(self, y: float):
+        self.send(GCODES["abs"])
+        cmd = GCODES["move_y"].format(y=y)
+        return self.send(cmd)
+    
+    def move_z(self, z: float):
+        self.send(GCODES["abs"])
+        cmd = GCODES["move_z"].format(z=z)
+        return self.send(cmd)
+    
+    def close(self):
+        self.ser.close()
 
 if __name__ == "__main__":
     # Windows: "COM5"

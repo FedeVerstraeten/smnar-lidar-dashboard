@@ -16,6 +16,7 @@ from lidarcontroller.licelcontroller import licelController
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
+from lidarcontroller.motorcontroller import MotorController
 
 #----------- FLASK CONFIG -----------
 
@@ -599,16 +600,37 @@ def motor_controls():
       print("Invalid motor step input: " + data_input + ". Step must be a positive integer.")
 
   # Motor movements
+  # Left -> -X, Right -> +X, Up -> +Y, Down -> -Y
   if(action_button == "motor_left"):
     print("Motor move LEFT command received.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=100.0)
+    motor.jog(dx=-globalconfig["motor_step"], dy=0.0, dz=0.0)  # Move X negative for left
+    motor.close()
+
   if(action_button == "motor_right"):
     print("Motor move RIGHT command received.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=100.0)
+    motor.jog(dx=globalconfig["motor_step"], dy=0.0, dz=0.0)  # Move X positive for right
+    motor.close()
+
   if(action_button == "motor_up"):
     print("Motor move UP command received.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=100.0)
+    motor.jog(dx=0.0, dy=globalconfig["motor_step"], dz=0.0)  # Move Y positive for up
+    motor.close()
   if(action_button == "motor_down"):
     print("Motor move DOWN command received.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=100.0)
+    motor.jog(dx=0.0, dy=-globalconfig["motor_step"], dz=0.0)  # Move Y negative for down
+    motor.close()
   if(action_button == "motor_stop"):
     print("Motor STOP command received.")
+    # Note: Implementing an emergency stop would depend on 
+    # the specific motor controller's capabilities and commands.
 
   # Motor home
   if(action_button == "motor_gethome"):
