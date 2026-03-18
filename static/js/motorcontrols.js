@@ -57,7 +57,7 @@ $('#motor_left_btn').on('click', function (e) {
     type: "GET",
     contentType: 'application/json;charset=UTF-8',
     data: {
-      'selected': document.getElementById('motor_resolution_apply').value,
+      'selected': document.getElementById('motor_left_btn').value,
       'input': 'left'
     },
     dataType:"json",

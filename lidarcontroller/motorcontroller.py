@@ -94,17 +94,21 @@ class MotorController:
 if __name__ == "__main__":
     # Windows: "COM5"
     # Linux/RPi: "/dev/ttyUSB0" o "/dev/ttyACM0"
-    PORT = "COM5"
+    PORT = "/dev/ttyUSB0"
 
     grbl = MotorController(PORT)
     grbl.init_incremental(feed_mm_min=80.0)
 
     print("Estado:", grbl.status())
 
-    # Prueba: mover en cruz (0.2 mm)
-    grbl.jog(dx=+0.2); print("X+ 0.2")
-    grbl.jog(dx=-0.2); print("X- 0.2")
-    grbl.jog(dy=+0.2); print("Y+ 0.2")
-    grbl.jog(dy=-0.2); print("Y- 0.2")
+    # Prueba: mover en cruz (1 mm)
+    grbl.jog(dx=+1); print("X+ 1")
+    time.sleep(1)
+    grbl.jog(dx=-1); print("X- 1")
+    time.sleep(1)
+    grbl.jog(dy=+1); print("Y+ 1")
+    time.sleep(1)
+    grbl.jog(dy=-1); print("Y- 1")
+    time.sleep(1)
 
     print("Listo. Estado:", grbl.status())

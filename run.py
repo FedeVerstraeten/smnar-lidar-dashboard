@@ -53,7 +53,7 @@ globalconfig = {
                   "period_time" : 1, # min
                   "motor_port" : 'COM4',
                   "motor_resolution" : 0.1, # mrad
-                  "motor_step" : 10 # mrad
+                  "motor_steps" : 10 # mrad
                  }
 
 #----------- INI FILES -----------
@@ -578,6 +578,8 @@ def motor_controls():
   action_button = request.args['selected']
   data_input = request.args['input']
 
+  print("Motor control action: " + action_button + ", input: " + data_input)
+
   # Serial port
   if action_button == "motor_port" and data_input:
     if(data_input != globalconfig["motor_port"]):  
@@ -585,17 +587,17 @@ def motor_controls():
 
   # Motor resolution
   valid_resolutions = ["1","0.1","0.01"]  # mrad
+
   if action_button == "motor_resolution" and data_input in valid_resolutions:
     if(data_input != str(globalconfig["motor_resolution"])):
       globalconfig["motor_resolution"] = float(data_input)
-  else:
-    print("Invalid motor resolution input: " + data_input + ". Valid options are: " + ", ".join(valid_resolutions))
+    else:
+      print("Invalid motor resolution input: " + data_input + ". Valid options are: " + ", ".join(valid_resolutions))
  
-
   # Motor step
-  if action_button == "motor_step" and data_input.isdigit():
+  if action_button == "motor_steps" and data_input.isdigit():
     if(int(data_input) > 0):
-      globalconfig["motor_step"] = int(data_input)
+      globalconfig["motor_steps"] = int(data_input)
     else:
       print("Invalid motor step input: " + data_input + ". Step must be a positive integer.")
 
@@ -605,27 +607,27 @@ def motor_controls():
     print("Motor move LEFT command received.")
     motor = MotorController(port=globalconfig["motor_port"])
     motor.init_incremental(feed_mm_min=100.0)
-    motor.jog(dx=-globalconfig["motor_step"], dy=0.0, dz=0.0)  # Move X negative for left
+    motor.jog(dx=-globalconfig["motor_steps"], dy=0.0, dz=0.0)  # Move X negative for left
     motor.close()
 
   if(action_button == "motor_right"):
     print("Motor move RIGHT command received.")
     motor = MotorController(port=globalconfig["motor_port"])
     motor.init_incremental(feed_mm_min=100.0)
-    motor.jog(dx=globalconfig["motor_step"], dy=0.0, dz=0.0)  # Move X positive for right
+    motor.jog(dx=globalconfig["motor_steps"], dy=0.0, dz=0.0)  # Move X positive for right
     motor.close()
 
   if(action_button == "motor_up"):
     print("Motor move UP command received.")
     motor = MotorController(port=globalconfig["motor_port"])
     motor.init_incremental(feed_mm_min=100.0)
-    motor.jog(dx=0.0, dy=globalconfig["motor_step"], dz=0.0)  # Move Y positive for up
+    motor.jog(dx=0.0, dy=globalconfig["motor_steps"], dz=0.0)  # Move Y positive for up
     motor.close()
   if(action_button == "motor_down"):
     print("Motor move DOWN command received.")
     motor = MotorController(port=globalconfig["motor_port"])
     motor.init_incremental(feed_mm_min=100.0)
-    motor.jog(dx=0.0, dy=-globalconfig["motor_step"], dz=0.0)  # Move Y negative for down
+    motor.jog(dx=0.0, dy=-globalconfig["motor_steps"], dz=0.0)  # Move Y negative for down
     motor.close()
   if(action_button == "motor_stop"):
     print("Motor STOP command received.")
