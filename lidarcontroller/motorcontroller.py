@@ -59,11 +59,6 @@ class MotorController:
         self.send(GCODES["inc"])
         self.send(GCODES["feed"].format(f=feed_mm_min))
 
-    def jog(self, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0):
-        # Movimiento incremental (G91 ya seteado)
-        cmd = GCODES["move_lin"].format(x=dx, y=dy, z=dz)
-        return self.send(cmd)
-    
     def set_zero(self):
         return self.send(GCODES["set_zero"])
     
@@ -90,6 +85,44 @@ class MotorController:
     
     def close(self):
         self.ser.close()
+
+    # MODO AUTOMÁTICO (G1)
+    # Movimiento incremental determinístico (bloqueante)
+    def move_relative(self, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0, feed: float = 80.0):
+        self.send(GCODES["inc"])
+        self.send(GCODES["feed"].format(f=feed))
+
+        cmd = "G1"
+        if dx != 0.0:
+            cmd += f" X{dx:.4f}"
+        if dy != 0.0:
+            cmd += f" Y{dy:.4f}"
+        if dz != 0.0:
+            cmd += f" Z{dz:.4f}"
+
+        return self.send(cmd)
+    
+    # MODO MANUAL (JOG - TIEMPO REAL)
+    # Movimiento tipo joystick (no bloqueante)
+    def jog(self, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0, feed: float = 80.0):
+        cmd = "$J=G91"
+
+        if dx != 0.0:
+            cmd += f" X{dx:.4f}"
+        if dy != 0.0:
+            cmd += f" Y{dy:.4f}"
+        if dz != 0.0:
+            cmd += f" Z{dz:.4f}"
+
+        cmd += f" F{feed:.2f}"
+
+        self.ser.write((cmd + "\n").encode())
+        self.ser.flush()
+
+    # Cancela movimiento jog inmediatamente (GRBL real-time command)
+    def jog_cancel(self):
+        self.ser.write(b'\x85')
+        self.ser.flush()
 
 if __name__ == "__main__":
     # Windows: "COM5"

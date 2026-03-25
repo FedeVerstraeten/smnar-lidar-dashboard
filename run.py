@@ -52,8 +52,8 @@ globalconfig = {
                   "laser_port" : 'COM3',
                   "period_time" : 1, # min
                   "motor_port" : 'COM4',
-                  "motor_resolution" : 0.1, # mrad
-                  "motor_steps" : 10 # mrad
+                  "motor_resolution" : 0.1,
+                  "motor_steps" : 10
                  }
 
 #----------- INI FILES -----------
@@ -586,10 +586,10 @@ def motor_controls():
       globalconfig["motor_port"] = data_input
 
   # Motor resolution
-  valid_resolutions = ["1","0.1","0.01"]  # mrad
+  valid_resolutions = ["1","0.1","0.01"]  # mm
 
-  if action_button == "motor_resolution" and data_input in valid_resolutions:
-    if(data_input != str(globalconfig["motor_resolution"])):
+  if action_button == "motor_resolution":
+    if(data_input in valid_resolutions):
       globalconfig["motor_resolution"] = float(data_input)
     else:
       print("Invalid motor resolution input: " + data_input + ". Valid options are: " + ", ".join(valid_resolutions))
@@ -607,38 +607,54 @@ def motor_controls():
     print("Motor move LEFT command received.")
     motor = MotorController(port=globalconfig["motor_port"])
     motor.init_incremental(feed_mm_min=100.0)
-    motor.jog(dx=-globalconfig["motor_steps"], dy=0.0, dz=0.0)  # Move X negative for left
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=-steps_to_mm, dy=0.0, dz=0.0)  # Move X negative for left
     motor.close()
 
   if(action_button == "motor_right"):
     print("Motor move RIGHT command received.")
     motor = MotorController(port=globalconfig["motor_port"])
     motor.init_incremental(feed_mm_min=100.0)
-    motor.jog(dx=globalconfig["motor_steps"], dy=0.0, dz=0.0)  # Move X positive for right
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=steps_to_mm, dy=0.0, dz=0.0)  # Move X positive for right
     motor.close()
 
   if(action_button == "motor_up"):
     print("Motor move UP command received.")
     motor = MotorController(port=globalconfig["motor_port"])
     motor.init_incremental(feed_mm_min=100.0)
-    motor.jog(dx=0.0, dy=globalconfig["motor_steps"], dz=0.0)  # Move Y positive for up
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=0.0, dy=steps_to_mm  , dz=0.0)  # Move Y positive for up
     motor.close()
+
   if(action_button == "motor_down"):
     print("Motor move DOWN command received.")
     motor = MotorController(port=globalconfig["motor_port"])
     motor.init_incremental(feed_mm_min=100.0)
-    motor.jog(dx=0.0, dy=-globalconfig["motor_steps"], dz=0.0)  # Move Y negative for down
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=0.0, dy=-steps_to_mm, dz=0.0)  # Move Y negative for down
     motor.close()
+
   if(action_button == "motor_stop"):
     print("Motor STOP command received.")
-    # Note: Implementing an emergency stop would depend on 
-    # the specific motor controller's capabilities and commands.
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.jog_cancel()  # Send jog cancel command to stop any ongoing movement
+    motor.close()
 
   # Motor home
   if(action_button == "motor_gethome"):
     print("Motor to HOME.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=100.0)
+    motor.move_to(x=5.0, y=5.0, z=5.0)  # Move to home position (0,0,0)
+    motor.close()
+
   if(action_button == "motor_sethome"):
     print("Motor set HOME position.")
+    motor = MotorController(port=globalconfig["motor_port"])  
+    motor.init_incremental(feed_mm_min=100.0)
+    motor.set_zero()  # Set current position as home
+    motor.close()
 
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'
