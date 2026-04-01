@@ -16,6 +16,7 @@ from lidarcontroller.licelcontroller import licelController
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
+from lidarcontroller.motorcontroller import MotorController
 
 #----------- FLASK CONFIG -----------
 
@@ -49,7 +50,11 @@ globalconfig = {
                   "raw_limits_final" : 30000, # m
                   "smooth_level" : 5,
                   "laser_port" : 'COM3',
-                  "period_time" : 1 # min
+                  "period_time" : 1, # min
+                  "motor_port" : 'COM4',
+                  "motor_resolution" : 0.1,
+                  "motor_steps" : 10,
+                  "motor_feed_rate" : 50
                  }
 
 #----------- INI FILES -----------
@@ -568,6 +573,100 @@ def sounding_data():
             }
 
   return render_template('sounding.html',context=context)
+
+@app.route('/motor', methods=['GET','POST'])
+def motor_controls():
+  action_button = request.args['selected']
+  data_input = request.args['input']
+
+  print("Motor control action: " + action_button + ", input: " + data_input)
+
+  # Serial port
+  if(action_button == "motor_port" and data_input):
+    if(data_input != globalconfig["motor_port"]):  
+      globalconfig["motor_port"] = data_input
+
+  # Motor resolution
+  valid_resolutions = ["1","0.1","0.01"]  # mm
+
+  if(action_button == "motor_resolution"):
+    if(data_input in valid_resolutions):
+      globalconfig["motor_resolution"] = float(data_input)
+    else:
+      print("Invalid motor resolution input: " + data_input + ". Valid options are: " + ", ".join(valid_resolutions))
+ 
+  # Motor step
+  if(action_button == "motor_steps" and data_input.isdigit()):
+    if(int(data_input) > 0):
+      globalconfig["motor_steps"] = int(data_input)
+    else:
+      print("Invalid motor step input: " + data_input + ". Step must be a positive integer.")
+
+  # Motor feed rate
+  if(action_button == "motor_feed_rate" and data_input.replace('.','',1).isdigit()):
+    if float(data_input) > 0:
+      globalconfig["motor_feed_rate"] = float(data_input)
+    else:
+      print("Invalid motor feed rate input: " + data_input + ". Feed rate must be a positive number.")
+
+  # Motor movements
+  # Left -> -X, Right -> +X, Up -> +Y, Down -> -Y
+  if(action_button == "motor_left"):
+    print("Motor move LEFT command received.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=globalconfig["motor_feed_rate"])
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"]
+    motor.jog(dx=-steps_to_mm, dy=0.0, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move X negative for left
+    motor.close()
+
+  if(action_button == "motor_right"):
+    print("Motor move RIGHT command received.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=globalconfig["motor_feed_rate"])
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=steps_to_mm, dy=0.0, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move X positive for right
+    motor.close()
+
+  if(action_button == "motor_up"):
+    print("Motor move UP command received.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=globalconfig["motor_feed_rate"])
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=0.0, dy=steps_to_mm  , dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move Y positive for up
+    motor.close()
+
+  if(action_button == "motor_down"):
+    print("Motor move DOWN command received.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=globalconfig["motor_feed_rate"])
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=0.0, dy=-steps_to_mm, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move Y negative for down
+    motor.close()
+
+  if(action_button == "motor_stop"):
+    print("Motor STOP command received.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.jog_cancel()  # Send jog cancel command to stop any ongoing movement
+    motor.close()
+
+  # Motor home
+  if(action_button == "motor_gethome"):
+    print("Motor to HOME.")
+    motor = MotorController(port=globalconfig["motor_port"])
+    motor.init_incremental(feed_mm_min=100.0)
+    motor.move_to(x=5.0, y=5.0, z=5.0)  # Move to home position (0,0,0)
+    motor.close()
+
+  if(action_button == "motor_sethome"):
+    print("Motor set HOME position.")
+    motor = MotorController(port=globalconfig["motor_port"])  
+    motor.init_incremental(feed_mm_min=100.0)
+    motor.set_zero()  # Set current position as home
+    motor.close()
+
+  response = make_response(json.dumps(globalconfig))
+  response.content_type = 'application/json'
+  return response
 
 #----------- MAIN RUN -----------
 

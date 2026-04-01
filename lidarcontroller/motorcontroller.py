@@ -1,0 +1,150 @@
+# Stepper motors control for LiDAR rotation using GRBL commands. 
+# This module handles motor configuration and command generation 
+# based on user input from the dashboard.
+
+import time
+import serial
+
+GCODES = {
+    "unlock": "$X",
+    "mm": "G21",
+    "abs": "G90",
+    "inc": "G91",
+    "feed": "F{f:.2f}",
+    "move_lin": "G1 X{x:.4f} Y{y:.4f} Z{z:.4f}",
+    "move_x": "G1 X{x:.4f}",
+    "move_y": "G1 Y{y:.4f}",
+    "move_z": "G1 Z{z:.4f}",
+    "set_zero": "G92 X0 Y0 Z0",
+}
+
+class MotorController:
+    def __init__(self, port: str, baud: int = 115200, timeout: float = 2.0):
+        self.ser = serial.Serial(port, baudrate=baud, timeout=timeout)
+        time.sleep(2.0)  # reset típico al abrir puerto en Arduino
+        self._wake()
+
+    def _wake(self):
+        self.ser.write(b"\r\n\r\n")
+        time.sleep(0.3)
+        self.ser.reset_input_buffer()
+
+    def _readline(self) -> str:
+        return self.ser.readline().decode(errors="ignore").strip()
+
+    def send(self, line: str) -> list[str]:
+        """Envía una línea y espera ok/error. Devuelve el log recibido."""
+        self.ser.write((line.strip() + "\n").encode())
+        self.ser.flush()
+        out = []
+        while True:
+            r = self._readline()
+            if not r:
+                continue
+            out.append(r)
+            rl = r.lower()
+            if rl.startswith("ok") or rl.startswith("error"):
+                break
+        return out
+
+    def status(self) -> str:
+        self.ser.write(b"?")
+        self.ser.flush()
+        return self._readline()
+
+    def init_incremental(self, feed_mm_min: float = 50.0):
+        # Unlock + mm + incremental + feed
+        self.send(GCODES["unlock"])
+        self.send(GCODES["mm"])
+        self.send(GCODES["inc"])
+        self.send(GCODES["feed"].format(f=feed_mm_min))
+
+    def set_zero(self):
+        return self.send(GCODES["set_zero"])
+    
+    def move_to(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+        # Movimiento absoluto (G90)
+        self.send(GCODES["abs"])
+        cmd = GCODES["move_lin"].format(x=x, y=y, z=z)
+        return self.send(cmd)
+    
+    def move_x(self, x: float):
+        self.send(GCODES["abs"])
+        cmd = GCODES["move_x"].format(x=x)
+        return self.send(cmd)
+    
+    def move_y(self, y: float):
+        self.send(GCODES["abs"])
+        cmd = GCODES["move_y"].format(y=y)
+        return self.send(cmd)
+    
+    def move_z(self, z: float):
+        self.send(GCODES["abs"])
+        cmd = GCODES["move_z"].format(z=z)
+        return self.send(cmd)
+    
+    def close(self):
+        self.ser.close()
+
+    # MODO AUTOMÁTICO (G1)
+    # Movimiento incremental determinístico (bloqueante)
+    def move_relative(self, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0, feed: float = 80.0):
+        self.send(GCODES["inc"])
+        self.send(GCODES["feed"].format(f=feed))
+
+        cmd = "G1"
+        if dx != 0.0:
+            cmd += f" X{dx:.4f}"
+        if dy != 0.0:
+            cmd += f" Y{dy:.4f}"
+        if dz != 0.0:
+            cmd += f" Z{dz:.4f}"
+
+        return self.send(cmd)
+    
+    # MODO MANUAL (JOG - TIEMPO REAL)
+    # Movimiento tipo joystick (no bloqueante)
+    def jog(self, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0, feed: float = 80.0):
+        cmd = "$J=G91"
+
+        if dx != 0.0:
+            cmd += f" X{dx:.4f}"
+        if dy != 0.0:
+            cmd += f" Y{dy:.4f}"
+        if dz != 0.0:
+            cmd += f" Z{dz:.4f}"
+
+        cmd += f" F{feed:.2f}"
+
+        self.ser.write((cmd + "\n").encode())
+        self.ser.flush()
+
+    # Cancela movimiento jog inmediatamente (GRBL real-time command)
+    def jog_cancel(self):
+        self.ser.write(b'\x85')
+        self.ser.flush()
+
+    def feed_rate(self, feed: float):
+        self.send(GCODES["feed"].format(f=feed))
+
+if __name__ == "__main__":
+    # Windows: "COM5"
+    # Linux/RPi: "/dev/ttyUSB0" o "/dev/ttyACM0"
+    PORT = "/dev/ttyUSB0"
+
+    grbl = MotorController(PORT)
+    grbl.init_incremental(feed_mm_min=80.0)
+
+    print("Estado:", grbl.status())
+
+    # Prueba: mover en cruz (1 mm)
+    grbl.jog(dx=+1); print("X+ 1")
+    time.sleep(1)
+    grbl.jog(dx=-1); print("X- 1")
+    time.sleep(1)
+    grbl.jog(dy=+1); print("Y+ 1")
+    time.sleep(1)
+    grbl.jog(dy=-1); print("Y- 1")
+    time.sleep(1)
+
+    print("Listo. Estado:", grbl.status())
