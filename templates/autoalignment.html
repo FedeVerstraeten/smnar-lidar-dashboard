@@ -305,7 +305,7 @@
         </div>
         <div class="col-md-6">
             <div class="card autoalign-card">
-                <div class="card-header"><b>Laser spot in telescope FOV (guide)</b></div>
+                <div class="card-header"><b>Laser spot in telescope FOV (guide heatmap)</b></div>
                 <div class="card-body"><div id="plotly-spot-polar" class="plot-host"></div></div>
             </div>
         </div>
@@ -319,10 +319,13 @@ var standardMargins = {t: 28, r: 24, b: 48, l: 56};
 
 Plotly.newPlot('plotly-lidar-range-correction', correctedGraph, {autosize: true, margin: standardMargins}, plotlyConfig);
 
+var signalGraph = {{ context.plot_lidar_signal | safe }};
+Plotly.newPlot('plotly-lidar-signal', signalGraph, {autosize: true, margin: standardMargins}, plotlyConfig);
+
 var xGrid = [-2, -1, 0, 1, 2];
 var yGrid = [-2, -1, 0, 1, 2];
 var zGrid = yGrid.map(function() { return xGrid.map(function() { return null; }); });
-var rawHeatmap = [{
+var fovHeatmap = [{
     type: 'heatmap',
     x: xGrid,
     y: yGrid,
@@ -332,14 +335,14 @@ var rawHeatmap = [{
     zmax: 1,
     colorbar: {title: 'Pearson r'}
 }];
-var rawHeatmapLayout = {
+var fovHeatmapLayout = {
     title: 'X/Y scan grid (Pearson map)',
     margin: {t: 38, r: 24, b: 48, l: 56},
     xaxis: {title: 'Motor X position', scaleanchor: 'y', scaleratio: 1},
     yaxis: {title: 'Motor Y position'},
     autosize: true
 };
-Plotly.newPlot('plotly-lidar-signal', rawHeatmap, rawHeatmapLayout, plotlyConfig);
+Plotly.newPlot('plotly-spot-polar', fovHeatmap, fovHeatmapLayout, plotlyConfig);
 
 var pearsonTrace = [{
     x: [],
@@ -355,29 +358,6 @@ var pearsonLayout = {
 };
 Plotly.newPlot('plotly-pearson', pearsonTrace, pearsonLayout, plotlyConfig);
 
-var polarGuide = [{
-    type: 'scatterpolar',
-    r: [1],
-    theta: [45],
-    mode: 'markers',
-    marker: {size: 13, color: '#dc3545', symbol: 'x'},
-    name: 'Laser spot'
-}];
-var polarLayout = {
-    margin: {t: 20, r: 20, b: 20, l: 20},
-    polar: {
-        radialaxis: {visible: true, range: [0, 5]},
-        angularaxis: {
-            direction: 'clockwise',
-            rotation: 90,
-            tickmode: 'array',
-            tickvals: [0, 90, 180, 270],
-            ticktext: ['UP', 'RIGHT', 'DOWN', 'LEFT']
-        }
-    },
-    showlegend: false
-};
-Plotly.newPlot('plotly-spot-polar', polarGuide, polarLayout, plotlyConfig);
 
 function resizeAutoalignPlots() {
     ['plotly-lidar-signal', 'plotly-lidar-range-correction', 'plotly-pearson', 'plotly-spot-polar'].forEach(function(id) {
