@@ -54,7 +54,10 @@ globalconfig = {
                   "motor_port" : 'COM4',
                   "motor_resolution" : 0.1,
                   "motor_steps" : 10,
-                  "motor_feed_rate" : 50
+                  "motor_feed_rate" : 50,
+                  "corr_range_init" : 5000,
+                  "corr_range_final" : 10000,
+                  "grid_min_resolution" : 0.1
                  }
 
 #----------- INI FILES -----------

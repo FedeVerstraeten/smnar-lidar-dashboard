@@ -35,10 +35,20 @@
         height: 34vh;
     }
 
+    .plot-host-square {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        min-height: 320px;
+    }
+
     @media (max-width: 992px) {
         .plot-host {
             min-height: 260px;
             height: 36vh;
+        }
+
+        .plot-host-square {
+            min-height: 280px;
         }
     }
 </style>
@@ -222,6 +232,23 @@
                     </div>
                 </div>
             </div>
+            <label><b style="color:white">Correlation range [m]:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="corr_range_init_input" placeholder="Initial"></div>
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="corr_range_final_input" placeholder="Final"></div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="corr_range_apply" value="corr_range">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">Δ grid</div></div>
+                        <input type="text" class="form-control" id="grid_min_resolution_input" placeholder="Min resolution between points">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="grid_min_resolution_apply" value="grid_min_resolution">Apply</button></div>
+            </div>
+            <small style="color:#ced4da;">Se requiere una resolución mínima entre puntos consecutivos para muestreo en grilla X/Y.</small>
+            <br>
             <button type="button" class="btn btn-outline-success btn-sm" id="autoalign_start_btn" value="autoalign_start">START AUTOALIGN</button>
             <button type="button" class="btn btn-outline-danger btn-sm" id="autoalign_stop_btn" value="autoalign_stop">STOP</button>
         </li>
@@ -258,7 +285,7 @@
         <div class="col-md-6">
             <div class="card autoalign-card">
                 <div class="card-header"><b>Range corrected LiDAR signal</b></div>
-                <div class="card-body"><div id="plotly-lidar-range-correction" class="plot-host"></div></div>
+                <div class="card-body"><div id="plotly-lidar-range-correction" class="plot-host-square"></div></div>
             </div>
         </div>
         <div class="col-md-6">
@@ -273,7 +300,7 @@
         <div class="col-md-6">
             <div class="card autoalign-card">
                 <div class="card-header"><b>Raw LiDAR signal</b></div>
-                <div class="card-body"><div id="plotly-lidar-signal" class="plot-host"></div></div>
+                <div class="card-body"><div id="plotly-lidar-signal" class="plot-host-square"></div></div>
             </div>
         </div>
         <div class="col-md-6">
@@ -286,13 +313,33 @@
 </div>
 
 <script>
-var signalGraph = {{ context.plot_lidar_signal | safe }};
 var correctedGraph = {{ context.plot_lidar_range_correction | safe }};
 var plotlyConfig = {responsive: true, displaylogo: false};
 var standardMargins = {t: 28, r: 24, b: 48, l: 56};
 
-Plotly.newPlot('plotly-lidar-signal', signalGraph, {autosize: true, margin: standardMargins}, plotlyConfig);
 Plotly.newPlot('plotly-lidar-range-correction', correctedGraph, {autosize: true, margin: standardMargins}, plotlyConfig);
+
+var xGrid = [-2, -1, 0, 1, 2];
+var yGrid = [-2, -1, 0, 1, 2];
+var zGrid = yGrid.map(function() { return xGrid.map(function() { return null; }); });
+var rawHeatmap = [{
+    type: 'heatmap',
+    x: xGrid,
+    y: yGrid,
+    z: zGrid,
+    colorscale: 'Viridis',
+    zmin: -1,
+    zmax: 1,
+    colorbar: {title: 'Pearson r'}
+}];
+var rawHeatmapLayout = {
+    title: 'X/Y scan grid (Pearson map)',
+    margin: {t: 38, r: 24, b: 48, l: 56},
+    xaxis: {title: 'Motor X position', scaleanchor: 'y', scaleratio: 1},
+    yaxis: {title: 'Motor Y position'},
+    autosize: true
+};
+Plotly.newPlot('plotly-lidar-signal', rawHeatmap, rawHeatmapLayout, plotlyConfig);
 
 var pearsonTrace = [{
     x: [],
@@ -368,5 +415,8 @@ document.getElementById('raw_limits_init_input').value = globalconfig["raw_limit
 document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
 document.getElementById('pearson_target_input').value = "0.98";
 document.getElementById('max_iter_input').value = "25";
+document.getElementById('corr_range_init_input').value = globalconfig["corr_range_init"];
+document.getElementById('corr_range_final_input').value = globalconfig["corr_range_final"];
+document.getElementById('grid_min_resolution_input').value = globalconfig["grid_min_resolution"];
 </script>
 {% endblock my_content %}
