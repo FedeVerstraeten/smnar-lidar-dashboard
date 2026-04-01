@@ -49,6 +49,22 @@ $('#motor_steps_apply').on('click', function (e) {
   });
 })
 
+$('#motor_feed_rate_apply').on('click', function (e) {
+  $.ajax({
+    url: "/motor",
+    type: "GET",
+    contentType: 'application/json;charset=UTF-8',
+    data: {
+      'selected': document.getElementById('motor_feed_rate_apply').value,
+      'input': document.getElementById('motor_feed_rate_input').value
+    },
+    dataType:"json",
+    success: function (data) {
+      console.log("MOTOR FEED RATE APPLY");
+    }
+  });
+})
+
 // Motors movements
 // Left
 $('#motor_left_btn').on('click', function (e) {

@@ -485,6 +485,20 @@ put your custom script or styling here
                     <button type="submit" class="btn btn-primary" id="motor_steps_apply" value="motor_steps">Apply</button> 
                 </div>
             </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="inlineFormInputGroup">Feed rate</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Feed rate</div>
+                        </div>
+                        <input type="text" class="form-control " id="motor_feed_rate_input" placeholder="Feed rate">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="motor_feed_rate_apply" value="motor_feed_rate">Apply</button> 
+                </div>
+            </div>
             <label for="motor-control">
                 <b style="color:white; padding-right: 15px;">Motor movements:</b>
             </label>
@@ -605,6 +619,7 @@ document.getElementById('laser_port_input').value = globalconfig["laser_port"];
 document.getElementById('motor_port_input').value = globalconfig["motor_port"];
 document.getElementById('motor_resolution_input').value = globalconfig["motor_resolution"];
 document.getElementById('motor_steps_input').value = globalconfig["motor_steps"];
+document.getElementById('motor_feed_rate_input').value = globalconfig["motor_feed_rate"];
 </script>
 
 {% endblock my_content %}

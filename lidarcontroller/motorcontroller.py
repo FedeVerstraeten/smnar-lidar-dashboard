@@ -124,6 +124,9 @@ class MotorController:
         self.ser.write(b'\x85')
         self.ser.flush()
 
+    def feed_rate(self, feed: float):
+        self.send(GCODES["feed"].format(f=feed))
+
 if __name__ == "__main__":
     # Windows: "COM5"
     # Linux/RPi: "/dev/ttyUSB0" o "/dev/ttyACM0"
