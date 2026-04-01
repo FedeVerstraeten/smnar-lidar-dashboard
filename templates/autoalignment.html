@@ -28,6 +28,19 @@
         font-weight: 700;
         font-size: 1.1rem;
     }
+
+    .plot-host {
+        width: 100%;
+        min-height: 300px;
+        height: 34vh;
+    }
+
+    @media (max-width: 992px) {
+        .plot-host {
+            min-height: 260px;
+            height: 36vh;
+        }
+    }
 </style>
 {% endblock script %}
 
@@ -245,13 +258,13 @@
         <div class="col-md-6">
             <div class="card autoalign-card">
                 <div class="card-header"><b>Range corrected LiDAR signal</b></div>
-                <div class="card-body"><div id="plotly-lidar-range-correction"></div></div>
+                <div class="card-body"><div id="plotly-lidar-range-correction" class="plot-host"></div></div>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card autoalign-card">
                 <div class="card-header"><b>Pearson coefficient evolution</b></div>
-                <div class="card-body"><div id="plotly-pearson"></div></div>
+                <div class="card-body"><div id="plotly-pearson" class="plot-host"></div></div>
             </div>
         </div>
     </div>
@@ -260,13 +273,13 @@
         <div class="col-md-6">
             <div class="card autoalign-card">
                 <div class="card-header"><b>Raw LiDAR signal</b></div>
-                <div class="card-body"><div id="plotly-lidar-signal"></div></div>
+                <div class="card-body"><div id="plotly-lidar-signal" class="plot-host"></div></div>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card autoalign-card">
                 <div class="card-header"><b>Laser spot in telescope FOV (guide)</b></div>
-                <div class="card-body"><div id="plotly-spot-polar"></div></div>
+                <div class="card-body"><div id="plotly-spot-polar" class="plot-host"></div></div>
             </div>
         </div>
     </div>
@@ -274,10 +287,12 @@
 
 <script>
 var signalGraph = {{ context.plot_lidar_signal | safe }};
-Plotly.plot('plotly-lidar-signal', signalGraph, {});
-
 var correctedGraph = {{ context.plot_lidar_range_correction | safe }};
-Plotly.plot('plotly-lidar-range-correction', correctedGraph, {});
+var plotlyConfig = {responsive: true, displaylogo: false};
+var standardMargins = {t: 28, r: 24, b: 48, l: 56};
+
+Plotly.newPlot('plotly-lidar-signal', signalGraph, {autosize: true, margin: standardMargins}, plotlyConfig);
+Plotly.newPlot('plotly-lidar-range-correction', correctedGraph, {autosize: true, margin: standardMargins}, plotlyConfig);
 
 var pearsonTrace = [{
     x: [],
@@ -291,7 +306,7 @@ var pearsonLayout = {
     yaxis: {title: 'r', range: [-1, 1]},
     xaxis: {title: 'Iteration'}
 };
-Plotly.newPlot('plotly-pearson', pearsonTrace, pearsonLayout);
+Plotly.newPlot('plotly-pearson', pearsonTrace, pearsonLayout, plotlyConfig);
 
 var polarGuide = [{
     type: 'scatterpolar',
@@ -315,7 +330,26 @@ var polarLayout = {
     },
     showlegend: false
 };
-Plotly.newPlot('plotly-spot-polar', polarGuide, polarLayout);
+Plotly.newPlot('plotly-spot-polar', polarGuide, polarLayout, plotlyConfig);
+
+function resizeAutoalignPlots() {
+    ['plotly-lidar-signal', 'plotly-lidar-range-correction', 'plotly-pearson', 'plotly-spot-polar'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) {
+            Plotly.Plots.resize(el);
+        }
+    });
+}
+
+window.addEventListener('resize', resizeAutoalignPlots);
+setTimeout(resizeAutoalignPlots, 150);
+
+// Also refresh plot sizes after sidebar collapse/expand transitions
+document.addEventListener('click', function(event) {
+    if (event.target.closest('[data-widget="pushmenu"]')) {
+        setTimeout(resizeAutoalignPlots, 350);
+    }
+});
 </script>
 
 <script>
