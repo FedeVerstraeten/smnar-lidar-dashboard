@@ -1,0 +1,338 @@
+{% extends "layout.html" %}
+{% block script %}
+<style>
+    .autoalign-card .card-header {
+        padding: .5rem .75rem;
+    }
+
+    .autoalign-summary {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .75rem;
+    }
+
+    .summary-box {
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+        padding: .5rem .75rem;
+        background: #fff;
+    }
+
+    .summary-box .label {
+        display: block;
+        color: #6c757d;
+        font-size: .8rem;
+    }
+
+    .summary-box .value {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+</style>
+{% endblock script %}
+
+{% block mode %}
+<a class="d-block">
+    <i class="nav-icon fas fa-angle-right"></i>
+    <b>Autoalignment</b> Mode
+</a>
+{% endblock mode %}
+
+{% block sidebar %}
+<!-- Licel controls -->
+<li class="nav-item has-treeview menu-open">
+    <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-desktop"></i>
+        <p>Licel controls<i class="right fas fa-angle-left"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">Ch</div></div>
+                        <input type="text" class="form-control" id="channel_input" placeholder="Channel">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="channel_apply" value="channel">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">Sec</div></div>
+                        <input type="text" class="form-control" id="acq_time_input" placeholder="Acq. Time">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="acq_time_apply" value="acq_time">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">Bin</div></div>
+                        <input type="text" class="form-control" id="bin_offset_input" placeholder="Bin offset">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="bin_offset_apply" value="bin_offset">Apply</button></div>
+            </div>
+        </li>
+        <li class="nav-item">
+            <button type="button" class="btn btn-outline-success btn-sm" id="startbtn" value="start">START</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="stopbtn" value="stop">STOP</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="oneshotbtn" value="oneshot">SINGLE SHOT</button>
+        </li>
+    </ul>
+</li>
+
+<!-- Plot controls -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-chart-line"></i>
+        <p>Plots controls<i class="right fas fa-angle-left"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <label><b style="color:white">Range corrected [m]:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="rc_limits_init_input" placeholder="Initial"></div>
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="rc_limits_final_input" placeholder="Final"></div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="rc_limits_apply" value="rc_limits">Apply</button></div>
+            </div>
+            <label><b style="color:white">Raw signal [m]:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="raw_limits_init_input" placeholder="Initial"></div>
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="raw_limits_final_input" placeholder="Final"></div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="raw_limits_apply" value="raw_limits">Apply</button></div>
+            </div>
+        </li>
+    </ul>
+</li>
+
+<!-- Laser controls -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-atom"></i>
+        <p>Laser controls<i class="right fas fa-angle-left"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-sm-7 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">></div></div>
+                        <input type="text" class="form-control" id="laser_port_input" placeholder="Serial port">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="button" class="btn btn-outline-success btn-sm" id="laser_startbtn" value="laser_start">ON</button></div>
+                <div class="col-sm-2 my-1"><button type="button" class="btn btn-outline-danger btn-sm" id="laser_stopbtn" value="laser_stop">OFF</button></div>
+            </div>
+        </li>
+    </ul>
+</li>
+
+<!-- Motor controls -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-cogs"></i>
+        <p>Motor PAP controls<i class="right fas fa-angle-left"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group"><div class="input-group-prepend"><div class="input-group-text">></div></div>
+                        <input type="text" class="form-control" id="motor_port_input" placeholder="Serial port"></div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="motor_port_apply" value="motor_port">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group"><div class="input-group-prepend"><div class="input-group-text">Step size</div></div>
+                        <input type="text" class="form-control" id="motor_resolution_input" placeholder="Resolution"></div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="motor_resolution_apply" value="motor_resolution">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group"><div class="input-group-prepend"><div class="input-group-text">N° steps</div></div>
+                        <input type="text" class="form-control" id="motor_steps_input" placeholder="Steps"></div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="motor_steps_apply" value="motor_steps">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group"><div class="input-group-prepend"><div class="input-group-text">Feed rate</div></div>
+                        <input type="text" class="form-control" id="motor_feed_rate_input" placeholder="Feed rate"></div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="motor_feed_rate_apply" value="motor_feed_rate">Apply</button></div>
+            </div>
+            <label><b style="color:white; padding-right: 15px;">Motor movements:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-10 my-1">
+                    <button type="button" class="btn btn-light" id="motor_left_btn" value="motor_left" title="Left"><i class="fas fa-arrow-left"></i></button>
+                    <button type="button" class="btn btn-light" id="motor_right_btn" value="motor_right" title="Right"><i class="fas fa-arrow-right"></i></button>
+                    <button type="button" class="btn btn-light" id="motor_up_btn" value="motor_up" title="Up"><i class="fas fa-arrow-up"></i></button>
+                    <button type="button" class="btn btn-light" id="motor_down_btn" value="motor_down" title="Down"><i class="fas fa-arrow-down"></i></button>
+                    <button type="button" class="btn btn-danger" id="motor_stop_btn" value="motor_stop" title="Stop"><i class="fas fa-stop"></i></button>
+                </div>
+            </div>
+            <div class="form-row align-items-center mt-1">
+                <div class="col-sm-10 my-1">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="motor_gethome_btn" value="motor_gethome"><i class="fas fa-home"></i> To Home</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="motor_sethome_btn" value="motor_sethome"><i class="fas fa-location-arrow"></i> Set Home</button>
+                </div>
+            </div>
+        </li>
+    </ul>
+</li>
+
+<!-- Autoalignment controls -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link ">
+        <i class="nav-icon fas fa-crosshairs"></i>
+        <p>Autoalignment setup<i class="right fas fa-angle-left"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">r*</div></div>
+                        <input type="text" class="form-control" id="pearson_target_input" placeholder="Target Pearson">
+                    </div>
+                </div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">N</div></div>
+                        <input type="text" class="form-control" id="max_iter_input" placeholder="Max iterations">
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline-success btn-sm" id="autoalign_start_btn" value="autoalign_start">START AUTOALIGN</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="autoalign_stop_btn" value="autoalign_stop">STOP</button>
+        </li>
+    </ul>
+</li>
+{% endblock sidebar %}
+
+{% block my_content %}
+<div class="container-fluid pt-2">
+    <div class="row mb-2">
+        <div class="col-md-6">
+            <div class="autoalign-summary">
+                <div class="summary-box">
+                    <span class="label">Pearson actual</span>
+                    <span class="value" id="pearson_current_value">--</span>
+                </div>
+                <div class="summary-box">
+                    <span class="label">Mejor Pearson</span>
+                    <span class="value" id="pearson_best_value">--</span>
+                </div>
+                <div class="summary-box">
+                    <span class="label">Posición X (left/right)</span>
+                    <span class="value" id="motor_x_value">0</span>
+                </div>
+                <div class="summary-box">
+                    <span class="label">Posición Y (up/down)</span>
+                    <span class="value" id="motor_y_value">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card autoalign-card">
+                <div class="card-header"><b>Range corrected LiDAR signal</b></div>
+                <div class="card-body"><div id="plotly-lidar-range-correction"></div></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card autoalign-card">
+                <div class="card-header"><b>Pearson coefficient evolution</b></div>
+                <div class="card-body"><div id="plotly-pearson"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card autoalign-card">
+                <div class="card-header"><b>Raw LiDAR signal</b></div>
+                <div class="card-body"><div id="plotly-lidar-signal"></div></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card autoalign-card">
+                <div class="card-header"><b>Laser spot in telescope FOV (guide)</b></div>
+                <div class="card-body"><div id="plotly-spot-polar"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var signalGraph = {{ context.plot_lidar_signal | safe }};
+Plotly.plot('plotly-lidar-signal', signalGraph, {});
+
+var correctedGraph = {{ context.plot_lidar_range_correction | safe }};
+Plotly.plot('plotly-lidar-range-correction', correctedGraph, {});
+
+var pearsonTrace = [{
+    x: [],
+    y: [],
+    mode: 'lines+markers',
+    name: 'Pearson r',
+    line: {color: '#17a2b8'}
+}];
+var pearsonLayout = {
+    margin: {t: 20, r: 20, b: 50, l: 50},
+    yaxis: {title: 'r', range: [-1, 1]},
+    xaxis: {title: 'Iteration'}
+};
+Plotly.newPlot('plotly-pearson', pearsonTrace, pearsonLayout);
+
+var polarGuide = [{
+    type: 'scatterpolar',
+    r: [1],
+    theta: [45],
+    mode: 'markers',
+    marker: {size: 13, color: '#dc3545', symbol: 'x'},
+    name: 'Laser spot'
+}];
+var polarLayout = {
+    margin: {t: 20, r: 20, b: 20, l: 20},
+    polar: {
+        radialaxis: {visible: true, range: [0, 5]},
+        angularaxis: {
+            direction: 'clockwise',
+            rotation: 90,
+            tickmode: 'array',
+            tickvals: [0, 90, 180, 270],
+            ticktext: ['UP', 'RIGHT', 'DOWN', 'LEFT']
+        }
+    },
+    showlegend: false
+};
+Plotly.newPlot('plotly-spot-polar', polarGuide, polarLayout);
+</script>
+
+<script>
+var globalconfig = {{ context.globalconfig | safe }};
+document.getElementById('channel_input').value = globalconfig["channel"];
+document.getElementById('acq_time_input').value = globalconfig["acq_time"];
+document.getElementById('bin_offset_input').value = globalconfig["bin_offset"];
+document.getElementById('laser_port_input').value = globalconfig["laser_port"];
+document.getElementById('motor_port_input').value = globalconfig["motor_port"];
+document.getElementById('motor_resolution_input').value = globalconfig["motor_resolution"];
+document.getElementById('motor_steps_input').value = globalconfig["motor_steps"];
+document.getElementById('motor_feed_rate_input').value = globalconfig["motor_feed_rate"];
+document.getElementById('rc_limits_init_input').value = globalconfig["rc_limits_init"];
+document.getElementById('rc_limits_final_input').value = globalconfig["rc_limits_final"];
+document.getElementById('raw_limits_init_input').value = globalconfig["raw_limits_init"];
+document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
+document.getElementById('pearson_target_input').value = "0.98";
+document.getElementById('max_iter_input').value = "25";
+</script>
+{% endblock my_content %}
