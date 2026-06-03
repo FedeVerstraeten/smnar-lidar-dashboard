@@ -7,48 +7,121 @@
 
     .autoalign-summary {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: .75rem;
+        grid-template-columns: repeat(5, minmax(120px, 1fr));
+        gap: .5rem;
     }
 
     .summary-box {
         border: 1px solid #dee2e6;
         border-radius: .25rem;
-        padding: .5rem .75rem;
+        padding: .45rem .6rem;
         background: #fff;
+        min-width: 0;
     }
 
     .summary-box .label {
         display: block;
         color: #6c757d;
-        font-size: .8rem;
+        font-size: .74rem;
+        white-space: nowrap;
     }
 
     .summary-box .value {
         font-weight: 700;
-        font-size: 1.1rem;
+        font-size: 1rem;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .autoalign-progress {
+        margin-top: .5rem;
+        display: grid;
+        grid-template-columns: minmax(160px, max-content) minmax(180px, 1fr) minmax(130px, max-content);
+        gap: .75rem;
+        align-items: center;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+        padding: .45rem .6rem;
+    }
+
+    .autoalign-progress .progress {
+        height: .75rem;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .scan-progress-label {
+        color: #6c757d;
+        font-size: .78rem;
+        white-space: nowrap;
+    }
+
+    .scan-progress-meta {
+        display: flex;
+        justify-content: flex-end;
+        align-items: baseline;
+        gap: .5rem;
+        min-width: 0;
+        white-space: nowrap;
+    }
+
+    .scan-status {
+        font-weight: 700;
+        color: #495057;
+    }
+
+    .scan-percent {
+        color: #6c757d;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .autoalign-plots {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .autoalign-card {
+        height: 100%;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .autoalign-card .card-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: .5rem;
     }
 
     .plot-host {
         width: 100%;
-        min-height: 300px;
-        height: 34vh;
-    }
-
-    .plot-host-square {
-        width: 100%;
-        aspect-ratio: 1 / 1;
-        min-height: 320px;
+        height: clamp(280px, 32vh, 420px);
+        min-width: 0;
     }
 
     @media (max-width: 992px) {
-        .plot-host {
-            min-height: 260px;
-            height: 36vh;
+        .autoalign-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
-        .plot-host-square {
-            min-height: 280px;
+        .autoalign-progress {
+            grid-template-columns: 1fr;
+            gap: .35rem;
+        }
+
+        .scan-progress-meta {
+            justify-content: space-between;
+        }
+
+        .autoalign-plots {
+            grid-template-columns: 1fr;
+        }
+
+        .plot-host {
+            height: clamp(260px, 42vh, 380px);
         }
     }
 </style>
@@ -208,47 +281,96 @@
     </ul>
 </li>
 
-<!-- Autoalignment controls -->
+<!-- Scanning controls -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
         <i class="nav-icon fas fa-crosshairs"></i>
-        <p>Autoalignment setup<i class="right fas fa-angle-left"></i></p>
+        <p>Scanning setup<i class="right fas fa-angle-left"></i></p>
     </a>
     <ul class="nav nav-treeview">
         <li class="nav-item">
+            <label><b style="color:white">Grid XY:</b></label>
             <div class="form-row align-items-center">
                 <div class="col-sm-8 my-1">
                     <div class="input-group">
-                        <div class="input-group-prepend"><div class="input-group-text">r*</div></div>
-                        <input type="text" class="form-control" id="pearson_target_input" placeholder="Target Pearson">
+                        <div class="input-group-prepend"><div class="input-group-text">Rows</div></div>
+                        <input type="number" min="3" step="1" class="form-control" id="scan_rows_input" placeholder="Rows">
                     </div>
                 </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_rows_apply" value="scan_rows">Apply</button></div>
             </div>
             <div class="form-row align-items-center">
                 <div class="col-sm-8 my-1">
                     <div class="input-group">
-                        <div class="input-group-prepend"><div class="input-group-text">N</div></div>
-                        <input type="text" class="form-control" id="max_iter_input" placeholder="Max iterations">
+                        <div class="input-group-prepend"><div class="input-group-text">Cols</div></div>
+                        <input type="number" min="3" step="1" class="form-control" id="scan_cols_input" placeholder="Cols">
                     </div>
                 </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_cols_apply" value="scan_cols">Apply</button></div>
             </div>
-            <label><b style="color:white">Correlation range [m]:</b></label>
+            <label><b style="color:white">Motion:</b></label>
             <div class="form-row align-items-center">
-                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="corr_range_init_input" placeholder="Initial"></div>
-                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="corr_range_final_input" placeholder="Final"></div>
-                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="corr_range_apply" value="corr_range">Apply</button></div>
+                <div class="col-sm-4 my-1"><input type="number" min="0.001" step="0.001" class="form-control" id="scan_step_x_input" placeholder="Step X [mm]"></div>
+                <div class="col-sm-4 my-1"><input type="number" min="0.001" step="0.001" class="form-control" id="scan_step_y_input" placeholder="Step Y [mm]"></div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_steps_apply" value="scan_steps">Apply</button></div>
             </div>
             <div class="form-row align-items-center">
                 <div class="col-sm-8 my-1">
                     <div class="input-group">
                         <div class="input-group-prepend"><div class="input-group-text">Δ grid</div></div>
-                        <input type="text" class="form-control" id="grid_min_resolution_input" placeholder="Min resolution between points">
+                        <input type="number" min="1" step="1" class="form-control" id="scan_feed_input" placeholder="Feed">
                     </div>
                 </div>
-                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="grid_min_resolution_apply" value="grid_min_resolution">Apply</button></div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_feed_apply" value="scan_feed">Apply</button></div>
             </div>
-            <small style="color:#ced4da;">Se requiere una resolución mínima entre puntos consecutivos para muestreo en grilla X/Y.</small>
-            <br>
+            <label><b style="color:white">Scan mode:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">Pattern</div></div>
+                        <select class="form-control" id="scan_pattern_input">
+                            <option value="raster">raster</option>
+                            <option value="zigzag">zigzag</option>
+                            <option value="spiral">spiral</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_pattern_apply" value="scan_pattern">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">Reverse</div></div>
+                        <select class="form-control" id="scan_reverse_input">
+                            <option value="false">OFF</option>
+                            <option value="true">ON</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_reverse_apply" value="scan_reverse">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">Delay [s]</div></div>
+                        <input type="number" min="0" step="0.001" class="form-control" id="scan_delay_input" placeholder="Delay">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_delay_apply" value="scan_delay">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">On fail</div></div>
+                        <select class="form-control" id="scan_on_fail_input">
+                            <option value="retry">retry</option>
+                            <option value="skip">skip</option>
+                            <option value="abort">abort</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_on_fail_apply" value="scan_on_fail">Apply</button></div>
+            </div>
             <button type="button" class="btn btn-outline-success btn-sm" id="autoalign_start_btn" value="autoalign_start">START AUTOALIGN</button>
             <button type="button" class="btn btn-outline-danger btn-sm" id="autoalign_stop_btn" value="autoalign_stop">STOP</button>
         </li>
@@ -259,54 +381,71 @@
 {% block my_content %}
 <div class="container-fluid pt-2">
     <div class="row mb-2">
-        <div class="col-md-6">
+        <div class="col-12">
             <div class="autoalign-summary">
                 <div class="summary-box">
-                    <span class="label">Pearson actual</span>
-                    <span class="value" id="pearson_current_value">--</span>
+                    <span class="label">Grid size</span>
+                    <span class="value" id="grid_size_value">8 x 8</span>
                 </div>
                 <div class="summary-box">
-                    <span class="label">Mejor Pearson</span>
-                    <span class="value" id="pearson_best_value">--</span>
+                    <span class="label">Current X</span>
+                    <span class="value" id="grid_current_x_value">4.5</span>
                 </div>
                 <div class="summary-box">
                     <span class="label">Posición X (left/right)</span>
-                    <span class="value" id="motor_x_value">0</span>
+                    <span class="value" id="grid_current_y_value">4.5</span>
                 </div>
                 <div class="summary-box">
                     <span class="label">Posición Y (up/down)</span>
-                    <span class="value" id="motor_y_value">0</span>
+                    <span class="value" id="pearson_max_value">--</span>
+                </div>
+                <div class="summary-box">
+                    <span class="label">PC location</span>
+                    <span class="value" id="pearson_best_location_value">--</span>
+                </div>
+            </div>
+            <div class="autoalign-progress">
+                <span class="scan-progress-label">LiDAR scan progress</span>
+                <div class="progress">
+                    <div class="progress-bar bg-info"
+                         id="scan_progress_bar"
+                         role="progressbar"
+                         style="width: 0%;"
+                         aria-valuenow="0"
+                         aria-valuemin="0"
+                         aria-valuemax="100"></div>
+                </div>
+                <div class="scan-progress-meta">
+                    <span class="scan-status" id="scan_status_value">Idle</span>
+                    <span class="scan-percent" id="scan_progress_percent">0%</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6">
+    <div class="autoalign-plots">
+        <div class="autoalign-plot-cell">
             <div class="card autoalign-card">
                 <div class="card-header"><b>Range corrected LiDAR signal</b></div>
-                <div class="card-body"><div id="plotly-lidar-range-correction" class="plot-host-square"></div></div>
+                <div class="card-body"><div id="plotly-lidar-range-correction" class="plot-host"></div></div>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="autoalign-plot-cell">
             <div class="card autoalign-card">
                 <div class="card-header"><b>Pearson coefficient evolution</b></div>
                 <div class="card-body"><div id="plotly-pearson" class="plot-host"></div></div>
             </div>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6">
+        <div class="autoalign-plot-cell">
             <div class="card autoalign-card">
                 <div class="card-header"><b>Raw LiDAR signal</b></div>
-                <div class="card-body"><div id="plotly-lidar-signal" class="plot-host-square"></div></div>
+                <div class="card-body"><div id="plotly-lidar-signal" class="plot-host"></div></div>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="autoalign-plot-cell">
             <div class="card autoalign-card">
-                <div class="card-header"><b>Laser spot in telescope FOV (guide heatmap)</b></div>
-                <div class="card-body"><div id="plotly-spot-polar" class="plot-host"></div></div>
+                <div class="card-header"><b>LiDAR measurement grid</b></div>
+                <div class="card-body"><div id="plotly-measurement-grid" class="plot-host"></div></div>
             </div>
         </div>
     </div>
@@ -315,34 +454,110 @@
 <script>
 var correctedGraph = {{ context.plot_lidar_range_correction | safe }};
 var plotlyConfig = {responsive: true, displaylogo: false};
-var standardMargins = {t: 28, r: 24, b: 48, l: 56};
+var standardMargins = {t: 18, r: 16, b: 42, l: 52};
+var rangeCorrectedMargins = {t: 104, r: 24, b: 64, l: 64};
+var rawSignalMargins = {t: 32, r: 24, b: 56, l: 64};
 
-Plotly.newPlot('plotly-lidar-range-correction', correctedGraph, {autosize: true, margin: standardMargins}, plotlyConfig);
+function responsiveLayout(baseLayout, overrides) {
+    var layout = Object.assign({}, baseLayout || {}, overrides || {});
+    delete layout.width;
+    delete layout.height;
+    layout.autosize = true;
+    return layout;
+}
+
+function drawResponsivePlot(targetId, figure, layoutOverrides) {
+    var traces = Array.isArray(figure) ? figure : (figure.data || []);
+    var layout = responsiveLayout(Array.isArray(figure) ? {} : figure.layout, layoutOverrides);
+    Plotly.newPlot(targetId, traces, layout, plotlyConfig);
+}
+
+drawResponsivePlot('plotly-lidar-range-correction', correctedGraph, {
+    margin: rangeCorrectedMargins
+});
 
 var signalGraph = {{ context.plot_lidar_signal | safe }};
-Plotly.newPlot('plotly-lidar-signal', signalGraph, {autosize: true, margin: standardMargins}, plotlyConfig);
+drawResponsivePlot('plotly-lidar-signal', signalGraph, {
+    title: null,
+    margin: rawSignalMargins
+});
 
-var xGrid = [-2, -1, 0, 1, 2];
-var yGrid = [-2, -1, 0, 1, 2];
-var zGrid = yGrid.map(function() { return xGrid.map(function() { return null; }); });
-var fovHeatmap = [{
+var measurementGridSize = 8;
+var measurementAxis = Array.from({length: measurementGridSize}, function(_, index) { return index + 1; });
+var measurementGridCenter = (measurementGridSize + 1) / 2;
+
+function setSummaryBoxLabel(valueId, labelText) {
+    var valueEl = document.getElementById(valueId);
+    var labelEl = valueEl && valueEl.parentElement ? valueEl.parentElement.querySelector('.label') : null;
+    if (labelEl) {
+        labelEl.textContent = labelText;
+    }
+}
+
+function setScanProgress(percent) {
+    var progress = Math.max(0, Math.min(100, Number(percent) || 0));
+    var progressBar = document.getElementById('scan_progress_bar');
+    var progressPercent = document.getElementById('scan_progress_percent');
+    var progressText = progress + '%';
+    if (progressBar) {
+        progressBar.style.width = progressText;
+        progressBar.setAttribute('aria-valuenow', progress);
+    }
+    if (progressPercent) {
+        progressPercent.textContent = progressText;
+    }
+}
+
+function setScanStatus(status) {
+    var allowedStatuses = ['Idle', 'Running', 'Stopped', 'Complete', 'Error'];
+    var nextStatus = allowedStatuses.indexOf(status) >= 0 ? status : 'Idle';
+    var statusEl = document.getElementById('scan_status_value');
+    if (statusEl) {
+        statusEl.textContent = nextStatus;
+    }
+}
+
+setSummaryBoxLabel('grid_size_value', 'Grid size');
+setSummaryBoxLabel('grid_current_x_value', 'Current X');
+setSummaryBoxLabel('grid_current_y_value', 'Current Y');
+setSummaryBoxLabel('pearson_max_value', 'PC max');
+setSummaryBoxLabel('pearson_best_location_value', 'PC location');
+document.getElementById('grid_size_value').textContent = measurementGridSize + ' x ' + measurementGridSize;
+document.getElementById('grid_current_x_value').textContent = measurementGridCenter;
+document.getElementById('grid_current_y_value').textContent = measurementGridCenter;
+setScanStatus('Idle');
+setScanProgress(0);
+
+var measurementValues = measurementAxis.map(function(row) {
+    return measurementAxis.map(function(column) {
+        var distanceFromCenter = Math.hypot(row - measurementGridCenter, column - measurementGridCenter);
+        return Math.max(-1, Math.min(1, 1 - distanceFromCenter / 4));
+    });
+});
+var measurementGridTrace = [{
     type: 'heatmap',
-    x: xGrid,
-    y: yGrid,
-    z: zGrid,
+    x: measurementAxis,
+    y: measurementAxis,
+    z: measurementValues,
     colorscale: 'Viridis',
     zmin: -1,
     zmax: 1,
-    colorbar: {title: 'Pearson r'}
+    hovertemplate: 'Column %{x}<br>Row %{y}<br>Pearson r %{z:.3f}<extra></extra>',
+    colorbar: {title: 'Pearson r', len: 0.8}
 }];
-var fovHeatmapLayout = {
-    title: 'X/Y scan grid (Pearson map)',
-    margin: {t: 38, r: 24, b: 48, l: 56},
-    xaxis: {title: 'Motor X position', scaleanchor: 'y', scaleratio: 1},
-    yaxis: {title: 'Motor Y position'},
+var measurementGridLayout = {
+    margin: {t: 18, r: 24, b: 42, l: 52},
+    xaxis: {
+        title: 'Column',
+        dtick: 1,
+        constrain: 'domain',
+        scaleanchor: 'y',
+        scaleratio: 1
+    },
+    yaxis: {title: 'Row', dtick: 1, autorange: 'reversed'},
     autosize: true
 };
-Plotly.newPlot('plotly-spot-polar', fovHeatmap, fovHeatmapLayout, plotlyConfig);
+drawResponsivePlot('plotly-measurement-grid', measurementGridTrace, measurementGridLayout);
 
 var pearsonTrace = [{
     x: [],
@@ -352,15 +567,16 @@ var pearsonTrace = [{
     line: {color: '#17a2b8'}
 }];
 var pearsonLayout = {
-    margin: {t: 20, r: 20, b: 50, l: 50},
+    autosize: true,
+    margin: {t: 18, r: 16, b: 42, l: 52},
     yaxis: {title: 'r', range: [-1, 1]},
     xaxis: {title: 'Iteration'}
 };
-Plotly.newPlot('plotly-pearson', pearsonTrace, pearsonLayout, plotlyConfig);
+drawResponsivePlot('plotly-pearson', pearsonTrace, pearsonLayout);
 
 
 function resizeAutoalignPlots() {
-    ['plotly-lidar-signal', 'plotly-lidar-range-correction', 'plotly-pearson', 'plotly-spot-polar'].forEach(function(id) {
+    ['plotly-lidar-range-correction', 'plotly-pearson', 'plotly-lidar-signal', 'plotly-measurement-grid'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) {
             Plotly.Plots.resize(el);
@@ -370,6 +586,15 @@ function resizeAutoalignPlots() {
 
 window.addEventListener('resize', resizeAutoalignPlots);
 setTimeout(resizeAutoalignPlots, 150);
+
+if ('ResizeObserver' in window) {
+    var plotResizeObserver = new ResizeObserver(function() {
+        window.requestAnimationFrame(resizeAutoalignPlots);
+    });
+    document.querySelectorAll('.plot-host').forEach(function(el) {
+        plotResizeObserver.observe(el);
+    });
+}
 
 // Also refresh plot sizes after sidebar collapse/expand transitions
 document.addEventListener('click', function(event) {
@@ -393,10 +618,70 @@ document.getElementById('rc_limits_init_input').value = globalconfig["rc_limits_
 document.getElementById('rc_limits_final_input').value = globalconfig["rc_limits_final"];
 document.getElementById('raw_limits_init_input').value = globalconfig["raw_limits_init"];
 document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
-document.getElementById('pearson_target_input').value = "0.98";
-document.getElementById('max_iter_input').value = "25";
-document.getElementById('corr_range_init_input').value = globalconfig["corr_range_init"];
-document.getElementById('corr_range_final_input').value = globalconfig["corr_range_final"];
-document.getElementById('grid_min_resolution_input').value = globalconfig["grid_min_resolution"];
+document.getElementById('scan_rows_input').value = globalconfig["scan_rows"];
+document.getElementById('scan_cols_input').value = globalconfig["scan_cols"];
+document.getElementById('scan_step_x_input').value = Number(globalconfig["scan_step_x"]).toFixed(3);
+document.getElementById('scan_step_y_input').value = Number(globalconfig["scan_step_y"]).toFixed(3);
+document.getElementById('scan_feed_input').value = globalconfig["scan_feed"];
+document.getElementById('scan_pattern_input').value = globalconfig["scan_pattern"];
+document.getElementById('scan_reverse_input').value = String(Boolean(globalconfig["scan_reverse"]));
+document.getElementById('scan_delay_input').value = globalconfig["scan_delay"];
+document.getElementById('scan_on_fail_input').value = globalconfig["scan_on_fail"];
+document.getElementById('grid_size_value').textContent = globalconfig["scan_rows"] + ' x ' + globalconfig["scan_cols"];
+
+var scanFeedInputGroup = document.getElementById('scan_feed_input').closest('.input-group');
+if (scanFeedInputGroup) {
+    scanFeedInputGroup.querySelector('.input-group-text').textContent = 'Feed [mm/min]';
+}
+
+function applyScanSetting(buttonId, inputId) {
+    $('#' + buttonId).on('click', function () {
+        $.ajax({
+            url: "/scan_setup",
+            type: "GET",
+            contentType: 'application/json;charset=UTF-8',
+            data: {
+                'selected': document.getElementById(buttonId).value,
+                'input': document.getElementById(inputId).value
+            },
+            dataType:"json",
+            success: function (data) {
+                globalconfig = data;
+                document.getElementById('grid_size_value').textContent = data["scan_rows"] + ' x ' + data["scan_cols"];
+                console.log("SCAN SETUP APPLY", buttonId, data);
+            }
+        });
+    });
+}
+
+applyScanSetting('scan_rows_apply', 'scan_rows_input');
+applyScanSetting('scan_cols_apply', 'scan_cols_input');
+applyScanSetting('scan_feed_apply', 'scan_feed_input');
+applyScanSetting('scan_pattern_apply', 'scan_pattern_input');
+applyScanSetting('scan_reverse_apply', 'scan_reverse_input');
+applyScanSetting('scan_delay_apply', 'scan_delay_input');
+applyScanSetting('scan_on_fail_apply', 'scan_on_fail_input');
+
+$('#scan_steps_apply').on('click', function () {
+    $.ajax({
+        url: "/scan_setup",
+        type: "GET",
+        contentType: 'application/json;charset=UTF-8',
+        data: {
+            'selected': document.getElementById('scan_steps_apply').value,
+            'input': JSON.stringify([
+                document.getElementById('scan_step_x_input').value,
+                document.getElementById('scan_step_y_input').value
+            ])
+        },
+        dataType:"json",
+        success: function (data) {
+            globalconfig = data;
+            document.getElementById('scan_step_x_input').value = Number(data["scan_step_x"]).toFixed(3);
+            document.getElementById('scan_step_y_input').value = Number(data["scan_step_y"]).toFixed(3);
+            console.log("SCAN STEPS APPLY", data);
+        }
+    });
+});
 </script>
 {% endblock my_content %}

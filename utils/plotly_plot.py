@@ -24,13 +24,16 @@ def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
   fig = px.line(df, 
                 x=df.index, 
                 y=df['raw_signal'], 
-                title='LiDAR raw signal')
+                title='LiDAR raw signal'
+                )
   
   # Set axes titles
   fig.update_xaxes(rangeslider_visible=True,title_text="Height [m]")
   fig.update_yaxes(title_text="Raw signal [mV]",)
 
-  fig.update_layout(width=1200, height=500)
+  fig.update_layout(width=1200, height=500,
+                    title=None,
+                    margin=dict(t=32, r=24, b=56, l=64))
 
   plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
   
@@ -86,14 +89,15 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final,wavelength
       xanchor="right",
       x=0.93),
       title={
-      'text': '<span style="font-size: 20px;">Range corrected LiDAR signal </span><br><span style="font-size: 10px;">(click and drag)</span>',
+      'text': '<span style="font-size: 15px;">Range corrected LiDAR signal </span><br><span style="font-size: 10px;">(click and drag)</span>',
       'y': 0.97,
       'x': 0.45,
       'xanchor': 'center',
       'yanchor': 'top'},
       paper_bgcolor="#ffffff",
       plot_bgcolor="#ffffff",
-      width=640, height=480
+      width=640, height=480,
+      margin=dict(t=104, r=24, b=64, l=64)
       # width=800, height=600
   )
   # display rayleigh-fit range
@@ -125,11 +129,13 @@ def plotly_empty_signal(signal_type):
     df.columns=["bin","raw_signal"]
     fig = px.line(df, 
                   x='bin', 
-                  y=['raw_signal'], 
+                  y=['raw_signal'],
                   title='LiDAR raw signal')
     
     fig.update_xaxes(rangeslider_visible=True)
-    fig.update_layout(width=1200, height=500)
+    fig.update_layout(width=1200, height=500,
+                      title=None,
+                      margin=dict(t=32, r=24, b=56, l=64))
     plot_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
   elif signal_type =="rms":
@@ -196,14 +202,15 @@ def plotly_empty_signal(signal_type):
         xanchor="right",
         x=0.93),
         title={
-        'text': '<span style="font-size: 20px;">Range corrected LiDAR signal </span><br><span style="font-size: 10px;">(click and drag)</span>',
+        'text': '<span style="font-size: 15px;">Range corrected LiDAR signal </span><br><span style="font-size: 10px;">(click and drag)</span>',
         'y': 0.97,
         'x': 0.45,
         'xanchor': 'center',
         'yanchor': 'top'},
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
-        width=640, height=480
+        width=640, height=480,
+        margin=dict(t=104, r=24, b=64, l=64)
         # width=800, height=600
     )
 

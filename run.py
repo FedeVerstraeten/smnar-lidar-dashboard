@@ -57,7 +57,16 @@ globalconfig = {
                   "motor_feed_rate" : 50,
                   "corr_range_init" : 5000,
                   "corr_range_final" : 10000,
-                  "grid_min_resolution" : 0.1
+                  "grid_min_resolution" : 0.1,
+                  "scan_rows" : 8,
+                  "scan_cols" : 8,
+                  "scan_step_x" : 1.000,
+                  "scan_step_y" : 1.000,
+                  "scan_feed" : 50,
+                  "scan_pattern" : "raster",
+                  "scan_reverse" : False,
+                  "scan_delay" : 0.0,
+                  "scan_on_fail" : "retry"
                  }
 
 #----------- INI FILES -----------
@@ -681,6 +690,57 @@ def motor_controls():
     motor.init_incremental(feed_mm_min=100.0)
     motor.set_zero()  # Set current position as home
     motor.close()
+
+  response = make_response(json.dumps(globalconfig))
+  response.content_type = 'application/json'
+  return response
+
+@app.route('/scan_setup', methods=['GET','POST'])
+def scan_setup_controls():
+  field_selected = request.args['selected']
+  data_input = request.args['input']
+
+  print("Scan setup action: " + field_selected + ", input: " + data_input)
+
+  integer_fields = ["scan_rows", "scan_cols", "scan_feed"]
+  float_fields = ["scan_step_x", "scan_step_y", "scan_delay"]
+  pattern_options = ["raster", "zigzag", "spiral"]
+  on_fail_options = ["retry", "skip", "abort"]
+
+  if field_selected in integer_fields and data_input.isdigit():
+    value = int(data_input)
+    if field_selected in ["scan_rows", "scan_cols"] and value > 2:
+      globalconfig[field_selected] = value
+    if field_selected == "scan_feed" and value > 0:
+      globalconfig[field_selected] = value
+
+  if field_selected in float_fields and data_input.replace('.','',1).isdigit():
+    value = float(data_input)
+    if field_selected in ["scan_step_x", "scan_step_y"] and value > 0:
+      globalconfig[field_selected] = round(value, 3)
+    if field_selected == "scan_delay" and value >= 0:
+      globalconfig[field_selected] = value
+
+  if field_selected == "scan_steps":
+    scan_steps = json.loads(data_input)
+    if len(scan_steps) == 2:
+      step_x = scan_steps[0]
+      step_y = scan_steps[1]
+      if str(step_x).replace('.','',1).isdigit() and str(step_y).replace('.','',1).isdigit():
+        step_x = float(step_x)
+        step_y = float(step_y)
+        if step_x > 0 and step_y > 0:
+          globalconfig["scan_step_x"] = round(step_x, 3)
+          globalconfig["scan_step_y"] = round(step_y, 3)
+
+  if field_selected == "scan_pattern" and data_input in pattern_options:
+    globalconfig[field_selected] = data_input
+
+  if field_selected == "scan_reverse" and data_input in ["true", "false", "True", "False"]:
+    globalconfig[field_selected] = data_input.lower() == "true"
+
+  if field_selected == "scan_on_fail" and data_input in on_fail_options:
+    globalconfig[field_selected] = data_input
 
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'
