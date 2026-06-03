@@ -1,8 +1,18 @@
 {% extends "layout.html" %}
 {% block script %}
-<!-- 
-put your custom script or styling here
--->
+<style>
+    .plot-host {
+        width: 100%;
+        height: clamp(320px, 48vh, 560px);
+        min-width: 0;
+    }
+
+    @media (max-width: 992px) {
+        .plot-host {
+            height: clamp(280px, 52vh, 460px);
+        }
+    }
+</style>
 {% endblock script %}
 
 <!-- Mode legend -->
@@ -200,22 +210,54 @@ put your custom script or styling here
     <!-- ./col -->
 </div>
 
-<!-- Plotly plot placeholder -->
-<div class="container-fluid">
-      <div class="row">
-          <!-- LiDAR signal plot-->
-          <div class="chart" id="plotly-lidar-signal">
-          </div>
-      </div>
-      <hr>
-  </div>
+<div class="container-fluid pt-2">
+    <div id="plotly-lidar-signal" class="plot-host"></div>
 </div>
 
-<!-- Script to execute the Json ( we can create it also with looping) -->
 <script>
-//Parse your Json variable here
-var graphs = {{ context.plot_multiple_lidar_signal | safe }};
-Plotly.plot('plotly-lidar-signal', graphs, {});
+var plotlyConfig = {responsive: true, displaylogo: false};
+
+function responsiveLayout(baseLayout, overrides) {
+    var layout = Object.assign({}, baseLayout || {}, overrides || {});
+    delete layout.width;
+    delete layout.height;
+    layout.autosize = true;
+    return layout;
+}
+
+function drawResponsivePlot(targetId, figure, layoutOverrides) {
+    var traces = Array.isArray(figure) ? figure : (figure.data || []);
+    var layout = responsiveLayout(Array.isArray(figure) ? {} : figure.layout, layoutOverrides);
+    Plotly.newPlot(targetId, traces, layout, plotlyConfig);
+}
+
+drawResponsivePlot('plotly-lidar-signal', {{ context.plot_multiple_lidar_signal | safe }}, {
+    title: null,
+    margin: {t: 32, r: 24, b: 56, l: 64}
+});
+
+function resizeAcquisitionPlots() {
+    var el = document.getElementById('plotly-lidar-signal');
+    if (el) {
+        Plotly.Plots.resize(el);
+    }
+}
+
+window.addEventListener('resize', resizeAcquisitionPlots);
+setTimeout(resizeAcquisitionPlots, 150);
+
+if ('ResizeObserver' in window) {
+    var acquisitionResizeObserver = new ResizeObserver(function() {
+        window.requestAnimationFrame(resizeAcquisitionPlots);
+    });
+    acquisitionResizeObserver.observe(document.getElementById('plotly-lidar-signal'));
+}
+
+document.addEventListener('click', function(event) {
+    if (event.target.closest('[data-widget="pushmenu"]')) {
+        setTimeout(resizeAcquisitionPlots, 350);
+    }
+});
 </script>
 
 <script>
@@ -237,4 +279,3 @@ document.getElementById('laser_port_input').value = globalconfig["laser_port"];
 
 
 {% endblock my_content %}
-
