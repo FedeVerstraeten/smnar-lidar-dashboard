@@ -616,7 +616,8 @@ def motor_controls():
     print("Motor move LEFT command received.")
     serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
     motor = MotorController(ser=serial_motor) 
-    motor.initialize(feed_mm_min=globalconfig["motor_feed_rate"])
+    motor.initialize(feed=globalconfig["motor_feed_rate"])
+    motor.disable_limits()  # Disable limit switches for manual jogging
     steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"]
     motor.jog(dx=-steps_to_mm, dy=0.0, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move X negative for left
     serial_motor.close()
@@ -625,7 +626,8 @@ def motor_controls():
     print("Motor move RIGHT command received.")
     serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
     motor = MotorController(ser=serial_motor)
-    motor.initialize(feed_mm_min=globalconfig["motor_feed_rate"])
+    motor.initialize(feed=globalconfig["motor_feed_rate"])
+    motor.disable_limits()  # Disable limit switches for manual jogging
     steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
     motor.jog(dx=steps_to_mm, dy=0.0, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move X positive for right
     serial_motor.close()
@@ -634,7 +636,8 @@ def motor_controls():
     print("Motor move UP command received.")
     serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
     motor = MotorController(ser=serial_motor)
-    motor.initialize(feed_mm_min=globalconfig["motor_feed_rate"])
+    motor.initialize(feed=globalconfig["motor_feed_rate"])
+    motor.disable_limits()  # Disable limit switches for manual jogging
     steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
     motor.jog(dx=0.0, dy=steps_to_mm  , dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move Y positive for up
     serial_motor.close()
@@ -643,7 +646,8 @@ def motor_controls():
     print("Motor move DOWN command received.")
     serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
     motor = MotorController(ser=serial_motor)
-    motor.initialize(feed_mm_min=globalconfig["motor_feed_rate"])
+    motor.initialize(feed=globalconfig["motor_feed_rate"])
+    motor.disable_limits()  # Disable limit switches for manual jogging
     steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
     motor.jog(dx=0.0, dy=-steps_to_mm, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move Y negative for down
     serial_motor.close()
@@ -660,15 +664,15 @@ def motor_controls():
     print("Motor to HOME.")
     serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
     motor = MotorController(ser=serial_motor)
-    motor.initialize(feed_mm_min=100.0)
-    motor.move_home()  # Move to home position (0,0,0)
+    motor.initialize(feed=100.0)
+    motor.go_home()  # Move to home position (0,0,0)
     serial_motor.close()
  
   if(action_button == "motor_sethome"):
     print("Motor set HOME position.")
     serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
     motor = MotorController(ser=serial_motor)
-    motor.initialize(feed_mm_min=100.0)
+    motor.initialize(feed=100.0)
     motor.set_home()  # Set current position as home (0,0,0)
     serial_motor.close()
  

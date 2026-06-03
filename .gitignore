@@ -4,6 +4,10 @@ sounding/
 packages/
 pkg/
 
+# Motor controller files
+motor_state.json
+motor_history.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
