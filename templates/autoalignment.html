@@ -702,5 +702,91 @@ $('#scan_steps_apply').on('click', function () {
         }
     });
 });
+
+function parsePlotFigure(figureJson) {
+    if (!figureJson) {
+        return {data: [], layout: {}};
+    }
+    return typeof figureJson === 'string' ? JSON.parse(figureJson) : figureJson;
+}
+
+function renderAutoalignResponse(context) {
+    if (context.plot_lidar_range_correction) {
+        drawResponsivePlot('plotly-lidar-range-correction', parsePlotFigure(context.plot_lidar_range_correction), {
+            margin: rangeCorrectedMargins
+        });
+    }
+
+    if (context.plot_lidar_signal) {
+        drawResponsivePlot('plotly-lidar-signal', parsePlotFigure(context.plot_lidar_signal), {
+            title: null,
+            margin: rawSignalMargins
+        });
+    }
+
+    if (context.plot_pearson) {
+        drawResponsivePlot('plotly-pearson', parsePlotFigure(context.plot_pearson), {
+            margin: {t: 18, r: 16, b: 42, l: 52}
+        });
+    }
+
+    if (context.plot_measurement_grid) {
+        drawResponsivePlot('plotly-measurement-grid', parsePlotFigure(context.plot_measurement_grid), {
+            margin: {t: 18, r: 24, b: 42, l: 52}
+        });
+    }
+
+    if (context.best) {
+        document.getElementById('pearson_max_value').textContent = Number(context.best.pearson).toFixed(4);
+        document.getElementById('pearson_best_location_value').textContent = 'C' + context.best.col + ', R' + context.best.row;
+        document.getElementById('grid_current_x_value').textContent = Number(context.best.x).toFixed(3) + ' mm';
+        document.getElementById('grid_current_y_value').textContent = Number(context.best.y).toFixed(3) + ' mm';
+    }
+
+    setScanProgress(context.progress || 0);
+    setScanStatus(context.status || 'Idle');
+    setTimeout(resizeAutoalignPlots, 50);
+}
+
+$('#autoalign_start_btn').on('click', function () {
+    setScanStatus('Running');
+    setScanProgress(0);
+    document.getElementById('pearson_max_value').textContent = '--';
+    document.getElementById('pearson_best_location_value').textContent = '--';
+
+    $.ajax({
+        url: "/autoalign",
+        type: "GET",
+        contentType: 'application/json;charset=UTF-8',
+        data: {
+            'selected': document.getElementById('autoalign_start_btn').value
+        },
+        dataType:"json",
+        success: function (context) {
+            renderAutoalignResponse(context);
+            console.log("AUTOALIGN COMPLETE", context);
+        },
+        error: function (xhr) {
+            setScanStatus('Error');
+            console.log("AUTOALIGN ERROR", xhr.responseJSON || xhr.responseText);
+        }
+    });
+});
+
+$('#autoalign_stop_btn').on('click', function () {
+    $.ajax({
+        url: "/autoalign",
+        type: "GET",
+        contentType: 'application/json;charset=UTF-8',
+        data: {
+            'selected': document.getElementById('autoalign_stop_btn').value
+        },
+        dataType:"json",
+        success: function (context) {
+            setScanStatus(context.status || 'Stopped');
+            console.log("AUTOALIGN STOP", context);
+        }
+    });
+});
 </script>
 {% endblock my_content %}
