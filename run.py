@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 import json
 import configparser
 import datetime
-import numpy as np
+import serial 
 
 #----------- CUSTOM LIBS -----------
 
@@ -17,6 +17,7 @@ from lidarcontroller.licelcontroller import licelController
 from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
+from lidarcontroller.motorcontroller import MotorController
 
 #----------- FLASK CONFIG -----------
 
@@ -33,7 +34,7 @@ globalconfig = {
                   "ip" : '10.49.234.234',
                   "port" : 2055,
                   "channel" : 0,
-                  "acq_time" : 1,      # 10s = 300shots/30Hz(laser)
+                  "acq_time" : 10,      # 10s = 300shots/30Hz(laser)
                   "bin_offset" : 10,    # bin (default)
                   "max_bins" : 4000,    # bin
                   "bias_init" : 22500,  # m (3000 bins)
@@ -50,7 +51,23 @@ globalconfig = {
                   "raw_limits_final" : 30000, # m
                   "smooth_level" : 5,
                   "laser_port" : 'COM3',
-                  "period_time" : 1 # min
+                  "period_time" : 1, # min
+                  "motor_port" : 'COM4',
+                  "motor_resolution" : 0.1,
+                  "motor_steps" : 10,
+                  "motor_feed_rate" : 50,
+                  "corr_range_init" : 5000,
+                  "corr_range_final" : 10000,
+                  "grid_min_resolution" : 0.1,
+                  "scan_rows" : 8,
+                  "scan_cols" : 8,
+                  "scan_step_x" : 1.000,
+                  "scan_step_y" : 1.000,
+                  "scan_feed" : 50,
+                  "scan_pattern" : "raster",
+                  "scan_reverse" : False,
+                  "scan_delay" : 0.0,
+                  "scan_on_fail" : "retry"
                  }
 
 #----------- INI FILES -----------
@@ -63,11 +80,6 @@ globalinfo_dir = os.path.join(APP_ROOT, 'inifiles','globalinfo.ini')
 if os.path.exists(acquis_dir) and os.path.exists(globalinfo_dir):
   acquis_ini.read(acquis_dir)
   globalinfo_ini.read(globalinfo_dir)
-
-#----------- LIDAR SIMULATION -----------
-simul_path = os.path.join(APP_ROOT, 'simul')
-laser_simul = "OFF"
-
 
 #----------- END-POINT ROUTES -----------
 
@@ -89,6 +101,21 @@ def homepage():
 
   # run html template
   return render_template('alignment.html', context=context)
+
+
+@app.route("/autoalignment")
+def autoalignment_mode():
+
+  # empty plots
+  plot_lidar_signal = plotly_plot.plotly_empty_signal("raw")
+  plot_lidar_range_correction = plotly_plot.plotly_empty_signal("rangecorrected")
+
+  context = {"plot_lidar_signal": plot_lidar_signal,
+             "plot_lidar_range_correction": plot_lidar_range_correction,
+             "globalconfig": globalconfig
+            }
+
+  return render_template('autoalignment.html', context=context)
 
 @app.route("/acquisition")
 def acquisition_mode():
@@ -234,34 +261,20 @@ def licel_record_data():
     tr=globalconfig["channel"]
 
     # TODO mejorar esto
-    # if lc.sock is None:
-    #   lc.openConnection(LICEL_IP,LICEL_PORT)
+    if lc.sock is None:
+      lc.openConnection(LICEL_IP,LICEL_PORT)
 
-    # lc.selectTR(tr)
-    # lc.setInputRange(licelsettings.MILLIVOLT500)
+    lc.selectTR(tr)
+    lc.setInputRange(licelsettings.MILLIVOLT500)
    
-    # # start the acquisition
-    # lc.clearMemory()
-    # lc.startAcquisition()
-    # lc.msDelay(SHOTS_DELAY)
-    # lc.stopAcquisition() 
+    # start the acquisition
+    lc.clearMemory()
+    lc.startAcquisition()
+    lc.msDelay(SHOTS_DELAY)
+    lc.stopAcquisition() 
 
-    # # get signall in mV
-    # data_mv = lc.getAnalogSignalmV(tr,BIN_LONG_TRANCE,"A",licelsettings.MILLIVOLT500)
-
-    # ------------------------------------------------------------------
-    # LIDAR DATA SIMULATION
-    # ------------------------------------------------------------------
-    simul_file="lidar_simul_" + str(np.random.randint(0,33)) + ".json"
-    print(simul_file)
-    with open(os.path.join(simul_path,simul_file),'r') as json_file:
-      lidar_data_file = json.load(json_file)
-
-    if lidar_data_file and laser_simul=="ON":
-      data_mv = lidar_data_file[str(tr)]["data_mv"]
-    else:
-      data_mv = np.zeros(BIN_LONG_TRANCE)
-    # ------------------------------------------------------------------
+    # get signall in mV
+    data_mv = lc.getAnalogSignalmV(tr,BIN_LONG_TRANCE,"A",licelsettings.MILLIVOLT500)
 
     # close socket
     # lc.closeConnection()
@@ -470,8 +483,6 @@ def tcpip_connection():
 @app.route("/laser",methods=['GET','POST'])
 def laser_controls():
   
-  global laser_simul
-
   action_button = request.args['selected']
   serial_port = request.args['input']
   data = ""
@@ -481,20 +492,18 @@ def laser_controls():
       globalconfig["laser_port"] = serial_port
 
     if(action_button =="laser_start"):
-        # laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
-        # laser.connect()
-        # laser.startLaser()
-        # laser.disconnect()
-        # data ="Laser START"
-        laser_simul="ON"
+        laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
+        laser.connect()
+        laser.startLaser()
+        laser.disconnect()
+        data ="Laser START"
       
     if(action_button =="laser_stop"):
-      # laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
-      # laser.connect()
-      # laser.stopLaser()
-      # laser.disconnect()
-      # data="Laser STOP"
-      laser_simul="OFF"
+      laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
+      laser.connect()
+      laser.stopLaser()
+      laser.disconnect()
+      data="Laser STOP"
     
   response = make_response(json.dumps(data))
   response.content_type = 'application/json'
@@ -593,8 +602,163 @@ def sounding_data():
 
   return render_template('sounding.html',context=context)
 
+@app.route('/motor', methods=['GET','POST'])
+def motor_controls():
+  action_button = request.args['selected']
+  data_input = request.args['input']
+
+  print("Motor control action: " + action_button + ", input: " + data_input)
+
+  # Serial port
+  if(action_button == "motor_port" and data_input):
+    if(data_input != globalconfig["motor_port"]):  
+      globalconfig["motor_port"] = data_input
+
+  # Motor resolution
+  valid_resolutions = ["1","0.1","0.01"]  # mm
+
+  if(action_button == "motor_resolution"):
+    if(data_input in valid_resolutions):
+      globalconfig["motor_resolution"] = float(data_input)
+    else:
+      print("Invalid motor resolution input: " + data_input + ". Valid options are: " + ", ".join(valid_resolutions))
+ 
+  # Motor step
+  if(action_button == "motor_steps" and data_input.isdigit()):
+    if(int(data_input) > 0):
+      globalconfig["motor_steps"] = int(data_input)
+    else:
+      print("Invalid motor step input: " + data_input + ". Step must be a positive integer.")
+
+  # Motor feed rate
+  if(action_button == "motor_feed_rate" and data_input.replace('.','',1).isdigit()):
+    if float(data_input) > 0:
+      globalconfig["motor_feed_rate"] = float(data_input)
+    else:
+      print("Invalid motor feed rate input: " + data_input + ". Feed rate must be a positive number.")
+
+  # Motor movements
+  # Left -> -X, Right -> +X, Up -> +Y, Down -> -Y
+  if(action_button == "motor_left"):
+    print("Motor move LEFT command received.")
+    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
+    motor = MotorController(ser=serial_motor) 
+    motor.initialize(feed=globalconfig["motor_feed_rate"])
+    motor.disable_limits()  # Disable limit switches for manual jogging
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"]
+    motor.jog(dx=-steps_to_mm, dy=0.0, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move X negative for left
+    serial_motor.close()
+
+  if(action_button == "motor_right"):
+    print("Motor move RIGHT command received.")
+    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
+    motor = MotorController(ser=serial_motor)
+    motor.initialize(feed=globalconfig["motor_feed_rate"])
+    motor.disable_limits()  # Disable limit switches for manual jogging
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=steps_to_mm, dy=0.0, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move X positive for right
+    serial_motor.close()
+
+  if(action_button == "motor_up"):
+    print("Motor move UP command received.")
+    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
+    motor = MotorController(ser=serial_motor)
+    motor.initialize(feed=globalconfig["motor_feed_rate"])
+    motor.disable_limits()  # Disable limit switches for manual jogging
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=0.0, dy=steps_to_mm  , dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move Y positive for up
+    serial_motor.close()
+
+  if(action_button == "motor_down"):
+    print("Motor move DOWN command received.")
+    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
+    motor = MotorController(ser=serial_motor)
+    motor.initialize(feed=globalconfig["motor_feed_rate"])
+    motor.disable_limits()  # Disable limit switches for manual jogging
+    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
+    motor.jog(dx=0.0, dy=-steps_to_mm, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move Y negative for down
+    serial_motor.close()
+
+  if(action_button == "motor_stop"):
+    print("Motor STOP command received.")
+    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
+    motor = MotorController(ser=serial_motor)
+    motor.jog_cancel()  # Send jog cancel command to stop any ongoing movement
+    serial_motor.close()
+ 
+  # Motor home
+  if(action_button == "motor_gethome"):
+    print("Motor to HOME.")
+    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
+    motor = MotorController(ser=serial_motor)
+    motor.initialize(feed=100.0)
+    motor.go_home()  # Move to home position (0,0,0)
+    serial_motor.close()
+ 
+  if(action_button == "motor_sethome"):
+    print("Motor set HOME position.")
+    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
+    motor = MotorController(ser=serial_motor)
+    motor.initialize(feed=100.0)
+    motor.set_home()  # Set current position as home (0,0,0)
+    serial_motor.close()
+ 
+  response = make_response(json.dumps(globalconfig))
+  response.content_type = 'application/json'
+  return response
+
+@app.route('/scan_setup', methods=['GET','POST'])
+def scan_setup_controls():
+  field_selected = request.args['selected']
+  data_input = request.args['input']
+
+  print("Scan setup action: " + field_selected + ", input: " + data_input)
+
+  integer_fields = ["scan_rows", "scan_cols", "scan_feed"]
+  float_fields = ["scan_step_x", "scan_step_y", "scan_delay"]
+  pattern_options = ["raster", "zigzag", "spiral"]
+  on_fail_options = ["retry", "skip", "abort"]
+
+  if field_selected in integer_fields and data_input.isdigit():
+    value = int(data_input)
+    if field_selected in ["scan_rows", "scan_cols"] and value > 2:
+      globalconfig[field_selected] = value
+    if field_selected == "scan_feed" and value > 0:
+      globalconfig[field_selected] = value
+
+  if field_selected in float_fields and data_input.replace('.','',1).isdigit():
+    value = float(data_input)
+    if field_selected in ["scan_step_x", "scan_step_y"] and value > 0:
+      globalconfig[field_selected] = round(value, 3)
+    if field_selected == "scan_delay" and value >= 0:
+      globalconfig[field_selected] = value
+
+  if field_selected == "scan_steps":
+    scan_steps = json.loads(data_input)
+    if len(scan_steps) == 2:
+      step_x = scan_steps[0]
+      step_y = scan_steps[1]
+      if str(step_x).replace('.','',1).isdigit() and str(step_y).replace('.','',1).isdigit():
+        step_x = float(step_x)
+        step_y = float(step_y)
+        if step_x > 0 and step_y > 0:
+          globalconfig["scan_step_x"] = round(step_x, 3)
+          globalconfig["scan_step_y"] = round(step_y, 3)
+
+  if field_selected == "scan_pattern" and data_input in pattern_options:
+    globalconfig[field_selected] = data_input
+
+  if field_selected == "scan_reverse" and data_input in ["true", "false", "True", "False"]:
+    globalconfig[field_selected] = data_input.lower() == "true"
+
+  if field_selected == "scan_on_fail" and data_input in on_fail_options:
+    globalconfig[field_selected] = data_input
+
+  response = make_response(json.dumps(globalconfig))
+  response.content_type = 'application/json'
+  return response
+
 #----------- MAIN RUN -----------
 
 if __name__ == '__main__':
-  # app.run(debug=True)
-  app.run(debug=False)
+  app.run(debug=True)

@@ -1,0 +1,15 @@
+name: smnar-lidar-dashboard
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - flask=2.0.1
+  - werkzeug=2.0.1
+  - numpy
+  - scipy
+  - pandas
+  - plotly>=5.18
+  - pyserial=3.5
+  - python-dotenv=0.20.0
+  - python-dateutil=2.8.2
