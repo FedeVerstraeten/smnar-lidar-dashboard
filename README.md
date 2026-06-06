@@ -69,9 +69,39 @@ python run.py
 - **Láser:** inicia/detiene el láser en el puerto serie configurado.
 - **Sounding:** descarga radiosondeos por estación/región/fecha o usa el modelo atmosférico estándar; los archivos se guardan en `sounding/`.
 
+## Simuladores de hardware
+
+La rama `lidar-simulator` incluye simuladores independientes para probar el
+dashboard sin conectar el hardware:
+
+```bash
+# Controlador de motores GRBL (Linux/WSL)
+python grbl_fake_serial.py
+
+# Controlador Ethernet Licel
+python licel_fake_tcp.py
+```
+
+El simulador Licel escucha por defecto en `127.0.0.1:2055`. Lee
+automáticamente las adquisiciones reales `simul/lidar_simul_*.json`, rota una
+captura con cada comando `START`/`MSTART` y la entrega como datos binarios
+`LSW`/`MSW`. Para canales que no aparecen en la captura genera una señal
+sintética.
+
+Para usarlo, iniciar `licel_fake_tcp.py` y configurar la conexión TCP/IP del
+dashboard con IP `127.0.0.1` y puerto `2055`.
+
+Las pruebas automatizadas de ambos simuladores y el notebook del banco de
+pruebas del motor están centralizados en `tests/`:
+
+```bash
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
 ## Directorios relevantes
 - `inifiles/`: aquí se guardan los INI cargados desde la UI (`acquis.ini`, `globalinfo.ini`).
 - `acquisdata/`: mediciones adquiridas en JSON (se crea automáticamente si no existe).
+- `simul/`: adquisiciones reales usadas por el simulador TCP Licel.
 - `sounding/`: descargas de radiosondeo solicitadas desde la interfaz.
 - `utils/`: utilidades de ploteo (`utils/plotly_plot.py`) y manejo de radiosondeos (`utils/sounding.py`).
 - `lidarcontroller/`: lógica de señal (corrección de rango, Rayleigh-fit) y controladores Licel/láser.
