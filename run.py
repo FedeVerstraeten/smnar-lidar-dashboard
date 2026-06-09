@@ -274,7 +274,15 @@ def licel_record_data():
     lc.stopAcquisition() 
 
     # get signall in mV
-    data_mv = lc.getAnalogSignalmV(tr,BIN_LONG_TRANCE,"A",licelsettings.MILLIVOLT500)
+    # Include the final plot coordinate and the bins discarded by the offset.
+    # For 0-30000 m at 7.5 m/bin this yields 4001 plotted samples.
+    requested_bins = BIN_LONG_TRANCE + max(0, OFFSET_BINS)
+    data_mv = lc.getAnalogSignalmV(
+      tr,
+      requested_bins,
+      "A",
+      licelsettings.MILLIVOLT500
+    )
 
     # close socket
     # lc.closeConnection()
@@ -306,6 +314,7 @@ def licel_record_data():
               }
  
     # run html template
+
     return context
   
   if(action_button =="stop"):

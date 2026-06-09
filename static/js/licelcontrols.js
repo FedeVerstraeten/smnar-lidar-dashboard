@@ -2,6 +2,59 @@
 
 let interval;
 
+function updateLidarPlot(targetId, figureJson, layoutOverrides) {
+  var figure;
+  try {
+    figure = typeof figureJson === 'string'
+      ? JSON.parse(figureJson)
+      : figureJson;
+  } catch (error) {
+    console.error('Invalid Plotly figure for ' + targetId, error, figureJson);
+    return;
+  }
+
+  if (!figure || !Array.isArray(figure.data)) {
+    console.error('Plotly figure has no data for ' + targetId, figure);
+    return;
+  }
+
+  console.debug(
+    'Updating ' + targetId,
+    figure.data.map(function (trace) {
+      return {
+        name: trace.name,
+        xPoints: Array.isArray(trace.x) ? trace.x.length : 0,
+        yPoints: Array.isArray(trace.y) ? trace.y.length : 0
+      };
+    })
+  );
+
+  var layout = Object.assign({}, figure.layout || {}, layoutOverrides || {});
+  delete layout.width;
+  delete layout.height;
+  layout.autosize = true;
+
+  Plotly.react(
+    targetId,
+    figure.data || [],
+    layout,
+    {responsive: true, displaylogo: false}
+  );
+}
+
+function updateLidarSignalPlots(context) {
+  updateLidarPlot(
+    'plotly-lidar-signal',
+    context.plot_lidar_signal,
+    {title: null, margin: {t: 32, r: 24, b: 56, l: 64}}
+  );
+  updateLidarPlot(
+    'plotly-lidar-range-correction',
+    context.plot_lidar_range_correction,
+    {margin: {t: 104, r: 24, b: 64, l: 64}}
+  );
+}
+
 function requestPlots() {
   $.ajax({
     url: "/record",
@@ -13,13 +66,7 @@ function requestPlots() {
     dataType:"json",
     success: function (context) {
   
-      // Raw signal plot
-      var graph_raw = JSON.parse(context.plot_lidar_signal);
-      Plotly.newPlot('plotly-lidar-signal', graph_raw);
-      
-      // Range corrected plot
-      var graph_rc = JSON.parse(context.plot_lidar_range_correction);
-      Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
+      updateLidarSignalPlots(context);
       
       // Continuous RMS error plot
       var time = new Date();
@@ -60,7 +107,7 @@ $('#startbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-        
+        updateLidarSignalPlots(context);
         console.log("error es ",context.rms_error);
         var DELTA_TIME_MS = 1000
 
@@ -95,6 +142,9 @@ $('#startbtn').on('click', function (e) {
           interval = setInterval(requestPlots,delay_ms);
           console.log("START success",interval);
         }
+      },
+      error: function (xhr, status, error) {
+        console.error('START acquisition failed', status, error, xhr.responseText);
       }
    });
 })
@@ -128,14 +178,22 @@ $('#oneshotbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-        
-        // Raw signal plot
-        var graph_raw = JSON.parse(context.plot_lidar_signal);
-        Plotly.newPlot('plotly-lidar-signal', graph_raw);
-        
-        // Range corrected plot
-        var graph_rc = JSON.parse(context.plot_lidar_range_correction);
-        Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
+        updateLidarSignalPlots(context);
+
+        var time = new Date();
+        Plotly.extendTraces(
+          'plotly-lidar-rms',
+          {x: [[time]], y: [[context.rms_error]]},
+          [0]
+        );
+      },
+      error: function (xhr, status, error) {
+        console.error(
+          'SINGLE SHOT acquisition failed',
+          status,
+          error,
+          xhr.responseText
+        );
       }
    });
 })

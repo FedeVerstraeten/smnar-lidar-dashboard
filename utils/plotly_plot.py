@@ -9,26 +9,50 @@ import json
 import numpy as np
 
 
+def _plot_window(lidar_signal, limit_init, limit_final):
+  bin_meters = 7.5
+  sample_count = min(
+    len(lidar_signal.range),
+    len(lidar_signal.raw_signal)
+  )
+  bin_init = max(0, int(limit_init/bin_meters))
+  bin_final = min(sample_count, int(limit_final/bin_meters) + 1)
+
+  if bin_final <= bin_init:
+    bin_init = 0
+    bin_final = sample_count
+
+  return bin_init, bin_final
+
+
 def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
-  
-  # meters to bins
-  bin_init = int(limit_init/7.5)
-  bin_final = int(limit_final/7.5)
+  bin_init, bin_final = _plot_window(
+    lidar_signal,
+    limit_init,
+    limit_final
+  )
+  meters = np.asarray(
+    lidar_signal.range[bin_init:bin_final],
+    dtype=np.float64
+  ).tolist()
+  raw_signal = np.asarray(
+    lidar_signal.raw_signal[bin_init:bin_final],
+    dtype=np.float64
+  ).tolist()
 
-  df=pd.DataFrame({
-                  'meters':lidar_signal.range[bin_init:bin_final],
-                  'raw_signal':lidar_signal.raw_signal[bin_init:bin_final],
-                  })
-  df.index=df['meters']
-
-  fig = px.line(df, 
-                x=df.index, 
-                y=df['raw_signal'], 
-                title='LiDAR raw signal'
-                )
+  fig = go.Figure(data=go.Scatter(
+    x=meters,
+    y=raw_signal,
+    mode="lines",
+    name="Raw signal"
+  ))
   
   # Set axes titles
-  fig.update_xaxes(rangeslider_visible=True,title_text="Height [m]")
+  fig.update_xaxes(
+    rangeslider_visible=True,
+    title_text="Height [m]",
+    range=[limit_init, limit_final]
+  )
   fig.update_yaxes(title_text="Raw signal [mV]",)
 
   fig.update_layout(width=1200, height=500,
@@ -41,26 +65,32 @@ def plotly_lidar_signal(lidar_signal,limit_init,limit_final):
 
 
 def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final,wavelength):
+  bin_init, bin_final = _plot_window(
+    lidar_signal,
+    limit_init,
+    limit_final
+  )
+  meters = np.asarray(
+    lidar_signal.range[bin_init:bin_final],
+    dtype=np.float64
+  ).tolist()
+  range_corrected = np.asarray(
+    lidar_signal.rc_signal[bin_init:bin_final],
+    dtype=np.float64
+  ).tolist()
+  molecular_profile = np.asarray(
+    lidar_signal.adj_factor
+    * lidar_signal.pr2_mol[bin_init:bin_final],
+    dtype=np.float64
+  ).tolist()
 
-  # meters to bins
-  bin_init = int(limit_init/7.5)
-  bin_final = int(limit_final/7.5)
-
-  df=pd.DataFrame({
-                  'meters':lidar_signal.range[bin_init:bin_final],
-                  'range_corrected':lidar_signal.rc_signal[bin_init:bin_final],
-                  'mol_profile':lidar_signal.adj_factor*lidar_signal.pr2_mol[bin_init:bin_final]
-                  })
-  df.index=df['meters']
-  fig = go.Figure()
-  fig = make_subplots() # rayleigh-fit secondary curve?
-  #fig = make_subplots(specs=[[{"secondary_y": True}]]) # rayleigh-fit secondary curve?
+  fig = make_subplots()
 
   # Adding traces
   fig.add_trace(
     go.Scatter(
-        x=df.index,
-        y=df["range_corrected"],
+        x=meters,
+        y=range_corrected,
         mode="lines",
         name="Range corrected " + str(wavelength) + " nm",
         marker_color='#39ac39',
@@ -71,8 +101,8 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final,wavelength
 
   fig.add_trace(
     go.Scatter(
-        x=df.index,
-        y=df["mol_profile"],
+        x=meters,
+        y=molecular_profile,
         mode="lines",
         name="Molecular profile " + str(wavelength) + " nm",
         marker_color='#b23434',
@@ -105,7 +135,11 @@ def plotly_lidar_range_correction(lidar_signal,limit_init,limit_final,wavelength
 
   # Set x-axis title
   #fig.update_xaxes(tickangle=45,rangeslider_visible=True)
-  fig.update_xaxes(tickangle=45,title_text="Height [m]")
+  fig.update_xaxes(
+    tickangle=45,
+    title_text="Height [m]",
+    range=[limit_init, limit_final]
+  )
   
   # Set y-axes titles
   fig.update_yaxes(title_text="Range corrected signal [mV x m^2] ",
