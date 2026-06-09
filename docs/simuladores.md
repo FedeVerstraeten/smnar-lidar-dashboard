@@ -8,9 +8,10 @@ motores GRBL ni el controlador Ethernet Licel.
 
 | Componente | Archivo | Conexión simulada |
 | --- | --- | --- |
-| Controlador de motores GRBL | `grbl_fake_serial.py` | Puerto serie virtual PTY |
-| Controlador Licel | `licel_fake_tcp.py` | Servidor TCP/IP |
-| Mediciones LiDAR | `simul/lidar_simul_*.json` | Datos binarios Licel `LSW`/`MSW` |
+| Controlador de motores GRBL | `simulator/grbl_fake_serial.py` | Puerto serie virtual PTY |
+| Controlador Licel | `simulator/licel_fake_tcp.py` | Servidor TCP/IP |
+| Visor de mediciones | `simulator/lidar_simul_plot.py` | Gráficos Plotly raw y RC |
+| Mediciones LiDAR | `simulator/data/lidar_simul_*.json` | Datos binarios Licel `LSW`/`MSW` |
 | Tests automatizados | `tests/test_*.py` | Conexiones locales y lógica de protocolo |
 | Banco de prueba del motor | `tests/banco_prueba_motor_controller.ipynb` | Pruebas interactivas |
 
@@ -21,7 +22,7 @@ antes de usar los controles correspondientes en la interfaz.
 
 ### Funcionamiento
 
-`grbl_fake_serial.py` crea un pseudo-terminal y publica el enlace
+`simulator/grbl_fake_serial.py` crea un pseudo-terminal y publica el enlace
 `/tmp/grbl-sim`. El dashboard puede abrir ese enlace con `pyserial` como si
 fuera un controlador GRBL físico.
 
@@ -51,7 +52,7 @@ Python nativo de Windows.
 ### Ejecución
 
 ```bash
-python grbl_fake_serial.py
+python simulator/grbl_fake_serial.py
 ```
 
 Al iniciar muestra una salida similar a:
@@ -88,7 +89,7 @@ También se aceptan sin acción física los comandos `G20`, `G21`, `G17`, `G94`,
 
 ### Funcionamiento
 
-`licel_fake_tcp.py` crea un servidor TCP compatible con
+`simulator/licel_fake_tcp.py` crea un servidor TCP compatible con
 `lidarcontroller/licelcontroller.py`. Por defecto escucha en:
 
 ```text
@@ -109,18 +110,17 @@ comunica con el servidor fake usando el protocolo normal de Licel.
 
 ### Mediciones reales
 
-El directorio `simul/` contiene 33 adquisiciones reales exportadas por el
+El directorio `simulator/data/` contiene 33 adquisiciones reales exportadas por el
 módulo Acquisition:
 
 ```text
-simul/lidar_simul_0.json
+simulator/data/lidar_simul_0.json
 ...
-simul/lidar_simul_32.json
+simulator/data/lidar_simul_32.json
 ```
 
-Con cada comando `START` o `MSTART`, el simulador selecciona la siguiente
-captura y asigna sus canales a los transient recorders correspondientes. Al
-llegar al último archivo vuelve al primero.
+Con cada comando `START` o `MSTART`, el simulador selecciona una captura
+aleatoria y asigna sus canales a los transient recorders correspondientes.
 
 Los valores `data_mv` se convierten de nuevo a cuentas ADC y después se
 codifican como palabras de 16 bits `LSW` y `MSW`. De esta forma
@@ -133,7 +133,7 @@ sintética con fondo, decaimiento y un pico LiDAR.
 ### Ejecución
 
 ```bash
-python licel_fake_tcp.py
+python simulator/licel_fake_tcp.py
 ```
 
 Configurar en la sección TCP/IP del dashboard:
@@ -146,11 +146,11 @@ Puerto: 2055
 Opciones disponibles:
 
 ```bash
-python licel_fake_tcp.py --help
-python licel_fake_tcp.py --host 127.0.0.1 --port 2055
-python licel_fake_tcp.py --devices 0-3
-python licel_fake_tcp.py --shot-rate 30
-python licel_fake_tcp.py --data-dir simul
+python simulator/licel_fake_tcp.py --help
+python simulator/licel_fake_tcp.py --host 127.0.0.1 --port 2055
+python simulator/licel_fake_tcp.py --devices 0-3
+python simulator/licel_fake_tcp.py --shot-rate 30
+python simulator/licel_fake_tcp.py --data-dir simulator/data
 ```
 
 Para trabajar únicamente con señales sintéticas, indicar un directorio vacío
@@ -182,13 +182,13 @@ En Linux o WSL se pueden abrir tres terminales:
 Terminal 1:
 
 ```bash
-python grbl_fake_serial.py
+python simulator/grbl_fake_serial.py
 ```
 
 Terminal 2:
 
 ```bash
-python licel_fake_tcp.py
+python simulator/licel_fake_tcp.py
 ```
 
 Terminal 3:
@@ -261,7 +261,7 @@ pruebas manuales e interactivas del controlador de motores.
 
 ### El dashboard no conecta con Licel
 
-Comprobar que `licel_fake_tcp.py` esté ejecutándose y que el dashboard use
+Comprobar que `simulator/licel_fake_tcp.py` esté ejecutándose y que el dashboard use
 `127.0.0.1:2055`. Verificar también que el puerto no esté ocupado por otro
 proceso.
 
@@ -273,7 +273,7 @@ inicio.
 
 ### No aparecen las mediciones reales
 
-Comprobar que `--data-dir` apunte al directorio `simul/`. Al comenzar una
+Comprobar que `--data-dir` apunte al directorio `simulator/data/`. Al comenzar una
 adquisición debe aparecer en consola:
 
 ```text
@@ -285,7 +285,7 @@ Using recorded acquisition: lidar_simul_N.json
 Iniciar el simulador en otro puerto:
 
 ```bash
-python licel_fake_tcp.py --port 12055
+python simulator/licel_fake_tcp.py --port 12055
 ```
 
 Configurar el mismo puerto en el dashboard.

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-import grbl_fake_serial as grbl
+from simulator import grbl_fake_serial as grbl
 
 
 class GrblFakeSerialTest(unittest.TestCase):
@@ -25,7 +25,7 @@ class GrblFakeSerialTest(unittest.TestCase):
             ],
         )
 
-    @patch("grbl_fake_serial.time.sleep", return_value=None)
+    @patch("simulator.grbl_fake_serial.time.sleep", return_value=None)
     def test_absolute_and_relative_movements(self, _sleep):
         self.assertEqual(
             grbl.handle_command("G90 G1 X2.5 Y-1.5 F800"),
@@ -38,7 +38,7 @@ class GrblFakeSerialTest(unittest.TestCase):
         self.assertEqual(grbl.pos, {"X": 3.5, "Y": 0.5, "Z": -3.0})
         self.assertFalse(grbl.absolute_mode)
 
-    @patch("grbl_fake_serial.time.sleep", return_value=None)
+    @patch("simulator.grbl_fake_serial.time.sleep", return_value=None)
     def test_movements_are_clamped_to_axis_limits(self, _sleep):
         grbl.handle_command("G90 G1 X99 Y-99 Z8")
 
