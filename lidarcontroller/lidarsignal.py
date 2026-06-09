@@ -6,6 +6,7 @@ from scipy import constants
 from scipy import integrate
 from scipy.interpolate import interp1d
 
+
 class lidarSignal:
   
   def __init__(self):
@@ -68,10 +69,15 @@ class lidarSignal:
   def rangeCorrection(self,threshold_meters=0):
     
     # set theshold
-    if self.bin_threshold == 0:
-      self.bin_threshold = int(self.bin_long_trace/4)
-    else:
+    if threshold_meters > 0:
       self.setThreshold(threshold_meters)
+    elif self.bin_threshold == 0:
+      self.bin_threshold = int(self.bin_long_trace/4)
+
+    self.bin_threshold = min(
+      max(0, self.bin_threshold),
+      max(0, self.bin_long_trace - 1)
+    )
 
     # Height range on bins
     self.range = self.__BIN_METERS * np.arange(0,self.bin_long_trace,1)
@@ -151,7 +157,15 @@ class lidarSignal:
     # Range vector referenced to the LiDAR level
     range_lidar = height_highres - self.masl
 
-    cumtrapz = integrate.cumtrapz(alpha_mol, range_lidar, initial=0)
+    # cumtrapz (deprecated) or cumulative_trapezoid (new)
+    # scipy 1.10.0 deprecated cumtrapz, replaced by cumulative_trapezoid with same parameters and output
+    # if scipy version < 1.10.0 --> cumtrapz, else cumulative_trapezoid
+    if not hasattr(integrate, "cumulative_trapezoid"):
+      cumtrapz = integrate.cumtrapz(alpha_mol, range_lidar, initial=0)
+    else:
+      cumtrapz = integrate.cumulative_trapezoid(alpha_mol, range_lidar, initial=0)
+
+    # transmittance of the atmosphere for two-way path
     tm2r_mol = np.exp(-2*cumtrapz)
 
     # Purely molecular atmosphere profile
@@ -184,9 +198,29 @@ class lidarSignal:
     # Adjusment factor calculus between elastic LiDAR and molecular signals
     # a = sum(Sel*Sm)/sum(Sm^2)
 
-    sum_sel_sm = np.dot(self.rc_signal[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
-    sum_sm_square = np.dot(self.pr2_mol[bin_init:bin_fin+1],self.pr2_mol[bin_init:bin_fin+1])
-    self.adj_factor = sum_sel_sm/sum_sm_square
+    signal_window = np.asarray(
+      self.rc_signal[bin_init:bin_fin+1],
+      dtype=np.float64
+    )
+    molecular_window = np.asarray(
+      self.pr2_mol[bin_init:bin_fin+1],
+      dtype=np.float64
+    )
+    valid = np.isfinite(signal_window) & np.isfinite(molecular_window)
+
+    if np.count_nonzero(valid) < 2:
+      self.adj_factor = 0.0
+      return
+
+    signal_window = signal_window[valid]
+    molecular_window = molecular_window[valid]
+    sum_sel_sm = np.dot(signal_window, molecular_window)
+    sum_sm_square = np.dot(molecular_window, molecular_window)
+    if not np.isfinite(sum_sm_square) or sum_sm_square <= 0:
+      self.adj_factor = 0.0
+      return
+
+    self.adj_factor = float(sum_sel_sm/sum_sm_square)
 
   def overlapFitting(self):
 
@@ -196,17 +230,49 @@ class lidarSignal:
     raw_signal_nobias = self.raw_signal - self.bias
 
     # Adjustment factor on raw signal without bias
-    sum_sel_sm = np.dot(raw_signal_nobias[bin_init:bin_fin+1],self.pr_mol[bin_init:bin_fin+1])
-    sum_sm_square = np.dot(self.pr_mol[bin_init:bin_fin+1],self.pr_mol[bin_init:bin_fin+1])
-    adj_factor = sum_sel_sm/sum_sm_square
+    signal_window = np.asarray(
+      raw_signal_nobias[bin_init:bin_fin+1],
+      dtype=np.float64
+    )
+    molecular_window = np.asarray(
+      self.pr_mol[bin_init:bin_fin+1],
+      dtype=np.float64
+    )
+    valid = np.isfinite(signal_window) & np.isfinite(molecular_window)
+
+    if np.count_nonzero(valid) < 2:
+      self.alignment_factor = 0.0
+      self.rms_err = 0.0
+      return
+
+    signal_window = signal_window[valid]
+    molecular_window = molecular_window[valid]
+    sum_molecular_square = np.dot(molecular_window, molecular_window)
+    if not np.isfinite(sum_molecular_square) or sum_molecular_square <= 0:
+      self.alignment_factor = 0.0
+      self.rms_err = 0.0
+      return
+
+    adj_factor = np.dot(
+      signal_window,
+      molecular_window
+    )/sum_molecular_square
 
     # Molecular fit signal
-    prMol_Fit = adj_factor * self.pr_mol
+    fitted_window = adj_factor * molecular_window
 
-    
     # Fitting using Pearson's correlation coefficient, values between [-1,1]
     # maximum correlation with r=1 --> optimal alignment
-    r = np.corrcoef(prMol_Fit[bin_init:bin_fin+1], raw_signal_nobias[bin_init:bin_fin+1])
-    self.alignment_factor = r[0,1]
+    epsilon = np.finfo(np.float64).eps
+    if (
+      np.std(fitted_window) <= epsilon
+      or np.std(signal_window) <= epsilon
+    ):
+      self.alignment_factor = 0.0
+    else:
+      correlation = np.corrcoef(fitted_window, signal_window)[0, 1]
+      self.alignment_factor = (
+        float(correlation) if np.isfinite(correlation) else 0.0
+      )
 
-    self.rms_err=self.alignment_factor
+    self.rms_err = self.alignment_factor
