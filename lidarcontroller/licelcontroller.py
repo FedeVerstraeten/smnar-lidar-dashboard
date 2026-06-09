@@ -224,27 +224,30 @@ class licelController:
                       + " " + str(dataset) \
                       + " " + str(memory)
     
-    delay = 0.25 # seconds
-    databuff=b'0'
-    
     # resize buffer
     if self.buffersize < 2*bins:
       self.buffersize = 2*bins
 
     try:
-      while(len(databuff) < 2*bins and delay<10): # 1bin = 2 bytes = 16 bits
-        self.sock.send(bytes(command + '\r\n','utf-8'))
-        self.sock.settimeout(self.timeout)
-        time.sleep(delay) # wait TCP acquisition 
-      
-        databuff = self.sock.recv(self.buffersize)
-        print("databuff len:",len(databuff))
-        delay += 1
+      expected_bytes = 2*bins # 1 bin = 2 bytes = 16 bits
+      databuff = bytearray()
+      self.sock.sendall(bytes(command + '\r\n','utf-8'))
+      self.sock.settimeout(self.timeout)
+
+      while len(databuff) < expected_bytes:
+        chunk = self.sock.recv(expected_bytes - len(databuff))
+        if not chunk:
+          raise ConnectionError(
+            "Licel connection closed before dataset was complete"
+          )
+        databuff.extend(chunk)
+
+      print("databuff len:",len(databuff))
 
     except Exception as e:
       raise e
     
-    dataout = np.frombuffer(databuff,dtype=np.uint16)
+    dataout = np.frombuffer(bytes(databuff),dtype=np.uint16)
 
     return dataout
 

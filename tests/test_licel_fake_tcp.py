@@ -1,14 +1,20 @@
 import socket
+import struct
 import threading
 import time
 import unittest
 import json
 import os
 import tempfile
+from pathlib import Path
 
 import numpy as np
 
-from licel_fake_tcp import LicelState, LicelTCPServer
+from simulator.licel_fake_tcp import (
+    LicelProtocol,
+    LicelState,
+    LicelTCPServer,
+)
 from lidarcontroller.licelcontroller import licelController
 
 
@@ -62,6 +68,35 @@ class LicelFakeTCPTest(unittest.TestCase):
         self.assertEqual(data[0], 0)
         self.assertTrue(np.any(data[1:] > 0))
 
+    def test_controller_accumulates_fragmented_tcp_dataset(self):
+        expected = (0, 10, 20, 30)
+        payload = struct.pack("<4H", *expected)
+
+        class FragmentedSocket:
+            def __init__(self):
+                self.fragments = [
+                    payload[:3],
+                    payload[3:5],
+                    payload[5:],
+                ]
+
+            def sendall(self, _command):
+                pass
+
+            def settimeout(self, _timeout):
+                pass
+
+            def recv(self, size):
+                fragment = self.fragments.pop(0)
+                return fragment[:size]
+
+        controller = licelController()
+        controller.sock = FragmentedSocket()
+
+        data = controller.getDatasets(0, "LSW", 4, "A")
+
+        self.assertEqual(data.tolist(), list(expected))
+
     def test_analog_signal_end_to_end(self):
         bins = 128
         self.assertEqual(self.controller.selectTR(1), 0)
@@ -112,7 +147,32 @@ class LicelFakeTCPTest(unittest.TestCase):
                 server.server_close()
                 thread.join(timeout=2)
 
-        np.testing.assert_allclose(actual_mv, expected_mv, atol=0.13)
+        np.testing.assert_allclose(actual_mv, expected_mv, atol=0.01)
+
+    def test_recorded_signal_retains_sub_adc_count_precision(self):
+        expected_mv = np.array([4.6691, 4.6711, 4.6726, 4.6745])
+        recorder = type(
+            "Recorder",
+            (),
+            {
+                "shots": 66,
+                "input_range": 0,
+                "recorded_signal_mv": expected_mv.tolist(),
+            },
+        )()
+
+        lsw = LicelProtocol._dataset_values(
+            0, recorder, "LSW", len(expected_mv) + 1
+        )
+        msw = LicelProtocol._dataset_values(
+            0, recorder, "MSW", len(expected_mv) + 1
+        )
+        accumulated = (
+            (np.asarray(msw[1:], dtype=np.uint32) & 0x00FF) << 16
+        ) + np.asarray(lsw[1:], dtype=np.uint32)
+        actual_mv = accumulated / 64 * (500.0 / 4096.0)
+
+        np.testing.assert_allclose(actual_mv, expected_mv, atol=0.001)
 
     def test_multiple_recorder_flow(self):
         self.assertEqual(self.controller.selectTR("0,1,2"), 0)
@@ -131,6 +191,24 @@ class LicelFakeTCPTest(unittest.TestCase):
         with socket.create_connection((self.host, self.port), timeout=2) as sock:
             sock.sendall(b"BOGUS\r\n")
             self.assertEqual(sock.recv(1024), b"BOGUS unknown command\r\n")
+
+    def test_recording_files_have_all_channels_and_bins(self):
+        recording_paths = sorted(
+            Path("simulator/data").glob("lidar_simul_*.json")
+        )
+
+        self.assertEqual(len(recording_paths), 33)
+        for recording_path in recording_paths:
+            with recording_path.open(encoding="utf-8") as input_file:
+                recording = json.load(input_file)
+
+            self.assertEqual(set(recording), {"0", "1", "2", "3"})
+            for channel in recording.values():
+                self.assertEqual(int(channel["bins"]), 4092)
+                self.assertEqual(len(channel["data_mv"]), 4092)
+                self.assertTrue(
+                    np.all(np.isfinite(channel["data_mv"]))
+                )
 
 
 if __name__ == "__main__":

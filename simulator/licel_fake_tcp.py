@@ -6,6 +6,7 @@ import glob
 import json
 import math
 import os
+import random
 import socketserver
 import struct
 import threading
@@ -19,7 +20,7 @@ DEFAULT_PORT = 2055
 DEFAULT_SHOT_RATE = 30.0
 MAX_BINS = 16384
 DEFAULT_DATA_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "simul"
+    os.path.dirname(os.path.abspath(__file__)), "data"
 )
 
 
@@ -64,7 +65,6 @@ class LicelState:
     selected: List[int] = field(default_factory=list)
     recorders: Dict[int, TransientRecorder] = field(init=False)
     lock: threading.Lock = field(default_factory=threading.Lock)
-    recording_index: int = 0
 
     def __post_init__(self):
         self.recorders = {
@@ -78,10 +78,7 @@ class LicelState:
         if not self.recording_paths:
             return {}
 
-        path = self.recording_paths[
-            self.recording_index % len(self.recording_paths)
-        ]
-        self.recording_index += 1
+        path = random.choice(self.recording_paths)
         with open(path, "r", encoding="utf-8") as recording_file:
             recording = json.load(recording_file)
         print(f"Using recorded acquisition: {os.path.basename(path)}")
@@ -294,28 +291,35 @@ class LicelProtocol:
 
         for index in range(1, bins):
             x = index - 1
+            accumulated = None
             if (
                 recorder.recorded_signal_mv is not None
                 and x < len(recorder.recorded_signal_mv)
             ):
                 signal_mv = float(recorder.recorded_signal_mv[x])
-                adc_counts = round(signal_mv * 4096.0 / range_mv)
+                # Recorded values are already normalized by shot count. Encode
+                # the accumulated ADC value so sub-count precision is retained.
+                accumulated = round(
+                    signal_mv * 4096.0 * cycles / range_mv
+                )
             else:
                 background = 120.0 + 8.0 * math.sin(x / 37.0 + device_id)
                 peak = 2200.0 * math.exp(-((x - 650.0) / 170.0) ** 2)
                 tail = 700.0 * math.exp(-x / 1800.0)
                 adc_counts = int(background + peak + tail)
-            adc_counts = max(0, min(4095, adc_counts))
+                adc_counts = max(0, min(4095, adc_counts))
+                accumulated = adc_counts * cycles
 
             if dataset == "PC":
                 value = int(20 + 180 * math.exp(-x / 900.0))
             else:
-                accumulated = adc_counts * cycles
+                clipped = accumulated > 0xFFFFFF
+                accumulated = max(0, min(0xFFFFFF, accumulated))
                 if dataset == "LSW":
                     value = accumulated & 0xFFFF
                 else:
                     value = (accumulated >> 16) & 0x00FF
-                    if accumulated > 0xFFFFFF:
+                    if clipped:
                         value |= 0x0100
             values.append(value)
 
