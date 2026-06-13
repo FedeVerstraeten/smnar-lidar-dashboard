@@ -80,6 +80,9 @@ python simulator/grbl_fake_serial.py
 
 # Controlador Ethernet Licel
 python simulator/licel_fake_tcp.py
+
+# Láser Continuum Surelite II (Linux/WSL)
+python simulator/lasersurelite_fake_serial.py
 ```
 
 El simulador Licel escucha por defecto en `127.0.0.1:2055`. Lee
@@ -92,7 +95,11 @@ sintética.
 Para usarlo, iniciar `simulator/licel_fake_tcp.py` y configurar la conexión
 TCP/IP del dashboard con IP `127.0.0.1` y puerto `2055`.
 
-Las pruebas automatizadas de ambos simuladores y el notebook del banco de
+El simulador Surelite crea el puerto serie virtual `/tmp/laser-surelite-sim`.
+Configurar ese path como puerto del láser en el dashboard. Emula los comandos
+RS232 del equipo a 9600 baud y formato 8N1.
+
+Las pruebas automatizadas de los simuladores y el notebook del banco de
 pruebas del motor están centralizados en `tests/`:
 
 ```bash

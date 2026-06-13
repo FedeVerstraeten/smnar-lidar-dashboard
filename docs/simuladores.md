@@ -2,13 +2,14 @@
 
 Esta guía describe cómo ejecutar y usar los simuladores incluidos en la rama
 `lidar-simulator`. Permiten probar el dashboard sin conectar el controlador de
-motores GRBL ni el controlador Ethernet Licel.
+motores GRBL, el controlador Ethernet Licel ni el láser Continuum Surelite II.
 
 ## Componentes
 
 | Componente | Archivo | Conexión simulada |
 | --- | --- | --- |
 | Controlador de motores GRBL | `simulator/grbl_fake_serial.py` | Puerto serie virtual PTY |
+| Láser Continuum Surelite II | `simulator/lasersurelite_fake_serial.py` | Puerto serie virtual PTY |
 | Controlador Licel | `simulator/licel_fake_tcp.py` | Servidor TCP/IP |
 | Visor de mediciones | `simulator/lidar_simul_plot.py` | Gráficos Plotly raw y RC |
 | Mediciones LiDAR | `simulator/data/lidar_simul_*.json` | Datos binarios Licel `LSW`/`MSW` |
@@ -84,6 +85,65 @@ por el simulador.
 
 También se aceptan sin acción física los comandos `G20`, `G21`, `G17`, `G94`,
 `M2`, `M3` y `M5`.
+
+## Simulador Surelite II
+
+### Funcionamiento
+
+`simulator/lasersurelite_fake_serial.py` crea un pseudo-terminal con el enlace
+`/tmp/laser-surelite-sim`. El dashboard lo abre mediante `laserController` usando la
+configuración serie del equipo: 9600 baud, 8 bits, sin paridad y 1 stop bit.
+
+El simulador mantiene el estado de encendido, shutter, parámetros del láser,
+interlocks y contador de disparos. Los comandos deben enviarse en mayúsculas,
+con el formato exacto y terminados en `CR`.
+
+### Ejecución
+
+```bash
+python simulator/lasersurelite_fake_serial.py
+```
+
+Configurar `/tmp/laser-surelite-sim` como puerto del láser en el dashboard. Al igual
+que el simulador GRBL, requiere Linux, macOS o WSL.
+
+Para simular una condición de interlock o un contador inicial:
+
+```bash
+python simulator/lasersurelite_fake_serial.py --security-code 06
+python simulator/lasersurelite_fake_serial.py --shot-count 123456
+```
+
+### Comandos implementados
+
+| Comando | Acción |
+| --- | --- |
+| `SS` | Ejecuta un disparo si el láser está iniciado y `PD` es `000` |
+| `SE` | Devuelve el código de interlock con 2 dígitos |
+| `SH 0/1` | Cierra o abre el shutter |
+| `ST 0/1` | Detiene o inicia el láser |
+| `QS XXX` | Configura el retardo del Q-switch |
+| `RR XX.X` | Configura la tasa de repetición |
+| `VA X.XX` | Configura el voltaje de la fuente |
+| `PD XXX` | Configura la división de pulsos |
+| `SC` | Devuelve el contador con 9 dígitos |
+
+Sólo `SE` y `SC` generan una respuesta. Ambas son ASCII y terminan en `CR`.
+
+Los códigos configurables para la respuesta `SE` son:
+
+| Código | Estado |
+| --- | --- |
+| `00` | Operación normal |
+| `01` | Surelite fuera de modo serie |
+| `02` | Flujo de refrigerante interrumpido |
+| `03` | Temperatura de refrigerante alta |
+| `04` | Sin uso |
+| `05` | Problema en el cabezal |
+| `06` | Interlock externo |
+| `07` | Fin de carga no detectado |
+| `08` | Simmer no detectado |
+| `09` | Flow switch trabado |
 
 ## Simulador Licel
 
@@ -177,7 +237,7 @@ bytes por bin, sin agregar texto ni `CRLF` al bloque binario.
 
 ## Uso conjunto
 
-En Linux o WSL se pueden abrir tres terminales:
+En Linux o WSL se pueden abrir cuatro terminales:
 
 Terminal 1:
 
@@ -188,10 +248,16 @@ python simulator/grbl_fake_serial.py
 Terminal 2:
 
 ```bash
-python simulator/licel_fake_tcp.py
+python simulator/lasersurelite_fake_serial.py
 ```
 
 Terminal 3:
+
+```bash
+python simulator/licel_fake_tcp.py
+```
+
+Terminal 4:
 
 ```bash
 python run.py
@@ -200,6 +266,7 @@ python run.py
 En el dashboard configurar:
 
 - Motor: `/tmp/grbl-sim`.
+- Láser: `/tmp/laser-surelite-sim`.
 - Licel: `127.0.0.1`, puerto `2055`.
 
 Los logs de los simuladores muestran cada comando recibido con `>>` y cada
@@ -225,6 +292,12 @@ Ejecutar únicamente Licel:
 
 ```bash
 python -m unittest discover -s tests -p "test_licel_fake_tcp.py" -v
+```
+
+Ejecutar únicamente Surelite:
+
+```bash
+python -m unittest discover -s tests -p "test_lasersurelite_fake_serial.py" -v
 ```
 
 ### Cobertura GRBL
