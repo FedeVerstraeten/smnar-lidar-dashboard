@@ -20,18 +20,27 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
     <link rel="stlesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/vega-tooltip@0.16.0/vega-tooltip.scss">
     <style>
-        .laser-navbar-status {
+        .hardware-navbar-status {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            gap: .15rem;
+            padding: 0 .75rem;
+        }
+
+        .device-navbar-status {
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: .5rem;
-            min-height: 2.25rem;
-            padding: 0 .75rem;
+            min-height: 1.5rem;
             color: #495057;
             font-weight: 600;
             white-space: nowrap;
         }
 
-        .laser-navbar-led {
+        .device-navbar-led {
             width: 14px;
             height: 14px;
             border-radius: 50%;
@@ -41,15 +50,17 @@ scratch. This page gets rid of all links and provides the needed markup only.
             background: #dc3545;
         }
 
-        .laser-navbar-led.disconnected {
+        .device-navbar-led.disconnected {
             background: #dc3545;
         }
 
-        .laser-navbar-led.ready {
+        .device-navbar-led.connected,
+        .device-navbar-led.ready {
             background: #28a745;
         }
 
-        .laser-navbar-led.shooting {
+        .device-navbar-led.acquiring,
+        .device-navbar-led.shooting {
             background: #fd7e14;
         }
 
@@ -58,9 +69,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
         }
 
         @media (max-width: 576px) {
-            .laser-navbar-status {
+            .hardware-navbar-status {
                 padding: 0 .35rem;
                 font-size: .85rem;
+            }
+
+            .device-navbar-status {
+                min-height: 1.35rem;
             }
         }
     </style>
@@ -77,7 +92,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     {% endblock script %}
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand navbar-white navbar-light">
@@ -88,27 +103,33 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('homepage') }}">
-                        <button class="btn btn-outline-success" data-toggle="button" aria-pressed="false" type="button">Alignment Mode</button>
+                        <button class="btn {{ 'btn-success' if request.endpoint == 'homepage' else 'btn-outline-success' }}" type="button">Alignment Mode</button>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('acquisition_mode') }}">
-                        <button class="btn btn-outline-secondary" ata-toggle="button" aria-pressed="false" type="button">Acquisition Mode</button>
+                        <button class="btn {{ 'btn-secondary' if request.endpoint == 'acquisition_mode' else 'btn-outline-secondary' }}" type="button">Acquisition Mode</button>
                     </a>
                 </li> 
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('autoalignment_mode') }}">
-                        <button class="btn btn-outline-info" data-toggle="button" aria-pressed="false" type="button">Autoalignment Mode</button>
+                        <button class="btn {{ 'btn-info' if request.endpoint == 'autoalignment_mode' else 'btn-outline-info' }}" type="button">Autoalignment Mode</button>
                     </a>
                 </li>
             </ul>
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
-                    <div class="laser-navbar-status" title="Laser status">
-                        <i class="fas fa-exclamation-triangle laser-navbar-warning d-none" id="laser_nav_warning"></i>
-                        <span id="laser_nav_message">Laser disconnected</span>
-                        <span class="laser-navbar-led disconnected" id="laser_nav_led" aria-hidden="true"></span>
+                    <div class="hardware-navbar-status">
+                        <div class="device-navbar-status" title="Licel status">
+                            <span id="licel_nav_message">Licel disconnected</span>
+                            <span class="device-navbar-led disconnected" id="licel_nav_led" aria-hidden="true"></span>
+                        </div>
+                        <div class="device-navbar-status" title="Laser status">
+                            <i class="fas fa-exclamation-triangle laser-navbar-warning d-none" id="laser_nav_warning"></i>
+                            <span id="laser_nav_message">Laser disconnected</span>
+                            <span class="device-navbar-led disconnected" id="laser_nav_led" aria-hidden="true"></span>
+                        </div>
                     </div>
                 </li>
                 <!-- Messages Dropdown Menu -->
@@ -212,12 +233,12 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <script src="{{ url_for('static', filename='dist/js/adminlte.min.js') }}"></script>
     <!-- Custom lib -->
     <script src="{{ url_for('static', filename='js/controls.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/licelcontrols.js', v='20260608') }}"></script>
+    <script src="{{ url_for('static', filename='js/tcpipconnection.js', v='20260614-3') }}"></script>
+    <script src="{{ url_for('static', filename='js/licelcontrols.js', v='20260614-2') }}"></script>
     <script src="{{ url_for('static', filename='js/rayleighfit.js') }}"></script>
     <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lasercontrols.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sounding.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/tcpipconnection.js') }}"></script>
     <script src="{{ url_for('static', filename='js/acquiscontrols.js') }}"></script>
     <script src="{{ url_for('static', filename='js/motorcontrols.js') }}"></script>
     

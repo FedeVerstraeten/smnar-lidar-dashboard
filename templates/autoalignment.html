@@ -172,12 +172,14 @@
             </div>
         </li>
         <li class="nav-item">
-            <button type="button" class="btn btn-outline-success btn-sm" id="startbtn" value="start">START</button>
-            <button type="button" class="btn btn-outline-danger btn-sm" id="stopbtn" value="stop">STOP</button>
-            <button type="button" class="btn btn-outline-primary btn-sm" id="oneshotbtn" value="oneshot">SINGLE SHOT</button>
+            <button type="button" class="btn btn-outline-success btn-sm" id="startbtn" value="start" disabled>START</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="stopbtn" value="stop" disabled>STOP</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="oneshotbtn" value="oneshot" disabled>SINGLE SHOT</button>
         </li>
     </ul>
 </li>
+
+{% include "_tcpip_controls.html" %}
 
 <!-- Plot controls -->
 <li class="nav-item has-treeview menu-closed">
@@ -202,7 +204,6 @@
         </li>
     </ul>
 </li>
-
 <!-- Laser controls -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
@@ -622,6 +623,8 @@ document.addEventListener('click', function(event) {
 
 <script>
 var globalconfig = {{ context.globalconfig | safe }};
+document.getElementById('licel_ip_input').value = globalconfig["ip"];
+document.getElementById('licel_port_input').value = globalconfig["port"];
 document.getElementById('channel_input').value = globalconfig["channel"];
 document.getElementById('acq_time_input').value = globalconfig["acq_time"];
 document.getElementById('bin_offset_input').value = globalconfig["bin_offset"];

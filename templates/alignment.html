@@ -137,12 +137,13 @@
             </div>
         </li>
         <li class="nav-item">
-            <button type="button" class="btn btn-outline-success btn-sm" id="startbtn" value="start">START</button>
-            <button type="button" class="btn btn-outline-danger btn-sm" id="stopbtn" value="stop">STOP</button>
-            <button type="button" class="btn btn-outline-primary btn-sm" id="oneshotbtn" value="oneshot">SINGLE SHOT</button>
+            <button type="button" class="btn btn-outline-success btn-sm" id="startbtn" value="start" disabled>START</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="stopbtn" value="stop" disabled>STOP</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="oneshotbtn" value="oneshot" disabled>SINGLE SHOT</button>
         </li>
     </ul>
 </li>
+{% include "_tcpip_controls.html" %}
 <!-- Plots control Menu -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
@@ -400,52 +401,6 @@
 </ul>
 </li>
 <!-- ./Load ini Menu -->
-<!-- TCP/IP connection -->
-<li class="nav-item has-treeview menu-closed">
-    <a href="#" class="nav-link ">
-        <i class="nav-icon fas fa-network-wired"></i>
-        <p>
-            TCP/IP connection
-            <i class="right fas fa-angle-left"></i>
-        </p>
-    </a>
-    <ul class="nav nav-treeview">
-        <li class="nav-item">
-            <div class="form-row align-items-center">
-                <div class="col-sm-8 my-1">
-                    <label class="sr-only" for="inlineFormInputGroup">IP</label>
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <div class="input-group-text">IP</div>
-                        </div>
-                        <input type="text" class="form-control " id="licel_ip_input" placeholder="Licel IP">
-                    </div>
-                </div>
-                <div class="col-sm-2 my-1">
-                    <button type="submit" class="btn btn-primary" id="licel_ip_apply" value="ip">Apply</button>
-                </div>
-            </div>
-            <div class="form-row align-items-center">
-                <div class="col-sm-8 my-1">
-                    <label class="sr-only" for="inlineFormInputGroup">Port</label>
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <div class="input-group-text">Port</div>
-                        </div>
-                        <input type="text" class="form-control " id="licel_port_input" placeholder="Licel Port">
-                    </div>
-                </div>
-                <div class="col-sm-2 my-1">
-                    <button type="submit" class="btn btn-primary" id="licel_port_apply" value="port">Apply</button>
-                </div>
-                <!-- <div class="col-sm-1 my-1">
-                    <input type="checkbox" data-toggle="toggle" data-onstyle="success" data-offstyle="danger" id="tcpip_apply" value="tcpip_port">
-                </div> -->
-            </div>
-        </li>
-    </ul>
-</li>
-<!-- ./TCP/IP connection -->
 <!-- Laser controls -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">

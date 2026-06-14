@@ -65,13 +65,14 @@
             </div>
         </li>
         <li class="nav-item">
-            <button type="button" class="btn btn-outline-success btn-sm" id="acq_startbtn" value="start">START</button>
-            <button type="button" class="btn btn-outline-danger btn-sm" id="acq_stopbtn" value="stop">STOP</button>
-            <button type="button" class="btn btn-outline-primary btn-sm" id="acq_oneshotbtn" value="oneshot">SINGLE SHOT</button>
+            <button type="button" class="btn btn-outline-success btn-sm" id="acq_startbtn" value="start" disabled>START</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="acq_stopbtn" value="stop" disabled>STOP</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="acq_oneshotbtn" value="oneshot" disabled>SINGLE SHOT</button>
         </li>
     </ul>
 </li>
 <!-- ./Licel Menu -->
+{% include "_tcpip_controls.html" %}
 <!-- Plots control Menu -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
@@ -277,6 +278,8 @@ document.addEventListener('click', function(event) {
 var globalconfig = {{ context.globalconfig | safe }};
 
 // Licel controls
+document.getElementById('licel_ip_input').value = globalconfig["ip"];
+document.getElementById('licel_port_input').value = globalconfig["port"];
 document.getElementById('acq_time_input').value = globalconfig["acq_time"];
 document.getElementById('period_time_input').value = globalconfig["period_time"];
 

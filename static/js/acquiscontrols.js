@@ -3,6 +3,7 @@
 let acqinterval;
 
 function requestAcquisData() {
+  setLicelAcquiring();
   $.ajax({
     url: "/acquisdata",
     type: "GET",
@@ -12,11 +13,14 @@ function requestAcquisData() {
     },
     dataType:"json",
     success: function (context) {
-      
+      setLicelStatus({state: context.licel_state || 'connected', connected: true});
       // Raw signal plot
       var graph_raw = JSON.parse(context.plot_multiple_lidar_signal);
       Plotly.newPlot('plotly-lidar-signal', graph_raw);
       
+    },
+    error: function (xhr) {
+      updateLicelFromRequest(xhr, 'Licel acquisition failed');
     },
     cache: false
   });
@@ -40,7 +44,7 @@ $('#period_time_apply').on('click', function (e) {
 
 
 $('#acq_startbtn').on('click', function (e) {
-
+    setLicelAcquiring();
     $.ajax({
      url: "/acquisdata",
       type: "GET",
@@ -51,7 +55,7 @@ $('#acq_startbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-        
+        setLicelStatus({state: context.licel_state || 'connected', connected: true});
         // var DELTA_TIME_MS = 2000
         console.log("Period delay ms",context.period_delay)
         
@@ -59,6 +63,9 @@ $('#acq_startbtn').on('click', function (e) {
           acqinterval = setInterval(requestAcquisData,context.period_delay);
           console.log("ACQ START success",acqinterval);
         }
+      },
+      error: function (xhr) {
+        updateLicelFromRequest(xhr, 'Licel acquisition failed');
       }
    });
 })
@@ -73,6 +80,7 @@ $('#acq_stopbtn').on('click', function (e) {
     },
     dataType:"json",
     success: function (context) {
+      setLicelStatus({state: context.licel_state || 'connected', connected: true});
       clearInterval(acqinterval);
       acqinterval=null;
       console.log("ACQ STOP success",acqinterval);
@@ -81,7 +89,7 @@ $('#acq_stopbtn').on('click', function (e) {
 })
 
 $('#acq_oneshotbtn').on('click', function (e) {
-
+    setLicelAcquiring();
     $.ajax({
      url: "/acquisdata",
       type: "GET",
@@ -92,11 +100,13 @@ $('#acq_oneshotbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-        
+        setLicelStatus({state: context.licel_state || 'connected', connected: true});
         // Raw signal plot
         var graph_raw = JSON.parse(context.plot_multiple_lidar_signal);
         Plotly.newPlot('plotly-lidar-signal', graph_raw);
-        
+      },
+      error: function (xhr) {
+        updateLicelFromRequest(xhr, 'Licel acquisition failed');
       }
    });
 })
