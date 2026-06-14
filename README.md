@@ -71,6 +71,12 @@ python run.py
 
 ## Simuladores de hardware
 
+Documentación relacionada:
+
+- [`docs/simuladores.md`](docs/simuladores.md): ejecución, conexiones fake y tests.
+- [`docs/controles-dashboard.md`](docs/controles-dashboard.md): estados Licel,
+  controles de conexión y autoescala de gráficos.
+
 La rama `lidar-simulator` incluye simuladores independientes para probar el
 dashboard sin conectar el hardware:
 
@@ -117,7 +123,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 ## Notas adicionales
 - Los valores por defecto (IP, puerto, rangos, parámetros de ajuste) se cargan desde `globalconfig` en `run.py` y pueden modificarse en la UI.
-- No se incluyen tests automatizados; se recomienda validar conectividad con el hardware y revisar la salida en consola al ajustar parámetros o descargar radiosondeos.
+- Los tests automatizados están en `tests/` y se ejecutan con `unittest discover`.
 - El modo de autoalineación está en desarrollo
 
 ## Referencias

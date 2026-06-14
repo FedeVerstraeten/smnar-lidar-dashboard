@@ -213,6 +213,11 @@ python simulator/licel_fake_tcp.py --shot-rate 30
 python simulator/licel_fake_tcp.py --data-dir simulator/data
 ```
 
+En el dashboard se debe presionar `CONNECT` antes de usar `START` o
+`SINGLE SHOT`. El indicador Licel cambia de rojo a verde al conectar y a
+naranja durante la adquisición. Los campos IP y puerto pueden editarse mientras
+la conexión está cerrada.
+
 Para trabajar únicamente con señales sintéticas, indicar un directorio vacío
 en `--data-dir`.
 
