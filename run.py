@@ -8,6 +8,7 @@ import json
 import configparser
 import datetime
 import serial 
+import threading
 
 #----------- CUSTOM LIBS -----------
 
@@ -29,6 +30,9 @@ app.config.from_object('config.Config')
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 lidar = lidarSignal()
 lc = licelController()
+laser = laserController(port = 'COM3', baudrate = 9600, timeout = 5)
+laser_lock = threading.Lock()
+laser_state = "disconnected"
 
 globalconfig = {
                   "ip" : '10.49.234.234',
@@ -491,33 +495,99 @@ def tcpip_connection():
 
 @app.route("/laser",methods=['GET','POST'])
 def laser_controls():
-  
-  action_button = request.args['selected']
-  serial_port = request.args['input']
-  data = ""
+  global laser_state
 
-  if serial_port:
-    if serial_port != globalconfig["laser_port"]:
-      globalconfig["laser_port"] = serial_port
+  action_button = request.values.get('selected', '')
+  serial_port = request.values.get('input', '').strip()
 
-    if(action_button =="laser_start"):
-        laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
-        laser.connect()
-        laser.startLaser()
+  with laser_lock:
+    try:
+      connected = laser.isConnected()
+      if not connected:
+        laser_state = "disconnected"
+      elif laser_state == "disconnected":
+        laser_state = "ready"
+
+      if serial_port and serial_port != globalconfig["laser_port"]:
+        if connected:
+          return jsonify({
+            "ok": False,
+            "message": "Disconnect the laser before changing the serial port.",
+            "connected": connected,
+            "port": globalconfig["laser_port"],
+            "state": laser_state
+          }), 409
+
+        globalconfig["laser_port"] = serial_port
+
+      if(action_button == "laser_connect"):
+        if not globalconfig["laser_port"]:
+          return jsonify({
+            "ok": False,
+            "message": "Serial port is required.",
+            "connected": False,
+            "port": globalconfig["laser_port"],
+            "state": laser_state
+          }), 400
+
+        laser.connect(port = globalconfig["laser_port"], baudrate = 9600, timeout = 5)
+        laser_state = "ready"
+        data = "Laser serial connection established"
+
+      elif(action_button == "laser_disconnect"):
         laser.disconnect()
-        data ="Laser START"
-      
-    if(action_button =="laser_stop"):
-      laser = laserController(port = serial_port, baudrate = 9600, timeout = 5)
-      laser.connect()
-      laser.stopLaser()
-      laser.disconnect()
-      data="Laser STOP"
-    
-  response = make_response(json.dumps(data))
-  response.content_type = 'application/json'
-  
-  return response
+        laser_state = "disconnected"
+        data = "Laser serial connection closed"
+
+      elif(action_button == "laser_start"):
+        laser.startLaser()
+        laser_state = "shooting"
+        data = "Laser START"
+
+      elif(action_button == "laser_stop"):
+        laser.stopLaser()
+        laser_state = "ready"
+        data = "Laser STOP"
+
+      elif(action_button == "laser_shots"):
+        shots = laser.shotsCounter()
+        return jsonify({
+          "ok": True,
+          "message": "Laser shot counter: {:,}".format(shots),
+          "connected": laser.isConnected(),
+          "port": globalconfig["laser_port"],
+          "state": laser_state,
+          "shots": shots
+        })
+
+      elif(action_button == "laser_status"):
+        data = "Laser connected" if laser.isConnected() else "Laser disconnected"
+
+      else:
+        return jsonify({
+          "ok": False,
+          "message": "Invalid laser action.",
+          "connected": laser.isConnected(),
+          "port": globalconfig["laser_port"],
+          "state": laser_state
+        }), 400
+
+      return jsonify({
+        "ok": True,
+        "message": data,
+        "connected": laser.isConnected(),
+        "port": globalconfig["laser_port"],
+        "state": laser_state
+      })
+
+    except ValueError as ex:
+      return jsonify({
+        "ok": False,
+        "message": str(ex),
+        "connected": laser.isConnected(),
+        "port": globalconfig["laser_port"],
+        "state": laser_state
+      }), 500
 
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'txt','TXT', 'ini', 'INI'}

@@ -19,6 +19,51 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
     <link rel="stlesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/vega-tooltip@0.16.0/vega-tooltip.scss">
+    <style>
+        .laser-navbar-status {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            min-height: 2.25rem;
+            padding: 0 .75rem;
+            color: #495057;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .laser-navbar-led {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid rgba(0, 0, 0, .18);
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, .04), inset 0 1px 2px rgba(255, 255, 255, .45);
+            background: #dc3545;
+        }
+
+        .laser-navbar-led.disconnected {
+            background: #dc3545;
+        }
+
+        .laser-navbar-led.ready {
+            background: #28a745;
+        }
+
+        .laser-navbar-led.shooting {
+            background: #fd7e14;
+        }
+
+        .laser-navbar-warning {
+            color: #fd7e14;
+        }
+
+        @media (max-width: 576px) {
+            .laser-navbar-status {
+                padding: 0 .35rem;
+                font-size: .85rem;
+            }
+        }
+    </style>
     <!-- Import JQuery from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <!-- Import Plotly (does not have to be from CDN) -->
@@ -59,6 +104,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
             </ul>
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <div class="laser-navbar-status" title="Laser status">
+                        <i class="fas fa-exclamation-triangle laser-navbar-warning d-none" id="laser_nav_warning"></i>
+                        <span id="laser_nav_message">Laser disconnected</span>
+                        <span class="laser-navbar-led disconnected" id="laser_nav_led" aria-hidden="true"></span>
+                    </div>
+                </li>
                 <!-- Messages Dropdown Menu -->
                 <li class="nav-item dropdown">
                     <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
@@ -132,6 +184,26 @@ scratch. This page gets rid of all links and provides the needed markup only.
         </footer>
     </div>
     <!-- ./wrapper -->
+
+    <div class="modal fade" id="laser_shots_modal" tabindex="-1" role="dialog" aria-labelledby="laser_shots_title" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="laser_shots_title">Laser shot counter</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-muted small">Serial port</div>
+                    <div id="laser_shots_port" class="font-weight-bold mb-2"></div>
+                    <div class="text-muted small">Shots</div>
+                    <div id="laser_shots_value" class="h4 mb-0">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- jQuery -->
     <script src="{{ url_for('static', filename='plugins/jquery/jquery.min.js') }}"></script>
     <!-- Bootstrap 4 -->
