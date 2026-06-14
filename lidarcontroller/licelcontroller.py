@@ -72,26 +72,42 @@ class licelController:
   
   def openConnection(self,host,port):
     server_address = (host,port)
-    
-    if self.sock is None:
-      self.sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+
+    if self.sock is not None:
+      return
 
     try:
+      self.sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
       print('Connecting to: ', server_address)
       self.sock.connect(server_address)
+      self.host = host
+      self.port = port
       print('Connected to server')
     except Exception as e:
-      raise ValueError("Connection to server failed")
+      if self.sock is not None:
+        self.sock.close()
+        self.sock = None
+      raise ValueError("Connection to server failed") from e
 
   def closeConnection(self):
+    if self.sock is None:
+      return
+
     try:
       print('Closing connecting to: ', (self.host,self.port))
-      self.sock.shutdown(socket.SHUT_RDWR)
+      try:
+        self.sock.shutdown(socket.SHUT_RDWR)
+      except OSError:
+        pass
       self.sock.close()
       self.sock = None
       print('Connection closed')
     except Exception as e:
-      raise ValueError("Connection to server failed")
+      self.sock = None
+      raise ValueError("Connection to server failed") from e
+
+  def isConnected(self):
+    return self.sock is not None
 
   def runCommand(self,command,wait):
     response=None

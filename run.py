@@ -9,6 +9,7 @@ import configparser
 import datetime
 import serial 
 import threading
+from functools import wraps
 
 #----------- CUSTOM LIBS -----------
 
@@ -30,6 +31,8 @@ app.config.from_object('config.Config')
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 lidar = lidarSignal()
 lc = licelController()
+licel_lock = threading.Lock()
+licel_state = "disconnected"
 laser = laserController(port = 'COM3', baudrate = 9600, timeout = 5)
 laser_lock = threading.Lock()
 laser_state = "disconnected"
@@ -84,6 +87,47 @@ globalinfo_dir = os.path.join(APP_ROOT, 'inifiles','globalinfo.ini')
 if os.path.exists(acquis_dir) and os.path.exists(globalinfo_dir):
   acquis_ini.read(acquis_dir)
   globalinfo_ini.read(globalinfo_dir)
+
+def licel_status_payload(ok=True,message=""):
+  current_state = licel_state if lc.isConnected() else "disconnected"
+  return {
+    "ok": ok,
+    "message": message,
+    "connected": lc.isConnected(),
+    "ip": globalconfig["ip"],
+    "port": globalconfig["port"],
+    "state": current_state
+  }
+
+def licel_acquisition_required(route_function):
+  @wraps(route_function)
+  def guarded_route(*args,**kwargs):
+    global licel_state
+
+    action = request.values.get("selected","")
+    if action not in {"start","oneshot"}:
+      return route_function(*args,**kwargs)
+
+    with licel_lock:
+      if not lc.isConnected():
+        return jsonify(licel_status_payload(
+          False,
+          "Connect Licel before starting an acquisition."
+        )),409
+
+      licel_state = "acquiring"
+      try:
+        result = route_function(*args,**kwargs)
+      except Exception as ex:
+        return jsonify(licel_status_payload(False,str(ex))),500
+      finally:
+        licel_state = "connected" if lc.isConnected() else "disconnected"
+
+      if isinstance(result,dict):
+        result["licel_state"] = licel_state
+      return result
+
+  return guarded_route
 
 #----------- END-POINT ROUTES -----------
 
@@ -149,6 +193,7 @@ def acquisition_mode():
     return render_template('acquisition.html', context=context)
 
 @app.route("/acquisdata", methods=['GET','POST'])
+@licel_acquisition_required
 def licel_acquis_data():
 
   action_button = request.args['selected']
@@ -185,11 +230,6 @@ def licel_acquis_data():
                                   "A-binsA" : acquis_ini[section]["A-binsA"]
                                   }
   if(action_button =="start" or action_button =="oneshot"):
-    # open licel connection
-    if lc.sock is None:
-      lc.openConnection(LICEL_IP,LICEL_PORT)
-
-
     # setting Licel for each channel
     # for tr in acquis_settings:
     #   lc.selectTR(tr)
@@ -246,6 +286,7 @@ def licel_acquis_data():
     return response
 
 @app.route("/record", methods=['GET','POST'])
+@licel_acquisition_required
 def licel_record_data():
   action_button = request.args['selected']
 
@@ -263,10 +304,6 @@ def licel_record_data():
     # initialization
     global lc
     tr=globalconfig["channel"]
-
-    # TODO mejorar esto
-    if lc.sock is None:
-      lc.openConnection(LICEL_IP,LICEL_PORT)
 
     lc.selectTR(tr)
     lc.setInputRange(licelsettings.MILLIVOLT500)
@@ -474,24 +511,81 @@ def plots_limits():
 
 @app.route("/tcpip",methods=['GET','POST'])
 def tcpip_connection():
-  field_selected = request.args['selected']
-  data_input = request.args['input']
+  global licel_state
 
-  # IP
-  if(field_selected == "ip" and len(data_input.split('.'))==4):
-    ip_list = list(map(str,data_input.split('.')))
-    ip_digits = [i for i in ip_list if i.isdigit() and int(i)<256]
+  action = request.values.get("selected","licel_status")
+  ip_input = request.values.get("ip","").strip()
+  port_input = request.values.get("port","").strip()
 
-    if len(ip_digits)==4:
-      globalconfig[field_selected] = str(data_input)
-  
-  # Port
-  if(field_selected == "port" and data_input.isdigit()):
-    globalconfig[field_selected] = int(data_input)
+  if action == "licel_status":
+    return jsonify(licel_status_payload(
+      True,
+      "Licel connected" if lc.isConnected() else "Licel disconnected"
+    ))
 
-  response = make_response(json.dumps(globalconfig))
-  response.content_type = 'application/json'
-  return response
+  with licel_lock:
+    try:
+      if action in {"ip","port"}:
+        if lc.isConnected():
+          return jsonify(licel_status_payload(
+            False,
+            "Disconnect Licel before changing IP or port."
+          )),409
+
+        legacy_input = request.values.get("input","").strip()
+        if action == "ip":
+          ip_input = legacy_input
+        else:
+          port_input = legacy_input
+
+      if action in {"licel_connect","ip"} and ip_input:
+        octets = ip_input.split(".")
+        if (
+          len(octets) != 4
+          or not all(
+            octet.isdigit() and 0 <= int(octet) <= 255
+            for octet in octets
+          )
+        ):
+          return jsonify(licel_status_payload(
+            False,
+            "Invalid Licel IP address."
+          )),400
+        globalconfig["ip"] = ip_input
+
+      if action in {"licel_connect","port"} and port_input:
+        if not port_input.isdigit() or not 1 <= int(port_input) <= 65535:
+          return jsonify(licel_status_payload(
+            False,
+            "Invalid Licel TCP port."
+          )),400
+        globalconfig["port"] = int(port_input)
+
+      if action == "licel_connect":
+        if not lc.isConnected():
+          lc.openConnection(globalconfig["ip"],globalconfig["port"])
+        licel_state = "connected"
+        message = "Licel connection established"
+
+      elif action == "licel_disconnect":
+        lc.closeConnection()
+        licel_state = "disconnected"
+        message = "Licel connection closed"
+
+      elif action in {"ip","port"}:
+        message = "Licel connection settings updated"
+
+      else:
+        return jsonify(licel_status_payload(
+          False,
+          "Invalid Licel connection action."
+        )),400
+
+      return jsonify(licel_status_payload(True,message))
+
+    except ValueError as ex:
+      licel_state = "disconnected"
+      return jsonify(licel_status_payload(False,str(ex))),500
 
 @app.route("/laser",methods=['GET','POST'])
 def laser_controls():

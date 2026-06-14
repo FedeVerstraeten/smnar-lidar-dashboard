@@ -7,6 +7,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -42,6 +43,30 @@ class LicelFakeTCPTest(unittest.TestCase):
     def tearDown(self):
         if self.controller.sock is not None:
             self.controller.closeConnection()
+
+    def test_controller_reports_connection_lifecycle(self):
+        self.assertTrue(self.controller.isConnected())
+
+        self.controller.closeConnection()
+
+        self.assertFalse(self.controller.isConnected())
+
+    def test_failed_connection_can_be_retried(self):
+        controller = licelController()
+        fake_socket = mock.Mock()
+        fake_socket.connect.side_effect = OSError("connection refused")
+
+        with mock.patch(
+            "lidarcontroller.licelcontroller.socket.socket",
+            return_value=fake_socket,
+        ):
+            with self.assertRaisesRegex(
+                ValueError, "Connection to server failed"
+            ):
+                controller.openConnection("127.0.0.1", 1)
+
+        self.assertFalse(controller.isConnected())
+        fake_socket.close.assert_called_once()
 
     def test_single_recorder_command_flow(self):
         self.assertEqual(self.controller.selectTR(0), 0)
