@@ -1,0 +1,42 @@
+<!-- TCP/IP connection -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-network-wired"></i>
+        <p>
+            TCP/IP connection
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-12 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">IP</div>
+                        </div>
+                        <input type="text" class="form-control" id="licel_ip_input" placeholder="Licel IP">
+                    </div>
+                </div>
+                <div class="col-12 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Port</div>
+                        </div>
+                        <input type="text" class="form-control" id="licel_port_input" placeholder="Licel Port">
+                    </div>
+                </div>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-block" id="licel_connectbtn" value="licel_connect">CONNECT</button>
+                </div>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-secondary btn-sm btn-block" id="licel_disconnectbtn" value="licel_disconnect">DISCONNECT</button>
+                </div>
+                <div class="col-12 my-1">
+                    <small class="text-muted" id="licel_connection_status">Licel disconnected</small>
+                </div>
+            </div>
+        </li>
+    </ul>
+</li>
+<!-- ./TCP/IP connection -->

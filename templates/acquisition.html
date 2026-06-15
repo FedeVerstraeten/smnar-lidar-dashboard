@@ -65,13 +65,14 @@
             </div>
         </li>
         <li class="nav-item">
-            <button type="button" class="btn btn-outline-success btn-sm" id="acq_startbtn" value="start">START</button>
-            <button type="button" class="btn btn-outline-danger btn-sm" id="acq_stopbtn" value="stop">STOP</button>
-            <button type="button" class="btn btn-outline-primary btn-sm" id="acq_oneshotbtn" value="oneshot">SINGLE SHOT</button>
+            <button type="button" class="btn btn-outline-success btn-sm" id="acq_startbtn" value="start" disabled>START</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="acq_stopbtn" value="stop" disabled>STOP</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="acq_oneshotbtn" value="oneshot" disabled>SINGLE SHOT</button>
         </li>
     </ul>
 </li>
 <!-- ./Licel Menu -->
+{% include "_tcpip_controls.html" %}
 <!-- Plots control Menu -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
@@ -181,7 +182,7 @@
     <ul class="nav nav-treeview">
         <li class="nav-item">
             <div class="form-row align-items-center">
-                <div class="col-sm-7 my-1">
+                <div class="col-12 my-1">
                     <label class="sr-only" for="inlineFormInputGroup">Laser shoot</label>
                     <div class="input-group">
                         <div class="input-group-prepend">
@@ -190,11 +191,23 @@
                         <input type="text" class="form-control " id="laser_port_input" placeholder="Serial port">
                     </div>
                 </div>
-                <div class="col-sm-2 my-1">
-                    <button type="button" class="btn btn-outline-success btn-sm" id="laser_startbtn" value="laser_start">ON</button>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-block" id="laser_connectbtn" value="laser_connect">CONNECT</button>
                 </div>
-                <div class="col-sm-2 my-1">
-                    <button type="button" class="btn btn-outline-danger btn-sm" id="laser_stopbtn" value="laser_stop">OFF</button>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-secondary btn-sm btn-block" id="laser_disconnectbtn" value="laser_disconnect">DISCONNECT</button>
+                </div>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-success btn-sm btn-block" id="laser_startbtn" value="laser_start">ON</button>
+                </div>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-block" id="laser_stopbtn" value="laser_stop">OFF</button>
+                </div>
+                <div class="col-12 my-1">
+                    <button type="button" class="btn btn-outline-info btn-sm btn-block" id="laser_shotsbtn" value="laser_shots">SHOTS</button>
+                </div>
+                <div class="col-12 my-1">
+                    <small class="text-muted" id="laser_status_text">Laser disconnected</small>
                 </div>
             </div>
         </li>
@@ -265,6 +278,8 @@ document.addEventListener('click', function(event) {
 var globalconfig = {{ context.globalconfig | safe }};
 
 // Licel controls
+document.getElementById('licel_ip_input').value = globalconfig["ip"];
+document.getElementById('licel_port_input').value = globalconfig["port"];
 document.getElementById('acq_time_input').value = globalconfig["acq_time"];
 document.getElementById('period_time_input').value = globalconfig["period_time"];
 

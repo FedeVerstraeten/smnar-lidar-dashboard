@@ -2,7 +2,154 @@
 
 let interval;
 
+function installVisibleYAutoscale(targetId) {
+  var graph = document.getElementById(targetId);
+  if (!graph || typeof graph.on !== 'function') {
+    return;
+  }
+
+  if (graph._visibleYAutoscaleHandler) {
+    graph.removeListener('plotly_relayout', graph._visibleYAutoscaleHandler);
+  }
+
+  var updatingY = false;
+  graph._visibleYAutoscaleHandler = function (changes) {
+    if (updatingY) {
+      return;
+    }
+
+    if (changes['xaxis.autorange'] === true) {
+      updatingY = true;
+      Plotly.relayout(graph, {'yaxis.autorange': true}).finally(function () {
+        updatingY = false;
+      });
+      return;
+    }
+
+    var changedRange = changes['xaxis.range'];
+    var rangeStart = changedRange
+      ? changedRange[0]
+      : changes['xaxis.range[0]'];
+    var rangeEnd = changedRange
+      ? changedRange[1]
+      : changes['xaxis.range[1]'];
+    if (rangeStart === undefined || rangeEnd === undefined) {
+      return;
+    }
+
+    var fullXAxis = graph._fullLayout && graph._fullLayout.xaxis;
+    var dateRange = fullXAxis && fullXAxis.type === 'date';
+    var start = dateRange
+      ? new Date(rangeStart).getTime()
+      : Number(rangeStart);
+    var end = dateRange
+      ? new Date(rangeEnd).getTime()
+      : Number(rangeEnd);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) {
+      return;
+    }
+
+    var visibleY = [];
+    graph.data.forEach(function (trace) {
+      if (
+        trace.visible === false
+        || trace.visible === 'legendonly'
+        || !trace.x
+        || !trace.y
+      ) {
+        return;
+      }
+
+      trace.x.forEach(function (xValue, index) {
+        var x = dateRange ? new Date(xValue).getTime() : Number(xValue);
+        var y = Number(trace.y[index]);
+        if (x >= start && x <= end && Number.isFinite(y)) {
+          visibleY.push(y);
+        }
+      });
+    });
+
+    if (!visibleY.length) {
+      return;
+    }
+
+    var minimum = Math.min.apply(null, visibleY);
+    var maximum = Math.max.apply(null, visibleY);
+    var padding = Math.max(
+      (maximum - minimum) * 0.05,
+      Math.abs(maximum || minimum) * 0.01,
+      1e-12
+    );
+
+    updatingY = true;
+    Plotly.relayout(graph, {
+      'yaxis.range': [minimum - padding, maximum + padding],
+      'yaxis.autorange': false
+    }).finally(function () {
+      updatingY = false;
+    });
+  };
+
+  graph.on('plotly_relayout', graph._visibleYAutoscaleHandler);
+}
+
+function updateLidarPlot(targetId, figureJson, layoutOverrides) {
+  var figure;
+  try {
+    figure = typeof figureJson === 'string'
+      ? JSON.parse(figureJson)
+      : figureJson;
+  } catch (error) {
+    console.error('Invalid Plotly figure for ' + targetId, error, figureJson);
+    return;
+  }
+
+  if (!figure || !Array.isArray(figure.data)) {
+    console.error('Plotly figure has no data for ' + targetId, figure);
+    return;
+  }
+
+  console.debug(
+    'Updating ' + targetId,
+    figure.data.map(function (trace) {
+      return {
+        name: trace.name,
+        xPoints: Array.isArray(trace.x) ? trace.x.length : 0,
+        yPoints: Array.isArray(trace.y) ? trace.y.length : 0
+      };
+    })
+  );
+
+  var layout = Object.assign({}, figure.layout || {}, layoutOverrides || {});
+  delete layout.width;
+  delete layout.height;
+  layout.autosize = true;
+
+  Plotly.react(
+    targetId,
+    figure.data || [],
+    layout,
+    {responsive: true, displaylogo: false}
+  ).then(function () {
+    installVisibleYAutoscale(targetId);
+  });
+}
+
+function updateLidarSignalPlots(context) {
+  updateLidarPlot(
+    'plotly-lidar-signal',
+    context.plot_lidar_signal,
+    {title: null, margin: {t: 32, r: 24, b: 56, l: 64}}
+  );
+  updateLidarPlot(
+    'plotly-lidar-range-correction',
+    context.plot_lidar_range_correction,
+    {margin: {t: 104, r: 24, b: 64, l: 64}}
+  );
+}
+
 function requestPlots() {
+  setLicelAcquiring();
   $.ajax({
     url: "/record",
     type: "GET",
@@ -12,14 +159,8 @@ function requestPlots() {
     },
     dataType:"json",
     success: function (context) {
-  
-      // Raw signal plot
-      var graph_raw = JSON.parse(context.plot_lidar_signal);
-      Plotly.newPlot('plotly-lidar-signal', graph_raw);
-      
-      // Range corrected plot
-      var graph_rc = JSON.parse(context.plot_lidar_range_correction);
-      Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
+      setLicelStatus({state: context.licel_state || 'connected', connected: true});
+      updateLidarSignalPlots(context);
       
       // Continuous RMS error plot
       var time = new Date();
@@ -44,12 +185,15 @@ function requestPlots() {
       Plotly.relayout('plotly-lidar-rms', minuteView);
       Plotly.extendTraces('plotly-lidar-rms', update, [0])
     },
+    error: function (xhr) {
+      updateLicelFromRequest(xhr, 'Licel acquisition failed');
+    },
     cache: false
   });
 }
 
 $('#startbtn').on('click', function (e) {
-
+    setLicelAcquiring();
     $.ajax({
      url: "/record",
       type: "GET",
@@ -60,7 +204,8 @@ $('#startbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-        
+        setLicelStatus({state: context.licel_state || 'connected', connected: true});
+        updateLidarSignalPlots(context);
         console.log("error es ",context.rms_error);
         var DELTA_TIME_MS = 1000
 
@@ -88,13 +233,24 @@ $('#startbtn').on('click', function (e) {
           showlegend: false
         };
 
-        Plotly.newPlot('plotly-lidar-rms',initial_data, layout);
+        Plotly.newPlot(
+          'plotly-lidar-rms',
+          initial_data,
+          layout,
+          {responsive: true, displaylogo: false}
+        ).then(function () {
+          installVisibleYAutoscale('plotly-lidar-rms');
+        });
         var delay_ms = context.shots_delay + DELTA_TIME_MS;
 
         if (!interval) {
           interval = setInterval(requestPlots,delay_ms);
           console.log("START success",interval);
         }
+      },
+      error: function (xhr, status, error) {
+        updateLicelFromRequest(xhr, 'Licel acquisition failed');
+        console.error('START acquisition failed', status, error, xhr.responseText);
       }
    });
 })
@@ -109,6 +265,7 @@ $('#stopbtn').on('click', function (e) {
     },
     dataType:"json",
     success: function (context) {
+      setLicelStatus({state: context.licel_state || 'connected', connected: true});
       clearInterval(interval);
       interval=null;
       console.log("STOP success",interval);
@@ -117,7 +274,7 @@ $('#stopbtn').on('click', function (e) {
 })
 
 $('#oneshotbtn').on('click', function (e) {
-
+    setLicelAcquiring();
     $.ajax({
      url: "/record",
       type: "GET",
@@ -128,14 +285,24 @@ $('#oneshotbtn').on('click', function (e) {
       },
       dataType:"json",
       success: function (context) {
-        
-        // Raw signal plot
-        var graph_raw = JSON.parse(context.plot_lidar_signal);
-        Plotly.newPlot('plotly-lidar-signal', graph_raw);
-        
-        // Range corrected plot
-        var graph_rc = JSON.parse(context.plot_lidar_range_correction);
-        Plotly.newPlot('plotly-lidar-range-correction', graph_rc);
+        setLicelStatus({state: context.licel_state || 'connected', connected: true});
+        updateLidarSignalPlots(context);
+
+        var time = new Date();
+        Plotly.extendTraces(
+          'plotly-lidar-rms',
+          {x: [[time]], y: [[context.rms_error]]},
+          [0]
+        );
+      },
+      error: function (xhr, status, error) {
+        updateLicelFromRequest(xhr, 'Licel acquisition failed');
+        console.error(
+          'SINGLE SHOT acquisition failed',
+          status,
+          error,
+          xhr.responseText
+        );
       }
    });
 })
@@ -206,3 +373,11 @@ $('#bias_apply').on('click', function (e) {
     }
   });
 })
+
+$(document).ready(function () {
+  [
+    'plotly-lidar-signal',
+    'plotly-lidar-range-correction',
+    'plotly-lidar-rms'
+  ].forEach(installVisibleYAutoscale);
+});

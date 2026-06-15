@@ -19,10 +19,70 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
     <link rel="stlesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/vega-tooltip@0.16.0/vega-tooltip.scss">
+    <style>
+        .hardware-navbar-status {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            gap: .15rem;
+            padding: 0 .75rem;
+        }
+
+        .device-navbar-status {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: .5rem;
+            min-height: 1.5rem;
+            color: #495057;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .device-navbar-led {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid rgba(0, 0, 0, .18);
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, .04), inset 0 1px 2px rgba(255, 255, 255, .45);
+            background: #dc3545;
+        }
+
+        .device-navbar-led.disconnected {
+            background: #dc3545;
+        }
+
+        .device-navbar-led.connected,
+        .device-navbar-led.ready {
+            background: #28a745;
+        }
+
+        .device-navbar-led.acquiring,
+        .device-navbar-led.shooting {
+            background: #fd7e14;
+        }
+
+        .laser-navbar-warning {
+            color: #fd7e14;
+        }
+
+        @media (max-width: 576px) {
+            .hardware-navbar-status {
+                padding: 0 .35rem;
+                font-size: .85rem;
+            }
+
+            .device-navbar-status {
+                min-height: 1.35rem;
+            }
+        }
+    </style>
     <!-- Import JQuery from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <!-- Import Plotly (does not have to be from CDN) -->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <!-- Import moment.js for time series (does not have to be from CDN) -->
     <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js'></script>
     <!-- Toggle buttons -->
@@ -32,7 +92,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     {% endblock script %}
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand navbar-white navbar-light">
@@ -43,22 +103,35 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('homepage') }}">
-                        <button class="btn btn-outline-success" data-toggle="button" aria-pressed="false" type="button">Alignment Mode</button>
+                        <button class="btn {{ 'btn-success' if request.endpoint == 'homepage' else 'btn-outline-success' }}" type="button">Alignment Mode</button>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('acquisition_mode') }}">
-                        <button class="btn btn-outline-secondary" ata-toggle="button" aria-pressed="false" type="button">Acquisition Mode</button>
+                        <button class="btn {{ 'btn-secondary' if request.endpoint == 'acquisition_mode' else 'btn-outline-secondary' }}" type="button">Acquisition Mode</button>
                     </a>
                 </li> 
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('autoalignment_mode') }}">
-                        <button class="btn btn-outline-info" data-toggle="button" aria-pressed="false" type="button">Autoalignment Mode</button>
+                        <button class="btn {{ 'btn-info' if request.endpoint == 'autoalignment_mode' else 'btn-outline-info' }}" type="button">Autoalignment Mode</button>
                     </a>
                 </li>
             </ul>
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <div class="hardware-navbar-status">
+                        <div class="device-navbar-status" title="Licel status">
+                            <span id="licel_nav_message">Licel disconnected</span>
+                            <span class="device-navbar-led disconnected" id="licel_nav_led" aria-hidden="true"></span>
+                        </div>
+                        <div class="device-navbar-status" title="Laser status">
+                            <i class="fas fa-exclamation-triangle laser-navbar-warning d-none" id="laser_nav_warning"></i>
+                            <span id="laser_nav_message">Laser disconnected</span>
+                            <span class="device-navbar-led disconnected" id="laser_nav_led" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                </li>
                 <!-- Messages Dropdown Menu -->
                 <li class="nav-item dropdown">
                     <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
@@ -132,6 +205,26 @@ scratch. This page gets rid of all links and provides the needed markup only.
         </footer>
     </div>
     <!-- ./wrapper -->
+
+    <div class="modal fade" id="laser_shots_modal" tabindex="-1" role="dialog" aria-labelledby="laser_shots_title" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="laser_shots_title">Laser shot counter</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-muted small">Serial port</div>
+                    <div id="laser_shots_port" class="font-weight-bold mb-2"></div>
+                    <div class="text-muted small">Shots</div>
+                    <div id="laser_shots_value" class="h4 mb-0">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- jQuery -->
     <script src="{{ url_for('static', filename='plugins/jquery/jquery.min.js') }}"></script>
     <!-- Bootstrap 4 -->
@@ -140,12 +233,12 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <script src="{{ url_for('static', filename='dist/js/adminlte.min.js') }}"></script>
     <!-- Custom lib -->
     <script src="{{ url_for('static', filename='js/controls.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/licelcontrols.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tcpipconnection.js', v='20260614-3') }}"></script>
+    <script src="{{ url_for('static', filename='js/licelcontrols.js', v='20260614-2') }}"></script>
     <script src="{{ url_for('static', filename='js/rayleighfit.js') }}"></script>
     <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lasercontrols.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sounding.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/tcpipconnection.js') }}"></script>
     <script src="{{ url_for('static', filename='js/acquiscontrols.js') }}"></script>
     <script src="{{ url_for('static', filename='js/motorcontrols.js') }}"></script>
     
