@@ -1,0 +1,215 @@
+{% extends "layout.html" %}
+
+{% block script %}
+<style>
+    .telecover-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr);
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .telecover-card {
+        height: 100%;
+        min-width: 0;
+    }
+
+    .telecover-plot-host {
+        width: 100%;
+        height: clamp(420px, 62vh, 680px);
+        min-width: 0;
+    }
+
+    .tc-status-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: .5rem;
+        margin-bottom: 1rem;
+    }
+
+    .tc-status-box {
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+        padding: .5rem;
+        text-align: center;
+        background: #f8f9fa;
+    }
+
+    .tc-status-box .label {
+        display: block;
+        color: #6c757d;
+        font-size: .75rem;
+        text-transform: uppercase;
+    }
+
+    .tc-status-box .value {
+        display: block;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .tc-plate-wrap {
+        position: relative;
+        max-width: 440px;
+        margin: 0 auto;
+    }
+
+    .tc-plate {
+        display: block;
+        width: 100%;
+        height: auto;
+        transition: transform .25s ease, opacity .25s ease;
+    }
+
+    .tc-sector-open { fill: #fff; }
+    .tc-sector-closed { fill: #495057; }
+    .tc-sector-dark { fill: #000; }
+    .tc-sector-moving { fill: #ffc107; }
+    .tc-sector-error { fill: #dc3545; }
+    .tc-sector-border { stroke: #212529; stroke-width: 3; }
+    .tc-label {
+        fill: #212529;
+        font-size: 18px;
+        font-weight: 700;
+        pointer-events: none;
+    }
+
+    .tc-plate-off {
+        transform: translateY(-18px) rotate(-6deg);
+        opacity: .45;
+        filter: drop-shadow(0 12px 6px rgba(0, 0, 0, .28));
+    }
+
+    .tc-plate-overlay {
+        position: absolute;
+        inset: 50% auto auto 50%;
+        transform: translate(-50%, -50%);
+        border-radius: .25rem;
+        padding: .4rem .7rem;
+        background: rgba(33, 37, 41, .88);
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: .05em;
+        pointer-events: none;
+    }
+
+    .tc-control-section {
+        width: 100%;
+        padding: .25rem .5rem .75rem;
+    }
+
+    .tc-control-title {
+        color: #adb5bd;
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        margin: .5rem 0;
+    }
+
+    @media (max-width: 1200px) {
+        .telecover-grid { grid-template-columns: 1fr; }
+        .telecover-plot-host { height: clamp(340px, 52vh, 560px); }
+    }
+
+    @media (max-width: 768px) {
+        .tc-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+</style>
+<script src="{{ url_for('static', filename='js/telecovercontrols.js') }}" defer></script>
+{% endblock script %}
+
+{% block mode %}
+<a class="d-block">
+    <i class="nav-icon fas fa-angle-right"></i>
+    <b>Telecover</b> Mode
+</a>
+{% endblock mode %}
+
+{% block sidebar %}
+<li class="nav-item tc-control-section">
+    <div class="tc-control-title">TELECOVER HARDWARE</div>
+    <div class="row">
+        <div class="col-6 mb-2"><button class="btn btn-outline-primary btn-sm btn-block" onclick="telecoverAction('connect')">Connect</button></div>
+        <div class="col-6 mb-2"><button class="btn btn-outline-info btn-sm btn-block" onclick="telecoverAction('home')">Full Homing</button></div>
+        <div class="col-6 mb-2"><button class="btn btn-outline-success btn-sm btn-block" onclick="telecoverAction('lift_down')">Telecover ON</button></div>
+        <div class="col-6 mb-2"><button class="btn btn-outline-secondary btn-sm btn-block" onclick="telecoverAction('lift_up')">Telecover OFF</button></div>
+    </div>
+
+    <div class="tc-control-title">POSITION</div>
+    <div class="row">
+        <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_n')">Go North</button></div>
+        <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_e')">Go East</button></div>
+        <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_s')">Go South</button></div>
+        <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_w')">Go West</button></div>
+        <div class="col-12 mb-2"><button class="btn btn-outline-dark btn-sm btn-block bg-secondary" onclick="telecoverAction('move_dc')">Go Darkcurrent</button></div>
+    </div>
+
+    <div class="tc-control-title">SEQUENCE</div>
+    <div class="form-group mb-2">
+        <label class="text-white mb-1" for="telecover-acq-time">Acquisition time [s]</label>
+        <input class="form-control form-control-sm" id="telecover-acq-time" type="number" min="0" step="1"
+               value="{{ context.globalconfig.telecover_acq_time }}"
+               onchange="telecoverSetup('telecover_acq_time', this.value)">
+    </div>
+    <div class="form-group mb-2">
+        <label class="text-white mb-1" for="telecover-settle-time">Settle time [s]</label>
+        <input class="form-control form-control-sm" id="telecover-settle-time" type="number" min="0" step="0.1"
+               value="{{ context.globalconfig.telecover_settle_time }}"
+               onchange="telecoverSetup('telecover_settle_time', this.value)">
+    </div>
+    <div class="custom-control custom-switch mb-3">
+        <input class="custom-control-input" id="telecover-reverse" type="checkbox"
+               {% if context.globalconfig.telecover_reverse %}checked{% endif %}
+               onchange="telecoverSetup('telecover_reverse', this.checked)">
+        <label class="custom-control-label text-white" for="telecover-reverse">Reverse order</label>
+    </div>
+    <button class="btn btn-outline-primary btn-sm btn-block mb-2" onclick="telecoverAcquireCurrent()">Acquire current</button>
+    <button class="btn btn-outline-success btn-sm btn-block mb-2" onclick="telecoverRunSequence()">Run sequence</button>
+    <button class="btn btn-danger btn-sm btn-block" onclick="telecoverAction('stop')">STOP</button>
+</li>
+{% endblock sidebar %}
+
+{% block my_content %}
+<div class="container-fluid pt-2">
+    <div class="telecover-grid">
+        <div class="card telecover-card">
+            <div class="card-header"><b>Raw LiDAR signals &mdash; Telecover Test</b></div>
+            <div class="card-body p-2">
+                <div id="plotly-telecover-raw" class="telecover-plot-host"></div>
+            </div>
+        </div>
+
+        <div class="card telecover-card">
+            <div class="card-header"><b>Telecover plate position</b></div>
+            <div class="card-body">
+                <div class="tc-status-grid">
+                    <div class="tc-status-box"><span class="label">Position</span><span class="value" id="tc-position-value">UNKNOWN</span></div>
+                    <div class="tc-status-box"><span class="label">Lift</span><span class="value" id="tc-lift-value">UNKNOWN</span></div>
+                    <div class="tc-status-box"><span class="label">Motion</span><span class="value" id="tc-motion-value">IDLE</span></div>
+                    <div class="tc-status-box"><span class="label">Homed</span><span class="value" id="tc-homed-value">No</span></div>
+                    <div class="tc-status-box"><span class="label">Last error</span><span class="value" id="tc-error-value">&mdash;</span></div>
+                </div>
+
+                <div class="tc-plate-wrap">
+                    <svg id="tc-plate" class="tc-plate" viewBox="0 0 300 300" role="img" aria-label="Telecover plate">
+                        <path id="tc-sector-n" class="tc-sector-closed tc-sector-border" d="M150 150 L72.2 72.2 A110 110 0 0 1 227.8 72.2 Z"></path>
+                        <path id="tc-sector-e" class="tc-sector-closed tc-sector-border" d="M150 150 L227.8 72.2 A110 110 0 0 1 227.8 227.8 Z"></path>
+                        <path id="tc-sector-s" class="tc-sector-closed tc-sector-border" d="M150 150 L227.8 227.8 A110 110 0 0 1 72.2 227.8 Z"></path>
+                        <path id="tc-sector-w" class="tc-sector-closed tc-sector-border" d="M150 150 L72.2 227.8 A110 110 0 0 1 72.2 72.2 Z"></path>
+                        <circle cx="150" cy="150" r="28" fill="#000" class="tc-sector-border"></circle>
+                        <text x="150" y="58" text-anchor="middle" class="tc-label">North</text>
+                        <text x="245" y="156" text-anchor="middle" class="tc-label">East</text>
+                        <text x="150" y="257" text-anchor="middle" class="tc-label">South</text>
+                        <text x="54" y="156" text-anchor="middle" class="tc-label">West</text>
+                    </svg>
+                    <div id="tc-plate-overlay" class="tc-plate-overlay d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.telecoverInitialPlot = {{ context.plot_telecover_raw | safe }};
+</script>
+{% endblock my_content %}
