@@ -1,9 +1,11 @@
 var telecoverCurrentStatus = {
-  position: "UNKNOWN",
+  disk_position: "UNKNOWN",
   lift: "UNKNOWN",
+  darkcover: "UNKNOWN",
   motion: "IDLE",
-  homed: false,
-  last_error: ""
+  homed_lift: false,
+  homed_disk: false,
+  error: null
 };
 
 var telecoverTraceColors = {
@@ -24,7 +26,7 @@ function telecoverAction(action) {
   return telecoverRequest("/telecover_control?action=" + encodeURIComponent(action))
     .then(updateTelecoverStatus)
     .catch(function(error) {
-      updateTelecoverStatus({motion: "ERROR", last_error: error.message});
+      updateTelecoverStatus({motion: "ERROR", error: error.message});
     });
 }
 
@@ -33,7 +35,7 @@ function telecoverSetup(selected, input) {
     "/telecover_setup?selected=" + encodeURIComponent(selected) +
     "&input=" + encodeURIComponent(input)
   ).catch(function(error) {
-    updateTelecoverStatus({motion: "ERROR", last_error: error.message});
+    updateTelecoverStatus({motion: "ERROR", error: error.message});
   });
 }
 
@@ -41,12 +43,12 @@ function telecoverStatus() {
   return telecoverRequest("/telecover_status")
     .then(updateTelecoverStatus)
     .catch(function(error) {
-      updateTelecoverStatus({motion: "ERROR", last_error: error.message});
+      updateTelecoverStatus({motion: "ERROR", error: error.message});
     });
 }
 
 function telecoverAcquireCurrent() {
-  var position = telecoverCurrentStatus.position || "UNKNOWN";
+  var position = telecoverCurrentStatus.disk_position || "UNKNOWN";
   return telecoverRequest(
     "/telecover_acquire_current?position=" + encodeURIComponent(position)
   ).then(function(data) {
@@ -67,7 +69,7 @@ function telecoverRunSequence() {
       });
     }
     if (data.status === "ERROR") {
-      updateTelecoverStatus({motion: "ERROR", last_error: data.message});
+      updateTelecoverStatus({motion: "ERROR", error: data.message});
     } else {
       telecoverStatus();
     }
@@ -79,16 +81,17 @@ function updateTelecoverStatus(data) {
   data = data || {};
   telecoverCurrentStatus = Object.assign({}, telecoverCurrentStatus, data);
 
-  setTelecoverText("tc-position-value", telecoverCurrentStatus.position || "UNKNOWN");
+  setTelecoverText("tc-position-value", telecoverCurrentStatus.disk_position || "UNKNOWN");
   setTelecoverText("tc-lift-value", telecoverCurrentStatus.lift || "UNKNOWN");
+  setTelecoverText("tc-darkcover-value", telecoverCurrentStatus.darkcover || "UNKNOWN");
   setTelecoverText("tc-motion-value", telecoverCurrentStatus.motion || "UNKNOWN");
-  setTelecoverText("tc-homed-value", telecoverCurrentStatus.homed ? "Yes" : "No");
-  setTelecoverText("tc-error-value", telecoverCurrentStatus.last_error || "\u2014");
+  setTelecoverText("tc-error-value", telecoverCurrentStatus.error || "\u2014");
 
   updateTelecoverPlate(
-    telecoverCurrentStatus.position,
+    telecoverCurrentStatus.disk_position,
     telecoverCurrentStatus.motion,
-    telecoverCurrentStatus.lift
+    telecoverCurrentStatus.lift,
+    telecoverCurrentStatus.darkcover
   );
   return data;
 }
@@ -100,7 +103,7 @@ function setTelecoverText(id, value) {
   }
 }
 
-function updateTelecoverPlate(position, motion, lift) {
+function updateTelecoverPlate(position, motion, lift, darkcover) {
   var sectors = {
     N: document.getElementById("tc-sector-n"),
     E: document.getElementById("tc-sector-e"),
@@ -109,12 +112,13 @@ function updateTelecoverPlate(position, motion, lift) {
   };
   var plate = document.getElementById("tc-plate");
   var overlay = document.getElementById("tc-plate-overlay");
-  var fillClass = "tc-sector-closed";
+  var fillClass = "tc-sector-unknown";
   var overlayText = "";
 
   position = String(position || "UNKNOWN").toUpperCase();
   motion = String(motion || "IDLE").toUpperCase();
   lift = String(lift || "UNKNOWN").toUpperCase();
+  darkcover = String(darkcover || "UNKNOWN").toUpperCase();
 
   if (motion === "ERROR") {
     fillClass = "tc-sector-error";
@@ -122,8 +126,13 @@ function updateTelecoverPlate(position, motion, lift) {
   } else if (motion === "MOVING") {
     fillClass = "tc-sector-moving";
     overlayText = "MOVING";
-  } else if (position === "DC") {
+  } else if (lift === "UP") {
+    fillClass = "tc-sector-closed";
+    overlayText = "TELECOVER OFF";
+  } else if (darkcover === "CLOSED") {
     fillClass = "tc-sector-dark";
+  } else if (darkcover === "OPEN" && ["N", "E", "S", "W"].indexOf(position) !== -1) {
+    fillClass = "tc-sector-closed";
   }
 
   Object.keys(sectors).forEach(function(key) {
@@ -134,15 +143,12 @@ function updateTelecoverPlate(position, motion, lift) {
     sector.setAttribute(
       "class",
       "tc-sector-border " +
-      (fillClass === "tc-sector-closed" && position === key ? "tc-sector-open" : fillClass)
+      (fillClass === "tc-sector-closed" && darkcover === "OPEN" && position === key ? "tc-sector-open" : fillClass)
     );
   });
 
   if (plate) {
-    plate.classList.toggle("tc-plate-off", lift === "UP");
-  }
-  if (lift === "UP" && motion !== "ERROR" && motion !== "MOVING") {
-    overlayText = "TELECOVER OFF";
+    plate.classList.toggle("tc-plate-off", lift === "UP" && motion !== "ERROR" && motion !== "MOVING");
   }
   if (overlay) {
     overlay.textContent = overlayText;
@@ -207,6 +213,4 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   updateTelecoverStatus(telecoverCurrentStatus);
-  telecoverStatus();
-  setInterval(telecoverStatus, 2000);
 });

@@ -66,6 +66,7 @@
     .tc-sector-dark { fill: #000; }
     .tc-sector-moving { fill: #ffc107; }
     .tc-sector-error { fill: #dc3545; }
+    .tc-sector-unknown { fill: #adb5bd; }
     .tc-sector-border { stroke: #212529; stroke-width: 3; }
     .tc-label {
         fill: #212529;
@@ -128,6 +129,20 @@
 {% block sidebar %}
 <li class="nav-item tc-control-section">
     <div class="tc-control-title">TELECOVER HARDWARE</div>
+    <div class="form-group mb-2">
+        <label class="text-white mb-1" for="telecover-port">Serial port</label>
+        <div class="input-group input-group-sm">
+            <input class="form-control" id="telecover-port" type="text"
+                   value="{{ context.globalconfig.telecover_port }}"
+                   placeholder="COM5 or /tmp/telecover-sim">
+            <div class="input-group-append">
+                <button class="btn btn-outline-primary" type="button"
+                        onclick="telecoverSetup('telecover_port', document.getElementById('telecover-port').value)">
+                    Apply
+                </button>
+            </div>
+        </div>
+    </div>
     <div class="row">
         <div class="col-6 mb-2"><button class="btn btn-outline-primary btn-sm btn-block" onclick="telecoverAction('connect')">Connect</button></div>
         <div class="col-6 mb-2"><button class="btn btn-outline-info btn-sm btn-block" onclick="telecoverAction('home')">Full Homing</button></div>
@@ -141,7 +156,8 @@
         <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_e')">Go East</button></div>
         <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_s')">Go South</button></div>
         <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_w')">Go West</button></div>
-        <div class="col-12 mb-2"><button class="btn btn-outline-dark btn-sm btn-block bg-secondary" onclick="telecoverAction('move_dc')">Go Darkcurrent</button></div>
+        <div class="col-12 mb-2"><button class="btn btn-outline-dark btn-sm btn-block bg-secondary" onclick="telecoverAction('dark_close')">Close Darkcurrent / Total Cover</button></div>
+        <div class="col-12 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('dark_open')">Open Darkcurrent / Total Cover</button></div>
     </div>
 
     <div class="tc-control-title">SEQUENCE</div>
@@ -157,10 +173,9 @@
                value="{{ context.globalconfig.telecover_settle_time }}"
                onchange="telecoverSetup('telecover_settle_time', this.value)">
     </div>
-    <div class="custom-control custom-switch mb-3">
+    <div class="custom-control custom-switch mb-3 d-none">
         <input class="custom-control-input" id="telecover-reverse" type="checkbox"
-               {% if context.globalconfig.telecover_reverse %}checked{% endif %}
-               onchange="telecoverSetup('telecover_reverse', this.checked)">
+               disabled>
         <label class="custom-control-label text-white" for="telecover-reverse">Reverse order</label>
     </div>
     <button class="btn btn-outline-primary btn-sm btn-block mb-2" onclick="telecoverAcquireCurrent()">Acquire current</button>
@@ -183,10 +198,10 @@
             <div class="card-header"><b>Telecover plate position</b></div>
             <div class="card-body">
                 <div class="tc-status-grid">
-                    <div class="tc-status-box"><span class="label">Position</span><span class="value" id="tc-position-value">UNKNOWN</span></div>
+                    <div class="tc-status-box"><span class="label">Disk position</span><span class="value" id="tc-position-value">UNKNOWN</span></div>
                     <div class="tc-status-box"><span class="label">Lift</span><span class="value" id="tc-lift-value">UNKNOWN</span></div>
+                    <div class="tc-status-box"><span class="label">Dark cover</span><span class="value" id="tc-darkcover-value">UNKNOWN</span></div>
                     <div class="tc-status-box"><span class="label">Motion</span><span class="value" id="tc-motion-value">IDLE</span></div>
-                    <div class="tc-status-box"><span class="label">Homed</span><span class="value" id="tc-homed-value">No</span></div>
                     <div class="tc-status-box"><span class="label">Last error</span><span class="value" id="tc-error-value">&mdash;</span></div>
                 </div>
 

@@ -82,7 +82,10 @@ globalconfig = {
                   "telecover_timeout" : 2.0,
                   "telecover_acq_time" : 10,
                   "telecover_settle_time" : 2.0,
-                  "telecover_sequence" : ["N", "E", "S", "W", "DC"],
+                  "telecover_sequence" : ["N", "E", "S", "W"],
+                  "telecover_include_darkcurrent" : True,
+                  "telecover_return_to_north_before_darkcurrent" : True,
+                  "telecover_darkcurrent_requires_north" : True,
                   "telecover_reverse" : False,
                   "telecover_auto_save" : True,
                   "telecover_channel" : 0,
@@ -461,12 +464,22 @@ def licel_controls():
 
 def telecover_error_payload(error):
   return {
-    "homed": False,
-    "position": "UNKNOWN",
+    "device": "telecover",
+    "status": "ERROR",
+    "command": None,
+    "event": "error",
+    "subsystem": "unknown",
+    "disk_position": "UNKNOWN",
+    "target_position": "NONE",
     "lift": "UNKNOWN",
+    "darkcover": "UNKNOWN",
     "motion": "ERROR",
+    "homed_lift": False,
+    "homed_disk": False,
     "sensors": {},
-    "last_error": str(error)
+    "message": str(error),
+    "error": str(error),
+    "last_response": ""
   }
 
 def open_telecover_controller():
@@ -500,15 +513,19 @@ def telecover_control():
     serial_telecover, telecover = open_telecover_controller()
     actions = {
       "connect": telecover.status,
-      "home": telecover.home,
+      "home": telecover.full_home,
+      "home_lift": telecover.home_lift,
+      "home_disk": telecover.home_disk,
       "lift_up": telecover.lift_up,
       "lift_down": telecover.lift_down,
       "move_n": lambda: telecover.move_to("N"),
       "move_e": lambda: telecover.move_to("E"),
       "move_s": lambda: telecover.move_to("S"),
       "move_w": lambda: telecover.move_to("W"),
-      "move_dc": lambda: telecover.move_to("DC"),
-      "stop": telecover.stop
+      "dark_close": telecover.dark_close,
+      "dark_open": telecover.dark_open,
+      "move_dc": telecover.dark_close,
+      "stop": telecover.stop_lift
     }
     if action not in actions:
       raise ValueError("Unsupported telecover action: {}".format(action))
@@ -529,7 +546,12 @@ def telecover_setup():
   selected = request.args.get("selected", "")
   input_value = request.args.get("input", "")
   try:
-    if selected == "telecover_acq_time":
+    if selected == "telecover_port":
+      value = str(input_value).strip()
+      if not value:
+        raise ValueError("Telecover serial port is required.")
+      globalconfig[selected] = value
+    elif selected == "telecover_acq_time":
       value = int(input_value)
       if value < 0:
         raise ValueError("Acquisition time must be >= 0.")
@@ -539,7 +561,9 @@ def telecover_setup():
       if value < 0:
         raise ValueError("Settle time must be >= 0.")
       globalconfig[selected] = value
-    elif selected in {"telecover_reverse", "telecover_auto_save"}:
+    elif selected == "telecover_reverse":
+      globalconfig[selected] = False
+    elif selected == "telecover_auto_save":
       globalconfig[selected] = parse_boolean(input_value)
     elif selected == "telecover_channel":
       value = int(input_value)
@@ -551,7 +575,7 @@ def telecover_setup():
       if (
         not isinstance(sequence, list)
         or not sequence
-        or any(position not in {"N", "E", "S", "W", "DC"} for position in sequence)
+        or any(position not in {"N", "E", "S", "W"} for position in sequence)
       ):
         raise ValueError("Invalid telecover sequence.")
       globalconfig[selected] = sequence
@@ -576,33 +600,41 @@ def telecover_acquire_current():
 
 @app.route("/telecover_run_sequence")
 def telecover_run_sequence():
-  globalconfig["telecover_sequence"] = (
-    ["N", "W", "S", "E", "DC"]
-    if globalconfig["telecover_reverse"]
-    else ["N", "E", "S", "W", "DC"]
-  )
+  globalconfig["telecover_sequence"] = ["N", "E", "S", "W"]
+  globalconfig["telecover_reverse"] = False
   sequence = list(globalconfig["telecover_sequence"])
   results = []
   serial_telecover = None
 
   try:
     serial_telecover, telecover = open_telecover_controller()
+    telecover.home_lift()
+    telecover.move_to("N")
+    telecover.lift_down()
     for position in sequence:
-      if globalconfig["telecover_lift_required_for_rotation"] == "UP":
-        telecover.lift_up()
-      telecover.move_to(position)
-      if globalconfig["telecover_lift_required_for_measurement"] == "DOWN":
-        telecover.lift_down()
+      if position != "N":
+        telecover.move_to(position)
       time.sleep(globalconfig["telecover_settle_time"])
       results.append({
         "position": position,
         "status": "OK",
         "raw_trace": []
       })
+    if globalconfig["telecover_return_to_north_before_darkcurrent"]:
+      telecover.move_to("N")
+    if globalconfig["telecover_include_darkcurrent"]:
+      telecover.dark_close()
+      time.sleep(globalconfig["telecover_settle_time"])
+      results.append({
+        "position": "DC",
+        "status": "OK",
+        "raw_trace": []
+      })
+      telecover.dark_open()
 
     return jsonify({
       "status": "OK",
-      "sequence": sequence,
+      "sequence": sequence + (["DC"] if globalconfig["telecover_include_darkcurrent"] else []),
       "results": results
     })
   except Exception as exc:
