@@ -10,6 +10,7 @@ motores GRBL, el controlador Ethernet Licel ni el láser Continuum Surelite II.
 | --- | --- | --- |
 | Controlador de motores GRBL | `simulator/grbl_fake_serial.py` | Puerto serie virtual PTY |
 | Láser Continuum Surelite II | `simulator/lasersurelite_fake_serial.py` | Puerto serie virtual PTY |
+| Telecover Final4 | `simulator/telecover_fake_serial.py` | Puerto serie virtual PTY |
 | Controlador Licel | `simulator/licel_fake_tcp.py` | Servidor TCP/IP |
 | Visor de mediciones | `simulator/lidar_simul_plot.py` | Gráficos Plotly raw y RC |
 | Mediciones LiDAR | `simulator/data/lidar_simul_*.json` | Datos binarios Licel `LSW`/`MSW` |
@@ -144,6 +145,68 @@ Los códigos configurables para la respuesta `SE` son:
 | `07` | Fin de carga no detectado |
 | `08` | Simmer no detectado |
 | `09` | Flow switch trabado |
+
+## Simulador Telecover
+
+### Funcionamiento
+
+`simulator/telecover_fake_serial.py` crea un pseudo-terminal con el enlace
+`/tmp/telecover-sim`. El dashboard lo abre con `pyserial` como si fuera el
+firmware `TelecoverFinal4.ino`.
+
+El simulador mantiene:
+
+- Home, posicion y movimiento del eje de elevacion.
+- Home, posicion y movimiento del plato rotativo.
+- Estado de total cover para corriente oscura.
+- Contador de encoder y sensor superior simulado.
+
+Los comandos Telecover empiezan con `TCV`. Los comandos desconocidos que no
+empiezan con `TCV` se tratan como G-code reenviado a GRBL y responden `ok`.
+
+### Ejecucion
+
+```bash
+python simulator/telecover_fake_serial.py
+```
+
+Configurar `/tmp/telecover-sim` como puerto Telecover en el dashboard. Al igual
+que los otros simuladores serie, requiere Linux, macOS o WSL.
+
+Opciones disponibles:
+
+```bash
+python simulator/telecover_fake_serial.py --help
+python simulator/telecover_fake_serial.py --link /tmp/telecover-sim
+python simulator/telecover_fake_serial.py --delay 0.2
+python simulator/telecover_fake_serial.py --initial-lift UP
+python simulator/telecover_fake_serial.py --initial-disk N
+python simulator/telecover_fake_serial.py --verbose
+```
+
+Al iniciar muestra el puerto real `/dev/pts/...` y el puerto recomendado:
+
+```text
+/tmp/telecover-sim
+```
+
+### Comandos implementados
+
+| Comando | Accion |
+| --- | --- |
+| `TCVHomeE` | Home del eje vertical y deja el telecover arriba |
+| `TCVArriba` | Sube el telecover |
+| `TCVAbajo` | Baja el telecover si se hizo home |
+| `TCVDetener` | Detiene solo el eje de elevacion |
+| `TCVEstado` | Devuelve el bloque textual de elevacion |
+| `TCVNorte` | Inicializa o mueve el plato a Norte |
+| `TCVHomeP` | Home/retorno antihorario del plato desde Norte |
+| `TCVEste` | Mueve de Norte a Este |
+| `TCVSur` | Mueve de Este a Sur |
+| `TCVOeste` | Mueve de Sur a Oeste |
+| `TCVCOI` | Cierra total cover desde Norte para corriente oscura |
+| `TCVCOO` | Abre total cover y vuelve a Norte |
+| `TCVEstadoPlato` | Devuelve el bloque textual del plato |
 
 ## Simulador Licel
 
