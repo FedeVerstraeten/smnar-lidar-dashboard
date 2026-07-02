@@ -80,6 +80,7 @@ globalconfig = {
                   "telecover_port" : "COM5",
                   "telecover_baudrate" : 115200,
                   "telecover_timeout" : 2.0,
+                  "telecover_download_dir" : "telecover",
                   "telecover_acq_time" : 10,
                   "telecover_settle_time" : 2.0,
                   "telecover_sequence" : ["N", "E", "S", "W"],
@@ -550,6 +551,11 @@ def telecover_setup():
       value = str(input_value).strip()
       if not value:
         raise ValueError("Telecover serial port is required.")
+      globalconfig[selected] = value
+    elif selected == "telecover_download_dir":
+      value = str(input_value).strip()
+      if not value:
+        raise ValueError("Telecover download folder is required.")
       globalconfig[selected] = value
     elif selected == "telecover_acq_time":
       value = int(input_value)

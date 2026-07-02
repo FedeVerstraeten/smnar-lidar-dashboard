@@ -127,61 +127,192 @@
 {% endblock mode %}
 
 {% block sidebar %}
-<li class="nav-item tc-control-section">
-    <div class="tc-control-title">TELECOVER HARDWARE</div>
-    <div class="form-group mb-2">
-        <label class="text-white mb-1" for="telecover-port">Serial port</label>
-        <div class="input-group input-group-sm">
-            <input class="form-control" id="telecover-port" type="text"
-                   value="{{ context.globalconfig.telecover_port }}"
-                   placeholder="COM5 or /tmp/telecover-sim">
-            <div class="input-group-append">
-                <button class="btn btn-outline-primary" type="button"
-                        onclick="telecoverSetup('telecover_port', document.getElementById('telecover-port').value)">
-                    Apply
-                </button>
+<!-- Telecover controls -->
+<li class="nav-item has-treeview menu-open">
+    <a href="#" class="nav-link active">
+        <i class="nav-icon fas fa-adjust"></i>
+        <p>
+            Telecover
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item tc-control-section">
+            <div class="tc-control-title">HARDWARE</div>
+            <div class="form-group mb-2">
+                <label class="text-white mb-1" for="telecover-port">Serial port</label>
+                <div class="input-group input-group-sm">
+                    <input class="form-control" id="telecover-port" type="text"
+                           value="{{ context.globalconfig.telecover_port }}"
+                           placeholder="COM5 or /tmp/telecover-sim">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-primary" type="button"
+                                onclick="telecoverSetup('telecover_port', document.getElementById('telecover-port').value)">
+                            Apply
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-6 mb-2"><button class="btn btn-outline-primary btn-sm btn-block" onclick="telecoverAction('connect')">Connect</button></div>
-        <div class="col-6 mb-2"><button class="btn btn-outline-info btn-sm btn-block" onclick="telecoverAction('home')">Full Homing</button></div>
-        <div class="col-6 mb-2"><button class="btn btn-outline-success btn-sm btn-block" onclick="telecoverAction('lift_down')">Telecover ON</button></div>
-        <div class="col-6 mb-2"><button class="btn btn-outline-secondary btn-sm btn-block" onclick="telecoverAction('lift_up')">Telecover OFF</button></div>
-    </div>
+            <div class="row">
+                <div class="col-6 mb-2"><button class="btn btn-outline-primary btn-sm btn-block" onclick="telecoverAction('connect')">Connect</button></div>
+                <div class="col-6 mb-2"><button class="btn btn-outline-info btn-sm btn-block" onclick="telecoverAction('home')">Full Homing</button></div>
+                <div class="col-6 mb-2"><button class="btn btn-outline-success btn-sm btn-block" onclick="telecoverAction('lift_down')">Telecover ON</button></div>
+                <div class="col-6 mb-2"><button class="btn btn-outline-secondary btn-sm btn-block" onclick="telecoverAction('lift_up')">Telecover OFF</button></div>
+            </div>
 
-    <div class="tc-control-title">POSITION</div>
-    <div class="row">
-        <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_n')">Go North</button></div>
-        <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_e')">Go East</button></div>
-        <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_s')">Go South</button></div>
-        <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_w')">Go West</button></div>
-        <div class="col-12 mb-2"><button class="btn btn-outline-dark btn-sm btn-block bg-secondary" onclick="telecoverAction('dark_close')">Close Darkcurrent / Total Cover</button></div>
-        <div class="col-12 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('dark_open')">Open Darkcurrent / Total Cover</button></div>
-    </div>
+            <div class="tc-control-title">POSITION</div>
+            <div class="row">
+                <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_n')">Go North</button></div>
+                <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_e')">Go East</button></div>
+                <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_s')">Go South</button></div>
+                <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_w')">Go West</button></div>
+                <div class="col-12 mb-2"><button class="btn btn-outline-dark btn-sm btn-block bg-secondary" onclick="telecoverAction('dark_close')">Close Darkcurrent / Total Cover</button></div>
+                <div class="col-12 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('dark_open')">Open Darkcurrent / Total Cover</button></div>
+            </div>
 
-    <div class="tc-control-title">SEQUENCE</div>
-    <div class="form-group mb-2">
-        <label class="text-white mb-1" for="telecover-acq-time">Acquisition time [s]</label>
-        <input class="form-control form-control-sm" id="telecover-acq-time" type="number" min="0" step="1"
-               value="{{ context.globalconfig.telecover_acq_time }}"
-               onchange="telecoverSetup('telecover_acq_time', this.value)">
-    </div>
-    <div class="form-group mb-2">
-        <label class="text-white mb-1" for="telecover-settle-time">Settle time [s]</label>
-        <input class="form-control form-control-sm" id="telecover-settle-time" type="number" min="0" step="0.1"
-               value="{{ context.globalconfig.telecover_settle_time }}"
-               onchange="telecoverSetup('telecover_settle_time', this.value)">
-    </div>
-    <div class="custom-control custom-switch mb-3 d-none">
-        <input class="custom-control-input" id="telecover-reverse" type="checkbox"
-               disabled>
-        <label class="custom-control-label text-white" for="telecover-reverse">Reverse order</label>
-    </div>
-    <button class="btn btn-outline-primary btn-sm btn-block mb-2" onclick="telecoverAcquireCurrent()">Acquire current</button>
-    <button class="btn btn-outline-success btn-sm btn-block mb-2" onclick="telecoverRunSequence()">Run sequence</button>
-    <button class="btn btn-danger btn-sm btn-block" onclick="telecoverAction('stop')">STOP</button>
+            <div class="tc-control-title">SEQUENCE</div>
+            <div class="form-group mb-2">
+                <label class="text-white mb-1" for="telecover-settle-time">Settle time [s]</label>
+                <input class="form-control form-control-sm" id="telecover-settle-time" type="number" min="0" step="0.1"
+                       value="{{ context.globalconfig.telecover_settle_time }}"
+                       onchange="telecoverSetup('telecover_settle_time', this.value)">
+            </div>
+            <div class="custom-control custom-switch mb-3 d-none">
+                <input class="custom-control-input" id="telecover-reverse" type="checkbox" disabled>
+                <label class="custom-control-label text-white" for="telecover-reverse">Reverse order</label>
+            </div>
+            <button class="btn btn-outline-success btn-sm btn-block mb-2" onclick="telecoverRunSequence()">Run sequence</button>
+            <button class="btn btn-danger btn-sm btn-block" onclick="telecoverAction('stop')">STOP</button>
+        </li>
+    </ul>
 </li>
+<!-- ./Telecover controls -->
+
+<!-- Licel controls -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-desktop"></i>
+        <p>
+            Licel controls
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="acq_time_input">Acq. Time</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Sec</div>
+                        </div>
+                        <input type="text" class="form-control" id="acq_time_input" placeholder="Acq. Time">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="acq_time_apply" value="acq_time">Apply</button>
+                </div>
+                <div class="col-sm-8 my-1">
+                    <label class="sr-only" for="period_time_input">Period time</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Min</div>
+                        </div>
+                        <input type="text" class="form-control" id="period_time_input" placeholder="Period time">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1">
+                    <button type="submit" class="btn btn-primary" id="period_time_apply" value="period_time">Apply</button>
+                </div>
+            </div>
+        </li>
+        <li class="nav-item">
+            <button type="button" class="btn btn-outline-success btn-sm" id="acq_startbtn" value="start" disabled>START</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="acq_stopbtn" value="stop" disabled>STOP</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="acq_oneshotbtn" value="oneshot" disabled>SINGLE SHOT</button>
+        </li>
+    </ul>
+</li>
+<!-- ./Licel controls -->
+
+{% include "_tcpip_controls.html" %}
+
+<!-- Laser controller -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-atom"></i>
+        <p>
+            Laser controller
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <div class="form-row align-items-center">
+                <div class="col-12 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">&gt;</div>
+                        </div>
+                        <input type="text" class="form-control" id="laser_port_input" placeholder="Serial port">
+                    </div>
+                </div>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-block" id="laser_connectbtn" value="laser_connect">CONNECT</button>
+                </div>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-secondary btn-sm btn-block" id="laser_disconnectbtn" value="laser_disconnect">DISCONNECT</button>
+                </div>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-success btn-sm btn-block" id="laser_startbtn" value="laser_start">ON</button>
+                </div>
+                <div class="col-6 my-1">
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-block" id="laser_stopbtn" value="laser_stop">OFF</button>
+                </div>
+                <div class="col-12 my-1">
+                    <button type="button" class="btn btn-outline-info btn-sm btn-block" id="laser_shotsbtn" value="laser_shots">SHOTS</button>
+                </div>
+                <div class="col-12 my-1">
+                    <small class="text-muted" id="laser_status_text">Laser disconnected</small>
+                </div>
+            </div>
+        </li>
+    </ul>
+</li>
+<!-- ./Laser controller -->
+
+<!-- Download Folder -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-folder-open"></i>
+        <p>
+            Download Folder
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item tc-control-section">
+            <div class="form-group mb-2">
+                <label class="text-white mb-1" for="telecover-download-dir">Folder</label>
+                <div class="input-group input-group-sm">
+                    <input class="form-control" id="telecover-download-dir" type="text"
+                           value="{{ context.globalconfig.telecover_download_dir }}"
+                           placeholder="telecover">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" onclick="telecoverBrowseDownloadDir()">Browse</button>
+                        <button class="btn btn-outline-primary" type="button"
+                                onclick="telecoverSetup('telecover_download_dir', document.getElementById('telecover-download-dir').value)">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+                <input id="telecover-download-dir-picker" type="file" class="d-none" webkitdirectory directory
+                       onchange="telecoverUsePickedDownloadDir(this)">
+            </div>
+        </li>
+    </ul>
+</li>
+<!-- ./Download Folder -->
 {% endblock sidebar %}
 
 {% block my_content %}
@@ -226,5 +357,12 @@
 
 <script>
 window.telecoverInitialPlot = {{ context.plot_telecover_raw | safe }};
+var globalconfig = {{ context.globalconfig | safe }};
+
+document.getElementById('licel_ip_input').value = globalconfig["ip"];
+document.getElementById('licel_port_input').value = globalconfig["port"];
+document.getElementById('acq_time_input').value = globalconfig["acq_time"];
+document.getElementById('period_time_input').value = globalconfig["period_time"];
+document.getElementById('laser_port_input').value = globalconfig["laser_port"];
 </script>
 {% endblock my_content %}

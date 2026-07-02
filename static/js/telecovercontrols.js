@@ -39,6 +39,25 @@ function telecoverSetup(selected, input) {
   });
 }
 
+function telecoverBrowseDownloadDir() {
+  var picker = document.getElementById("telecover-download-dir-picker");
+  if (picker) {
+    picker.click();
+  }
+}
+
+function telecoverUsePickedDownloadDir(input) {
+  var folderInput = document.getElementById("telecover-download-dir");
+  if (!input || !input.files || !input.files.length || !folderInput) {
+    return;
+  }
+
+  var relativePath = input.files[0].webkitRelativePath || input.files[0].name;
+  var folder = relativePath.split("/")[0] || folderInput.value;
+  folderInput.value = folder;
+  telecoverSetup("telecover_download_dir", folder);
+}
+
 function telecoverStatus() {
   return telecoverRequest("/telecover_status")
     .then(updateTelecoverStatus)
