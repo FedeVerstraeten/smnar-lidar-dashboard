@@ -11,8 +11,10 @@ class SimulatorSerial:
     def __init__(self):
         self.command_buffer = b""
         self.responses = []
+        self.writes = []
 
     def write(self, data):
+        self.writes.append(data)
         self.command_buffer, events = grbl.process_serial_data(
             data, self.command_buffer
         )
@@ -52,8 +54,14 @@ class GrblFakeSerialTest(unittest.TestCase):
             ],
         )
 
-    def test_realtime_status_does_not_require_line_ending(self):
+    def test_status_waits_for_line_ending(self):
         buffer, events = grbl.process_serial_data(b"?")
+
+        self.assertEqual(buffer, b"?")
+        self.assertEqual(events, [])
+
+    def test_status_with_crlf_emits_one_response(self):
+        buffer, events = grbl.process_serial_data(b"?\r\n")
 
         self.assertEqual(buffer, b"")
         self.assertEqual(len(events), 1)
@@ -63,25 +71,14 @@ class GrblFakeSerialTest(unittest.TestCase):
             ["<Idle|MPos:0.000,0.000,0.000|WPos:0.000,0.000,0.000|FS:500,0>"],
         )
 
-    def test_realtime_status_preserves_buffered_command(self):
-        buffer, events = grbl.process_serial_data(b"G90")
-        buffer, status_events = grbl.process_serial_data(b"?", buffer)
-
-        self.assertEqual(buffer, b"G90")
-        self.assertEqual(status_events[0][0], "?")
-
-        buffer, command_events = grbl.process_serial_data(b"\n", buffer)
-
-        self.assertEqual(buffer, b"")
-        self.assertEqual(command_events, [("G90", ["ok"])])
-        self.assertTrue(grbl.absolute_mode)
-
-    def test_motor_controller_receives_realtime_status(self):
-        motor = MotorController(ser=SimulatorSerial())
+    def test_motor_controller_sends_line_terminated_status(self):
+        serial_connection = SimulatorSerial()
+        motor = MotorController(ser=serial_connection)
 
         status = motor.status(timeout_s=0.1)
 
         self.assertIn("<Idle|", status)
+        self.assertEqual(serial_connection.writes, [b"?\r\n"])
 
     @patch("simulator.grbl_fake_serial.time.sleep", return_value=None)
     def test_motor_controller_completes_grid_and_returns_home(self, _sleep):

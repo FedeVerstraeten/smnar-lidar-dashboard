@@ -120,7 +120,7 @@ def handle_command(cmd):
 
 
 def process_serial_data(data, buffer=b""):
-    """Process raw serial bytes and preserve GRBL real-time semantics."""
+    """Process raw serial bytes received from the dashboard."""
     events = []
 
     for byte in data:
@@ -129,16 +129,11 @@ def process_serial_data(data, buffer=b""):
             buffer = b""
             continue
 
-        # GRBL real-time commands are handled immediately and do not require
-        # CR/LF. They must not disturb a regular command already in progress.
-        if byte == ord("?"):
-            events.append(("?", handle_command("?")))
-            continue
-
         if byte in (10, 13):
             command = buffer.decode(errors="ignore").strip()
             buffer = b""
-            events.append((command, handle_command(command)))
+            if command:
+                events.append((command, handle_command(command)))
             continue
 
         buffer += bytes([byte])

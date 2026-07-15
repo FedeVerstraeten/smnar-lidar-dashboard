@@ -121,7 +121,7 @@ class MotorController:
         <Idle|MPos:...|FS:...>
         """        
         self.ser.reset_input_buffer()
-        self.ser.write(b"?")
+        self.ser.write(b"?\r\n")
         self.ser.flush()
 
         t0 = time.time()
