@@ -1,7 +1,34 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from lidarcontroller.motorcontroller import MotorController
 from simulator import grbl_fake_serial as grbl
+
+
+class SimulatorSerial:
+    def __init__(self):
+        self.command_buffer = b""
+        self.responses = []
+
+    def write(self, data):
+        self.command_buffer, events = grbl.process_serial_data(
+            data, self.command_buffer
+        )
+        for _, response_lines in events:
+            self.responses.extend(
+                (line + "\r\n").encode() for line in response_lines
+            )
+
+    def readline(self):
+        return self.responses.pop(0) if self.responses else b""
+
+    def reset_input_buffer(self):
+        self.responses.clear()
+
+    def flush(self):
+        pass
 
 
 class GrblFakeSerialTest(unittest.TestCase):
@@ -24,6 +51,62 @@ class GrblFakeSerialTest(unittest.TestCase):
                 "WPos:1.250,-2.500,3.000|FS:750,0>"
             ],
         )
+
+    def test_realtime_status_does_not_require_line_ending(self):
+        buffer, events = grbl.process_serial_data(b"?")
+
+        self.assertEqual(buffer, b"")
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0][0], "?")
+        self.assertEqual(
+            events[0][1],
+            ["<Idle|MPos:0.000,0.000,0.000|WPos:0.000,0.000,0.000|FS:500,0>"],
+        )
+
+    def test_realtime_status_preserves_buffered_command(self):
+        buffer, events = grbl.process_serial_data(b"G90")
+        buffer, status_events = grbl.process_serial_data(b"?", buffer)
+
+        self.assertEqual(buffer, b"G90")
+        self.assertEqual(status_events[0][0], "?")
+
+        buffer, command_events = grbl.process_serial_data(b"\n", buffer)
+
+        self.assertEqual(buffer, b"")
+        self.assertEqual(command_events, [("G90", ["ok"])])
+        self.assertTrue(grbl.absolute_mode)
+
+    def test_motor_controller_receives_realtime_status(self):
+        motor = MotorController(ser=SimulatorSerial())
+
+        status = motor.status(timeout_s=0.1)
+
+        self.assertIn("<Idle|", status)
+
+    @patch("simulator.grbl_fake_serial.time.sleep", return_value=None)
+    def test_motor_controller_completes_grid_and_returns_home(self, _sleep):
+        visited = []
+
+        with TemporaryDirectory() as temp_dir, patch.object(
+            MotorController, "STATE_FILE", Path(temp_dir) / "state.json"
+        ), patch.object(
+            MotorController, "HISTORY_FILE", Path(temp_dir) / "history.jsonl"
+        ):
+            motor = MotorController(ser=SimulatorSerial())
+            motor.initialize(feed=50)
+            motor.disable_limits()
+            motor.scan_grid(
+                rows=3,
+                cols=3,
+                step_x=1.0,
+                step_y=1.0,
+                centered=True,
+                on_point=lambda index, x, y: visited.append((index, x, y)),
+            )
+            motor.go_home(feed=50)
+
+        self.assertEqual(len(visited), 9)
+        self.assertEqual(motor.position, {"x": 0.0, "y": 0.0, "z": 0.0})
 
     @patch("simulator.grbl_fake_serial.time.sleep", return_value=None)
     def test_absolute_and_relative_movements(self, _sleep):
