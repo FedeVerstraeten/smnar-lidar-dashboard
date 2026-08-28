@@ -23,6 +23,7 @@ from lidarcontroller.lasercontroller import laserController
 from lidarcontroller.motorcontroller import MotorController
 from lidarcontroller.autoalignment import (
   AutoalignmentAlreadyRunning,
+  AutoalignmentMoveUnavailable,
   AutoalignmentService
 )
 
@@ -77,6 +78,7 @@ globalconfig = {
                   "scan_step_y" : 1.000,
                   "scan_feed" : 50,
                   "scan_pattern" : "raster",
+                  "scan_centered" : True,
                   "scan_reverse" : False,
                   "scan_delay" : 0.0,
                   "scan_on_fail" : "retry"
@@ -493,6 +495,20 @@ def autoalignment_status():
 @app.route("/autoalign/stop", methods=['POST'])
 def autoalignment_stop():
   return jsonify(autoalignment_service.stop())
+
+
+@app.route("/autoalign/move-best", methods=['POST'])
+def autoalignment_move_best():
+  try:
+    return jsonify(autoalignment_service.move_to_best())
+  except AutoalignmentMoveUnavailable as ex:
+    return jsonify({
+                    "ok": False,
+                    "status": autoalignment_service.snapshot()["status"],
+                    "message": str(ex)
+                  }), 409
+  except Exception:
+    return jsonify(autoalignment_service.snapshot()), 500
 
 
 @app.route("/autoalign", methods=['GET','POST'])
@@ -1070,7 +1086,7 @@ def scan_setup_controls():
   if field_selected == "scan_pattern" and data_input in pattern_options:
     globalconfig[field_selected] = data_input
 
-  if field_selected == "scan_reverse" and data_input in ["true", "false", "True", "False"]:
+  if field_selected in ["scan_reverse", "scan_centered"] and data_input in ["true", "false", "True", "False"]:
     globalconfig[field_selected] = data_input.lower() == "true"
 
   if field_selected == "scan_on_fail" and data_input in on_fail_options:

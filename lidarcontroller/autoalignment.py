@@ -8,6 +8,10 @@ class AutoalignmentAlreadyRunning(RuntimeError):
     pass
 
 
+class AutoalignmentMoveUnavailable(RuntimeError):
+    pass
+
+
 class AutoalignmentService:
     """Run an autoalignment scan outside the HTTP request lifecycle."""
 
@@ -29,6 +33,7 @@ class AutoalignmentService:
         self._lock = threading.RLock()
         self._stop_event = threading.Event()
         self._thread = None
+        self._scan_config = None
         self._state = self._initial_state()
 
     @staticmethod
@@ -36,6 +41,7 @@ class AutoalignmentService:
         return {
             "ok": True,
             "running": False,
+            "moving": False,
             "stop_requested": False,
             "status": "Idle",
             "message": "Autoalignment is idle.",
@@ -63,9 +69,9 @@ class AutoalignmentService:
         total_points = scan_config["scan_rows"] * scan_config["scan_cols"]
 
         with self._lock:
-            if self._state["running"]:
+            if self._state["running"] or self._state["moving"]:
                 raise AutoalignmentAlreadyRunning(
-                    "Autoalignment is already running."
+                    "Autoalignment or a final-position movement is already running."
                 )
 
             revision = self._state["revision"] + 1
@@ -78,6 +84,7 @@ class AutoalignmentService:
                 "revision": revision,
             })
             self._stop_event.clear()
+            self._scan_config = scan_config
             self._thread = threading.Thread(
                 target=self._run,
                 args=(scan_config,),
@@ -85,6 +92,75 @@ class AutoalignmentService:
                 daemon=True,
             )
             self._thread.start()
+
+        return self.snapshot()
+
+    def move_to_best(self):
+        serial_motor = None
+
+        with self._lock:
+            if self._state["running"] or self._state["moving"]:
+                raise AutoalignmentMoveUnavailable(
+                    "Wait until the current autoalignment operation finishes."
+                )
+            if self._state["status"] != "Complete" or self._state["best"] is None:
+                raise AutoalignmentMoveUnavailable(
+                    "Complete an autoalignment scan before moving to its best position."
+                )
+
+            config = copy.deepcopy(self._scan_config)
+            best = copy.deepcopy(self._state["best"])
+            self._state.update({
+                "moving": True,
+                "status": "Moving",
+                "message": "Moving to the best autoalignment position.",
+            })
+            self._state["revision"] += 1
+
+        try:
+            serial_motor = self._serial_factory(config)
+            motor = self._motor_factory(serial_motor)
+            motor.initialize(feed=config["scan_feed"])
+            motor.disable_limits()
+            motor.define_grid(
+                rows=config["scan_rows"],
+                cols=config["scan_cols"],
+                step_x=config["scan_step_x"],
+                step_y=config["scan_step_y"],
+                pattern=config["scan_pattern"],
+                centered=config.get("scan_centered", True),
+                reverse=config["scan_reverse"],
+            )
+            motor.move_to_grid_point(
+                row=int(best["grid_row"]),
+                col=int(best["grid_col"]),
+                feed=config["scan_feed"],
+            )
+            current = copy.deepcopy(best)
+            current.update({
+                "x": float(motor.position["x"]),
+                "y": float(motor.position["y"]),
+            })
+            self._update(
+                ok=True,
+                status="Complete",
+                current=current,
+                message="Motor moved to the best autoalignment position.",
+            )
+        except Exception as ex:
+            self._update(
+                ok=False,
+                status="Complete",
+                message="Could not move to the best position: {}".format(ex),
+            )
+            raise
+        finally:
+            if serial_motor is not None:
+                try:
+                    serial_motor.close()
+                except Exception:
+                    pass
+            self._update(moving=False)
 
         return self.snapshot()
 
@@ -121,8 +197,9 @@ class AutoalignmentService:
         total_points = rows * cols
         step_x = config["scan_step_x"]
         step_y = config["scan_step_y"]
-        x0 = -((cols - 1) * step_x) / 2.0
-        y0 = -((rows - 1) * step_y) / 2.0
+        centered = config.get("scan_centered", True)
+        x0 = -((cols - 1) * step_x) / 2.0 if centered else 0.0
+        y0 = -((rows - 1) * step_y) / 2.0 if centered else 0.0
 
         try:
             with self._run_context():
@@ -154,13 +231,17 @@ class AutoalignmentService:
                             "action": config["scan_on_fail"],
                         }
 
-                    col = int(round((x - x0) / step_x)) + 1
-                    row = int(round((y - y0) / step_y)) + 1
+                    grid_col = int(round((x - x0) / step_x))
+                    grid_row = int(round((y - y0) / step_y))
+                    col = grid_col + 1 if centered else grid_col
+                    row = grid_row + 1 if centered else grid_row
                     result = {
                         "index": len(results),
                         "scan_index": scan_index,
                         "row": row,
                         "col": col,
+                        "grid_row": grid_row,
+                        "grid_col": grid_col,
                         "x": x,
                         "y": y,
                         "pearson": float(measurement["pearson"]),
@@ -191,7 +272,7 @@ class AutoalignmentService:
                     step_y=step_y,
                     feed=config["scan_feed"],
                     pattern=config["scan_pattern"],
-                    centered=True,
+                    centered=centered,
                     reverse=config["scan_reverse"],
                     wait_mode="delay",
                     delay_s=config["scan_delay"],
@@ -201,6 +282,14 @@ class AutoalignmentService:
                 )
                 motor.go_home(feed=config["scan_feed"])
                 returned_home = True
+                self._update(
+                    current={
+                        "row": (rows + 1) / 2.0 if centered else 0,
+                        "col": (cols + 1) / 2.0 if centered else 0,
+                        "x": float(motor.position["x"]),
+                        "y": float(motor.position["y"]),
+                    }
+                )
 
                 if fatal_acquisition_error[0] is not None:
                     raise RuntimeError(

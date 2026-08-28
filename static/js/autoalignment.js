@@ -6,6 +6,7 @@
     ['scan_cols_apply', 'scan_cols_input'],
     ['scan_feed_apply', 'scan_feed_input'],
     ['scan_pattern_apply', 'scan_pattern_input'],
+    ['scan_centered_apply', 'scan_centered_input'],
     ['scan_reverse_apply', 'scan_reverse_input'],
     ['scan_delay_apply', 'scan_delay_input'],
     ['scan_on_fail_apply', 'scan_on_fail_input']
@@ -30,9 +31,26 @@
     return fallback;
   }
 
+  function formatPosition(point) {
+    var gridX = typeof point.col === 'number' ? point.col : 0;
+    var gridY = typeof point.row === 'number' ? point.row : 0;
+    var formatGridCoordinate = function (value) {
+      return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
+    };
+    return '(' + formatGridCoordinate(gridX) + ',' +
+      formatGridCoordinate(gridY) + ') = (' +
+      Number(point.x).toFixed(2) + ', ' +
+      Number(point.y).toFixed(2) + ') mm';
+  }
+
   function updateConfig(data) {
     globalconfig = data;
     $('#grid_size_value').text(data.scan_rows + ' x ' + data.scan_cols);
+    var homeX = data.scan_centered ? (Number(data.scan_cols) + 1) / 2 : 0;
+    var homeY = data.scan_centered ? (Number(data.scan_rows) + 1) / 2 : 0;
+    $('#grid_current_position_value').text(
+      '(' + homeX + ',' + homeY + ') = (0.00, 0.00) mm'
+    );
   }
 
   function validateInput(inputId) {
@@ -131,11 +149,10 @@
     }
     if (context.best) {
       $('#pearson_max_value').text(Number(context.best.pearson).toFixed(4));
-      $('#pearson_best_location_value').text('C' + context.best.col + ', R' + context.best.row);
+      $('#pearson_best_location_value').text(formatPosition(context.best));
     }
     if (context.current) {
-      $('#grid_current_x_value').text(Number(context.current.x).toFixed(3) + ' mm');
-      $('#grid_current_y_value').text(Number(context.current.y).toFixed(3) + ' mm');
+      $('#grid_current_position_value').text(formatPosition(context.current));
     }
 
     setScanProgress(context.progress || 0);
@@ -145,6 +162,14 @@
 
   function scanIsActive(context) {
     return context.running || ['Starting', 'Running', 'Stopping'].indexOf(context.status) >= 0;
+  }
+
+  function operationIsActive(context) {
+    return scanIsActive(context) || context.moving || context.status === 'Moving';
+  }
+
+  function canMoveToBest(context) {
+    return context.status === 'Complete' && context.best && !operationIsActive(context);
   }
 
   function stopStatusPolling() {
@@ -172,10 +197,11 @@
       }
     }
 
-    $('#autoalign_start_btn').prop('disabled', scanIsActive(context));
+    $('#autoalign_start_btn').prop('disabled', operationIsActive(context));
     $('#autoalign_stop_btn').prop('disabled', !scanIsActive(context));
+    $('#autoalign_move_best_btn').prop('disabled', !canMoveToBest(context));
 
-    if (scanIsActive(context)) {
+    if (operationIsActive(context)) {
       scheduleStatusPoll();
       return;
     }
@@ -218,6 +244,7 @@
       var button = $(this);
       button.prop('disabled', true);
       $('#autoalign_stop_btn').prop('disabled', false);
+      $('#autoalign_move_best_btn').prop('disabled', true);
       setScanStatus('Starting');
       setScanProgress(0);
       $('#pearson_max_value, #pearson_best_location_value').text('--');
@@ -255,7 +282,28 @@
       });
     });
 
+    $('#autoalign_move_best_btn').off('click').on('click.autoalignment', function () {
+      var button = $(this);
+      button.prop('disabled', true);
+      $('#autoalign_start_btn').prop('disabled', true);
+      setScanStatus('Moving');
+      feedback('Moving to the best autoalignment position...', 'info');
+
+      $.ajax({
+        url: '/autoalign/move-best',
+        type: 'POST',
+        dataType: 'json',
+      }).done(function (context) {
+        handleStatus(context);
+        feedback('Motor moved to the best autoalignment position.', 'success');
+      }).fail(function (xhr) {
+        feedback(errorMessage(xhr, 'Could not move to the best position.'), 'error');
+        pollStatus();
+      });
+    });
+
     $('#autoalign_stop_btn').prop('disabled', true);
+    $('#autoalign_move_best_btn').prop('disabled', true);
     feedback('Scan settings ready.', 'info');
     pollStatus();
   });

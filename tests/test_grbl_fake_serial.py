@@ -106,6 +106,35 @@ class GrblFakeSerialTest(unittest.TestCase):
         self.assertEqual(motor.position, {"x": 0.0, "y": 0.0, "z": 0.0})
 
     @patch("simulator.grbl_fake_serial.time.sleep", return_value=None)
+    def test_define_grid_allows_safe_direct_movement_without_scanning(self, _sleep):
+        with TemporaryDirectory() as temp_dir, patch.object(
+            MotorController, "STATE_FILE", Path(temp_dir) / "state.json"
+        ), patch.object(
+            MotorController, "HISTORY_FILE", Path(temp_dir) / "history.jsonl"
+        ):
+            serial_connection = SimulatorSerial()
+            motor = MotorController(ser=serial_connection)
+            motor.initialize(feed=50)
+            motor.disable_limits()
+            writes_before_definition = len(serial_connection.writes)
+
+            motor.define_grid(
+                rows=3,
+                cols=3,
+                step_x=1.0,
+                step_y=1.0,
+                centered=True,
+            )
+
+            self.assertEqual(len(serial_connection.writes), writes_before_definition)
+            self.assertEqual(motor.grid_point(0, 2), (1.0, -1.0))
+
+            motor.move_to_grid_point(row=0, col=2, feed=50)
+
+        self.assertEqual(motor.position["x"], 1.0)
+        self.assertEqual(motor.position["y"], -1.0)
+
+    @patch("simulator.grbl_fake_serial.time.sleep", return_value=None)
     def test_absolute_and_relative_movements(self, _sleep):
         self.assertEqual(
             grbl.handle_command("G90 G1 X2.5 Y-1.5 F800"),

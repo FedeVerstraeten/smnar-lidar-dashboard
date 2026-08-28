@@ -4,6 +4,7 @@ import unittest
 
 from lidarcontroller.autoalignment import (
     AutoalignmentAlreadyRunning,
+    AutoalignmentMoveUnavailable,
     AutoalignmentService,
 )
 
@@ -16,6 +17,7 @@ SCAN_CONFIG = {
     "scan_step_y": 1.0,
     "scan_feed": 50,
     "scan_pattern": "raster",
+    "scan_centered": True,
     "scan_reverse": False,
     "scan_delay": 0.0,
     "scan_on_fail": "abort",
@@ -36,6 +38,9 @@ class FakeMotor:
     def __init__(self, serial_connection):
         self.serial_connection = serial_connection
         self.home_calls = 0
+        self.position = {"x": 0.0, "y": 0.0, "z": 0.0}
+        self.grid = None
+        self.moved_to = None
 
     def initialize(self, feed):
         self.feed = feed
@@ -43,14 +48,41 @@ class FakeMotor:
     def disable_limits(self):
         pass
 
-    def scan_grid(self, on_point, **_kwargs):
-        for index, (x, y) in enumerate(self.points):
+    def define_grid(self, rows, cols, step_x, step_y, centered, **_kwargs):
+        x0 = -((cols - 1) * step_x) / 2.0 if centered else 0.0
+        y0 = -((rows - 1) * step_y) / 2.0 if centered else 0.0
+        self.grid = {
+            (row, col): (x0 + col * step_x, y0 + row * step_y)
+            for row in range(rows)
+            for col in range(cols)
+        }
+
+    def move_to_grid_point(self, row, col, feed):
+        self.moved_to = (row, col, feed)
+        x, y = self.grid[(row, col)]
+        self.position.update({"x": x, "y": y})
+
+    def scan_grid(self, on_point, **kwargs):
+        rows = kwargs["rows"]
+        cols = kwargs["cols"]
+        step_x = kwargs["step_x"]
+        step_y = kwargs["step_y"]
+        centered = kwargs["centered"]
+        x0 = -((cols - 1) * step_x) / 2.0 if centered else 0.0
+        y0 = -((rows - 1) * step_y) / 2.0 if centered else 0.0
+        points = [
+            (x0 + col * step_x, y0 + row * step_y)
+            for row in range(rows)
+            for col in range(cols)
+        ]
+        for index, (x, y) in enumerate(points):
             response = on_point(index, x, y)
             if not response.get("ok", True) and response.get("action") == "abort":
                 break
 
     def go_home(self, feed):
         self.home_calls += 1
+        self.position.update({"x": 0.0, "y": 0.0, "z": 0.0})
 
 
 def wait_for(predicate, timeout=1.0):
@@ -138,6 +170,10 @@ class AutoalignmentServiceTest(unittest.TestCase):
         self.assertEqual(final["measured_points"], 4)
         self.assertEqual(final["best"]["pearson"], 0.8)
         self.assertEqual(final["filename"], "result.json")
+        self.assertEqual(final["current"]["x"], 0.0)
+        self.assertEqual(final["current"]["y"], 0.0)
+        self.assertEqual(final["current"]["col"], 1.5)
+        self.assertEqual(final["current"]["row"], 1.5)
         self.assertTrue(serial_connections[0].closed)
         self.assertEqual(motors[0].home_calls, 1)
         self.assertEqual(len(saved), 1)
@@ -177,6 +213,47 @@ class AutoalignmentServiceTest(unittest.TestCase):
         self.assertEqual(final["status"], "Error")
         self.assertEqual(final["measured_points"], 0)
         self.assertIn("Licel acquisition failed", final["message"])
+
+    def test_move_to_best_reloads_grid_and_updates_current_position(self):
+        service, serial_connections, motors, _ = self.make_service()
+        service.start(SCAN_CONFIG)
+        service.wait(2.0)
+
+        moved = service.move_to_best()
+
+        self.assertEqual(motors[1].moved_to, (0, 1, SCAN_CONFIG["scan_feed"]))
+        self.assertEqual(moved["current"]["x"], 0.5)
+        self.assertEqual(moved["current"]["y"], -0.5)
+        self.assertEqual(moved["current"]["col"], 2)
+        self.assertEqual(moved["current"]["row"], 1)
+        self.assertEqual(moved["best"]["pearson"], 0.8)
+        self.assertFalse(moved["moving"])
+        self.assertTrue(serial_connections[1].closed)
+
+    def test_move_to_best_requires_a_completed_scan(self):
+        service, *_ = self.make_service()
+
+        with self.assertRaises(AutoalignmentMoveUnavailable):
+            service.move_to_best()
+
+    def test_non_centered_scan_uses_zero_based_grid_coordinates(self):
+        service, _, motors, _ = self.make_service()
+        config = dict(SCAN_CONFIG, scan_centered=False)
+        service.start(config)
+        final = service.wait(2.0)
+
+        self.assertEqual(final["current"]["col"], 0)
+        self.assertEqual(final["current"]["row"], 0)
+        self.assertEqual(final["best"]["col"], 1)
+        self.assertEqual(final["best"]["row"], 0)
+        self.assertEqual(final["best"]["x"], 1.0)
+        self.assertEqual(final["best"]["y"], 0.0)
+
+        moved = service.move_to_best()
+
+        self.assertEqual(motors[1].moved_to, (0, 1, SCAN_CONFIG["scan_feed"]))
+        self.assertEqual(moved["current"]["col"], 1)
+        self.assertEqual(moved["current"]["row"], 0)
 
 
 if __name__ == "__main__":

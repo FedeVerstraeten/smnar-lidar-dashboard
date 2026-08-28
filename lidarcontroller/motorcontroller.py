@@ -493,6 +493,62 @@ class MotorController:
             **meta,
         }
 
+    def define_grid(
+        self,
+        rows: int,
+        cols: int,
+        step_x: float = 0.1,
+        step_y: float = 0.1,
+        step_z: float = 0.0,
+        drift_xy: float = 0.0,
+        drift_yx: float = 0.0,
+        pattern: str = "zigzag",
+        centered: bool = False,
+        reverse: bool = False,
+    ):
+        """Define and validate a grid without moving the motor."""
+        points = self._generate_grid_points(
+            rows=rows,
+            cols=cols,
+            step_x=step_x,
+            step_y=step_y,
+            drift_xy=drift_xy,
+            drift_yx=drift_yx,
+            pattern=pattern,
+            centered=centered,
+        )
+        points_by_id = self._generate_grid_points_by_id(
+            rows=rows,
+            cols=cols,
+            step_x=step_x,
+            step_y=step_y,
+            drift_xy=drift_xy,
+            drift_yx=drift_yx,
+            centered=centered,
+        )
+        if reverse:
+            points = list(reversed(points))
+
+        for x, y in points:
+            self._check_limits(x, y, self.position["z"])
+
+        self._save_grid(
+            rows=rows,
+            cols=cols,
+            points=points,
+            points_by_id=points_by_id,
+            pattern=pattern,
+            source="grid",
+            reverse=reverse,
+            step_x=step_x,
+            step_y=step_y,
+            step_z=step_z,
+            drift_xy=drift_xy,
+            drift_yx=drift_yx,
+            centered=centered,
+        )
+        return list(points)
+
     def scan_points(
         self,
         points,
@@ -655,40 +711,17 @@ class MotorController:
                   return_home: bool = False
                   ):
 
-        points = self._generate_grid_points(rows=rows, cols=cols,
-                                            step_x=step_x, step_y=step_y,
-                                            drift_xy=drift_xy, drift_yx=drift_yx,
-                                            pattern=pattern, centered=centered)
-        points_by_id = self._generate_grid_points_by_id(
+        self.define_grid(
             rows=rows,
             cols=cols,
             step_x=step_x,
             step_y=step_y,
             drift_xy=drift_xy,
             drift_yx=drift_yx,
-            centered=centered,
-        )
-        if reverse:
-            points = list(reversed(points))
-
-        # Validación preventiva: evita iniciar una grilla que excede límites.
-        for x, y in points:
-            self._check_limits(x, y, self.position["z"])
-
-        self._save_grid(
-            rows=rows,
-            cols=cols,
-            points=points,
-            points_by_id=points_by_id,
             pattern=pattern,
-            source="grid",
-            reverse=reverse,
-            step_x=step_x,
-            step_y=step_y,
-            step_z=step_z,
-            drift_xy=drift_xy,
-            drift_yx=drift_yx,
             centered=centered,
+            reverse=reverse,
+            step_z=step_z,
         )
 
         self._log_event("scan_grid_start", rows=rows, cols=cols,
