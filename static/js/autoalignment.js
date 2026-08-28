@@ -10,6 +10,9 @@
     ['scan_delay_apply', 'scan_delay_input'],
     ['scan_on_fail_apply', 'scan_on_fail_input']
   ];
+  var statusTimer = null;
+  var lastRevision = -1;
+  var statusPollDelayMs = 500;
 
   function feedback(message, level) {
     var element = $('#scan_setup_feedback');
@@ -129,13 +132,72 @@
     if (context.best) {
       $('#pearson_max_value').text(Number(context.best.pearson).toFixed(4));
       $('#pearson_best_location_value').text('C' + context.best.col + ', R' + context.best.row);
-      $('#grid_current_x_value').text(Number(context.best.x).toFixed(3) + ' mm');
-      $('#grid_current_y_value').text(Number(context.best.y).toFixed(3) + ' mm');
+    }
+    if (context.current) {
+      $('#grid_current_x_value').text(Number(context.current.x).toFixed(3) + ' mm');
+      $('#grid_current_y_value').text(Number(context.current.y).toFixed(3) + ' mm');
     }
 
     setScanProgress(context.progress || 0);
     setScanStatus(context.status || 'Idle');
     setTimeout(resizeAutoalignPlots, 50);
+  }
+
+  function scanIsActive(context) {
+    return context.running || ['Starting', 'Running', 'Stopping'].indexOf(context.status) >= 0;
+  }
+
+  function stopStatusPolling() {
+    if (statusTimer) {
+      clearTimeout(statusTimer);
+      statusTimer = null;
+    }
+  }
+
+  function scheduleStatusPoll() {
+    stopStatusPolling();
+    statusTimer = setTimeout(pollStatus, statusPollDelayMs);
+  }
+
+  function handleStatus(context) {
+    if (typeof context.revision === 'number' && context.revision < lastRevision) {
+      return;
+    }
+
+    if (context.revision !== lastRevision) {
+      lastRevision = context.revision;
+      renderResponse(context);
+      if (context.message) {
+        feedback(context.message, context.status === 'Error' ? 'error' : 'info');
+      }
+    }
+
+    $('#autoalign_start_btn').prop('disabled', scanIsActive(context));
+    $('#autoalign_stop_btn').prop('disabled', !scanIsActive(context));
+
+    if (scanIsActive(context)) {
+      scheduleStatusPoll();
+      return;
+    }
+
+    stopStatusPolling();
+    if (context.status === 'Complete') {
+      feedback('Autoalignment scan finished.', 'success');
+    } else if (context.status === 'Stopped') {
+      feedback('Autoalignment stopped.', 'info');
+    }
+  }
+
+  function pollStatus() {
+    $.ajax({
+      url: '/autoalign/status',
+      type: 'GET',
+      dataType: 'json',
+      cache: false
+    }).done(handleStatus).fail(function (xhr) {
+      feedback(errorMessage(xhr, 'Could not read autoalignment status.'), 'error');
+      scheduleStatusPoll();
+    });
   }
 
   $(function () {
@@ -155,46 +217,46 @@
     $('#autoalign_start_btn').off('click').on('click.autoalignment', function () {
       var button = $(this);
       button.prop('disabled', true);
-      setScanStatus('Running');
+      $('#autoalign_stop_btn').prop('disabled', false);
+      setScanStatus('Starting');
       setScanProgress(0);
       $('#pearson_max_value, #pearson_best_location_value').text('--');
       feedback('Autoalignment scan started.', 'info');
 
       $.ajax({
-        url: '/autoalign',
-        type: 'GET',
+        url: '/autoalign/start',
+        type: 'POST',
         dataType: 'json',
-        data: {selected: button.val()}
       }).done(function (context) {
-        renderResponse(context);
-        feedback('Autoalignment scan finished.', 'success');
+        lastRevision = -1;
+        handleStatus(context);
       }).fail(function (xhr) {
         setScanStatus('Error');
-        feedback(errorMessage(xhr, 'Autoalignment scan failed.'), 'error');
-      }).always(function () {
         button.prop('disabled', false);
+        $('#autoalign_stop_btn').prop('disabled', true);
+        feedback(errorMessage(xhr, 'Autoalignment scan failed.'), 'error');
       });
     });
 
     $('#autoalign_stop_btn').off('click').on('click.autoalignment', function () {
       var button = $(this);
       button.prop('disabled', true);
+      setScanStatus('Stopping');
 
       $.ajax({
-        url: '/autoalign',
-        type: 'GET',
+        url: '/autoalign/stop',
+        type: 'POST',
         dataType: 'json',
-        data: {selected: button.val()}
       }).done(function (context) {
-        setScanStatus(context.status || 'Stopped');
-        feedback(context.message || 'Autoalignment stop requested.', 'info');
+        handleStatus(context);
       }).fail(function (xhr) {
-        feedback(errorMessage(xhr, 'Could not stop autoalignment.'), 'error');
-      }).always(function () {
         button.prop('disabled', false);
+        feedback(errorMessage(xhr, 'Could not stop autoalignment.'), 'error');
       });
     });
 
+    $('#autoalign_stop_btn').prop('disabled', true);
     feedback('Scan settings ready.', 'info');
+    pollStatus();
   });
 })(jQuery);

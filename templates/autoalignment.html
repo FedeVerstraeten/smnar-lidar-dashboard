@@ -204,6 +204,61 @@
         </li>
     </ul>
 </li>
+<!-- Rayleigh-Fit controls -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-square-root-alt"></i>
+        <p>Rayleigh-Fit controls<i class="right fas fa-angle-left"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <label><b style="color:white">Rayleigh-Fit range [meters]:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="fit_init_input" placeholder="Initial"></div>
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="fit_final_input" placeholder="Final"></div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button></div>
+            </div>
+            <label><b style="color:white">Wavelength source:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">nm</div></div>
+                        <input type="text" class="form-control" id="wavelength_input" placeholder="Wavelength">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="wavelength_apply" value="wavelength">Apply</button></div>
+            </div>
+            <label><b style="color:white">Surface conditions:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">ºC</div></div>
+                        <input type="text" class="form-control" id="temperature_input" placeholder="Temperature">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="temperature_apply" value="temperature">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">hPa</div></div>
+                        <input type="text" class="form-control" id="pressure_input" placeholder="Pressure">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="pressure_apply" value="pressure">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">m</div></div>
+                        <input type="text" class="form-control" id="masl_input" placeholder="MASL">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button></div>
+            </div>
+        </li>
+    </ul>
+</li>
 <!-- Laser controls -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
@@ -529,7 +584,7 @@ function setScanProgress(percent) {
 }
 
 function setScanStatus(status) {
-    var allowedStatuses = ['Idle', 'Running', 'Stopped', 'Complete', 'Error'];
+    var allowedStatuses = ['Idle', 'Starting', 'Running', 'Stopping', 'Stopped', 'Complete', 'Error'];
     var nextStatus = allowedStatuses.indexOf(status) >= 0 ? status : 'Idle';
     var statusEl = document.getElementById('scan_status_value');
     if (statusEl) {
@@ -640,6 +695,12 @@ document.getElementById('rc_limits_init_input').value = globalconfig["rc_limits_
 document.getElementById('rc_limits_final_input').value = globalconfig["rc_limits_final"];
 document.getElementById('raw_limits_init_input').value = globalconfig["raw_limits_init"];
 document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
+document.getElementById('fit_init_input').value = globalconfig["fit_init"];
+document.getElementById('fit_final_input').value = globalconfig["fit_final"];
+document.getElementById('wavelength_input').value = globalconfig["wavelength"];
+document.getElementById('temperature_input').value = globalconfig["temperature"];
+document.getElementById('pressure_input').value = globalconfig["pressure"];
+document.getElementById('masl_input').value = globalconfig["masl"];
 document.getElementById('scan_rows_input').value = globalconfig["scan_rows"];
 document.getElementById('scan_cols_input').value = globalconfig["scan_cols"];
 document.getElementById('scan_step_x_input').value = Number(globalconfig["scan_step_x"]).toFixed(3);
@@ -667,5 +728,5 @@ function parsePlotFigure(figureJson) {
 {% endblock my_content %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', filename='js/autoalignment.js', v='20260715-1') }}"></script>
+<script src="{{ url_for('static', filename='js/autoalignment.js', v='20260828-1') }}"></script>
 {% endblock page_scripts %}

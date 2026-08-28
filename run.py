@@ -9,6 +9,7 @@ import configparser
 import datetime
 import serial 
 import threading
+from contextlib import contextmanager
 from functools import wraps
 
 #----------- CUSTOM LIBS -----------
@@ -20,6 +21,10 @@ from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
 from lidarcontroller.motorcontroller import MotorController
+from lidarcontroller.autoalignment import (
+  AutoalignmentAlreadyRunning,
+  AutoalignmentService
+)
 
 #----------- FLASK CONFIG -----------
 
@@ -36,13 +41,6 @@ licel_state = "disconnected"
 laser = laserController(port = 'COM3', baudrate = 9600, timeout = 5)
 laser_lock = threading.Lock()
 laser_state = "disconnected"
-autoalign_lock = threading.Lock()
-autoalign_state = {
-                  "running": False,
-                  "stop_requested": False,
-                  "results": [],
-                  "best": None
-                 }
 
 globalconfig = {
                   "ip" : '10.49.234.234',
@@ -276,6 +274,59 @@ def autoalign_results_to_plots(results):
           "plot_measurement_grid": json.dumps({"data": grid_trace, "layout": grid_layout})
          }
 
+
+@contextmanager
+def autoalignment_acquisition_context():
+  global licel_state
+
+  with licel_lock:
+    if not lc.isConnected():
+      raise RuntimeError("Connect Licel before starting autoalignment.")
+
+    licel_state = "acquiring"
+    try:
+      yield
+    finally:
+      licel_state = "connected" if lc.isConnected() else "disconnected"
+
+
+def acquire_autoalignment_point():
+  acquire_processed_lidar_trace()
+  context = build_alignment_context()
+  return {
+          "pearson": float(lidar.alignment_factor),
+          "plots": {
+                    "plot_lidar_signal": context["plot_lidar_signal"],
+                    "plot_lidar_range_correction": context["plot_lidar_range_correction"]
+                   }
+         }
+
+
+def save_autoalignment_results(config, results, best):
+  acquisdata_path = os.path.join(APP_ROOT, 'acquisdata')
+  os.makedirs(acquisdata_path, exist_ok=True)
+  filename = "autoalign_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
+  filepath = os.path.join(acquisdata_path,filename)
+  with open(filepath,'w') as file:
+    file.write(json.dumps({
+                           "globalconfig": config,
+                           "results": results,
+                           "best": best
+                          }))
+  return filename
+
+
+autoalignment_service = AutoalignmentService(
+  serial_factory=lambda config: serial.Serial(
+    port=config["motor_port"], baudrate=115200, timeout=2.0
+  ),
+  motor_factory=lambda serial_connection: MotorController(ser=serial_connection),
+  acquire_point=acquire_autoalignment_point,
+  plots_builder=autoalign_results_to_plots,
+  results_saver=save_autoalignment_results,
+  run_context=autoalignment_acquisition_context,
+)
+
 #----------- END-POINT ROUTES -----------
 
 @app.route("/")
@@ -410,171 +461,57 @@ def licel_record_data():
     response.content_type = 'application/json'
     return response
 
-@app.route("/autoalign", methods=['GET','POST'])
-@licel_acquisition_required
-def autoalignment_data():
-  global autoalign_state
-
-  action_button = request.args['selected']
-
-  if(action_button == "autoalign_stop"):
-    with autoalign_lock:
-      autoalign_state["stop_requested"] = True
-
-    return jsonify({
-                    "ok": True,
-                    "status": "Stopped",
-                    "message": "Autoalignment stop requested."
-                  })
-
-  if(action_button != "autoalign_start"):
+def start_autoalignment():
+  if not lc.isConnected():
     return jsonify({
                     "ok": False,
                     "status": "Error",
-                    "message": "Invalid autoalignment action."
-                  }), 400
-
-  with autoalign_lock:
-    if autoalign_state["running"]:
-      return jsonify({
-                      "ok": False,
-                      "status": "Running",
-                      "message": "Autoalignment is already running."
-                    }), 409
-
-    autoalign_state = {
-                       "running": True,
-                       "stop_requested": False,
-                       "results": [],
-                       "best": None
-                      }
-
-  serial_motor = None
-  motor = None
-  returned_home = False
+                    "message": "Connect Licel before starting autoalignment."
+                  }), 409
 
   try:
-    rows = globalconfig["scan_rows"]
-    cols = globalconfig["scan_cols"]
-    total_points = rows * cols
-
-    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
-    motor = MotorController(ser=serial_motor)
-    motor.initialize(feed=globalconfig["scan_feed"])
-    motor.disable_limits()
-
-    results = []
-    x0 = -((cols - 1) * globalconfig["scan_step_x"]) / 2.0
-    y0 = -((rows - 1) * globalconfig["scan_step_y"]) / 2.0
-
-    def measure_point(index, x, y):
-      with autoalign_lock:
-        if autoalign_state["stop_requested"]:
-          return {"ok": False, "action": "abort"}
-
-      try:
-        acquire_processed_lidar_trace()
-      except Exception as ex:
-        print("Autoalignment acquisition failed:", ex)
-        return {"ok": False, "action": globalconfig["scan_on_fail"]}
-
-      col = int(round((x - x0) / globalconfig["scan_step_x"])) + 1
-      row = int(round((y - y0) / globalconfig["scan_step_y"])) + 1
-      result = {
-                "index": len(results),
-                "scan_index": index,
-                "row": row,
-                "col": col,
-                "x": x,
-                "y": y,
-                "pearson": float(lidar.alignment_factor),
-                "timestamp": datetime.datetime.now().isoformat()
-               }
-      results.append(result)
-
-      with autoalign_lock:
-        autoalign_state["results"] = results
-        if autoalign_state["best"] is None or result["pearson"] > autoalign_state["best"]["pearson"]:
-          autoalign_state["best"] = result
-
-      return {"ok": True}
-
-    motor.scan_grid(
-                   rows=rows,
-                   cols=cols,
-                   step_x=globalconfig["scan_step_x"],
-                   step_y=globalconfig["scan_step_y"],
-                   feed=globalconfig["scan_feed"],
-                   pattern=globalconfig["scan_pattern"],
-                   centered=True,
-                   reverse=globalconfig["scan_reverse"],
-                   wait_mode="delay",
-                   delay_s=globalconfig["scan_delay"],
-                   on_point=measure_point,
-                   on_fail=globalconfig["scan_on_fail"],
-                   return_home=False
-                  )
-    motor.go_home(feed=globalconfig["scan_feed"])
-    returned_home = True
-
-    with autoalign_lock:
-      stop_requested = autoalign_state["stop_requested"]
-      best = autoalign_state["best"]
-
-    status = "Stopped" if stop_requested else "Complete"
-    progress = int(round((len(results) / total_points) * 100)) if total_points else 0
-    plots = autoalign_results_to_plots(results)
-
-    acquisdata_path = os.path.join(APP_ROOT, 'acquisdata')
-    if not os.path.isdir(acquisdata_path):
-      os.mkdir(acquisdata_path)
-    filename = "autoalign_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
-    filepath = os.path.join(acquisdata_path,filename)
-    with open(filepath,'w') as file:
-      file.write(json.dumps({
-                             "globalconfig": globalconfig,
-                             "results": results,
-                             "best": best
-                            }))
-
-    context = build_alignment_context() if results else {
-              "plot_lidar_signal": plotly_plot.plotly_empty_signal("raw"),
-              "plot_lidar_range_correction": plotly_plot.plotly_empty_signal("rangecorrected"),
-              "rms_error": 0
-             }
-    context.update(plots)
-    context.update({
-                    "ok": True,
-                    "status": status,
-                    "progress": progress,
-                    "total_points": total_points,
-                    "measured_points": len(results),
-                    "best": best,
-                    "results": results,
-                    "filename": filename
-                  })
-
-    return context
-
-  except Exception as ex:
+    state = autoalignment_service.start(globalconfig)
+    return jsonify(state), 202
+  except AutoalignmentAlreadyRunning as ex:
     return jsonify({
                     "ok": False,
-                    "status": "Error",
+                    "status": "Running",
                     "message": str(ex)
-                  }), 500
+                  }), 409
 
-  finally:
-    if motor is not None and not returned_home:
-      try:
-        motor.go_home(feed=globalconfig["scan_feed"])
-      except Exception as ex:
-        print("Autoalignment return home failed:", ex)
 
-    if serial_motor is not None:
-      serial_motor.close()
+@app.route("/autoalign/start", methods=['POST'])
+def autoalignment_start():
+  return start_autoalignment()
 
-    with autoalign_lock:
-      autoalign_state["running"] = False
+
+@app.route("/autoalign/status", methods=['GET'])
+def autoalignment_status():
+  return jsonify(autoalignment_service.snapshot())
+
+
+@app.route("/autoalign/stop", methods=['POST'])
+def autoalignment_stop():
+  return jsonify(autoalignment_service.stop())
+
+
+@app.route("/autoalign", methods=['GET','POST'])
+def autoalignment_data():
+  """Compatibility endpoint for clients using the original action API."""
+  action_button = request.values.get('selected','')
+
+  if action_button == "autoalign_start":
+    return start_autoalignment()
+  if action_button == "autoalign_stop":
+    return jsonify(autoalignment_service.stop())
+  if action_button == "autoalign_status":
+    return jsonify(autoalignment_service.snapshot())
+
+  return jsonify({
+                  "ok": False,
+                  "status": "Error",
+                  "message": "Invalid autoalignment action."
+                }), 400
 
 @app.route("/licelcontrols", methods=['GET','POST'])
 def licel_controls():
