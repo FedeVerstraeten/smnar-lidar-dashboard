@@ -21,15 +21,15 @@ class MotorController:
     HISTORY_FILE = Path("motor_history.jsonl")
 
     def __init__(self, ser: serial.Serial, axis_map: Optional[dict] = None):
-        
-        # Puerto serie ya inicializado y abierto 
+
+        # Puerto serie ya inicializado y abierto
         # (ej: serial.Serial(PORT, BAUDRATE, timeout=TIMEOUT))
         self.ser = ser
 
         # Ejes lógicos -> ejes físicos GRBL
         # Por defecto, mapea x->X, y->Z, z no se usa.
-        # Inversion de dirección por signo: 
-        #    1 para normal, 
+        # Inversion de dirección por signo:
+        #    1 para normal,
         #   -1 para invertir sentido.
         self.axis_map = axis_map or {
             "x": ("X", 1),  # eje lógico x -> eje GRBL X
@@ -49,6 +49,10 @@ class MotorController:
             "z_max":  0.2,
         }
         self.limits_enabled = True
+
+        self.grid_points = None
+        self.grid_points_by_id = None
+        self.grid_meta = None
 
         self.load_state()
 
@@ -107,7 +111,7 @@ class MotorController:
             rl = r.lower()
             if rl.startswith("ok") or rl.startswith("error"):
                 return r
-            
+
     def wake_up(self, wait_s: float = 2.0) -> None:
         self.ser.write(b"\r\n\r\n")
         self.ser.flush()
@@ -119,7 +123,7 @@ class MotorController:
         Consulta el estado actual de GRBL usando '?'.
         Devuelve la línea de estado tipo:
         <Idle|MPos:...|FS:...>
-        """        
+        """
         self.ser.reset_input_buffer()
         self.ser.write(b"?\r\n")
         self.ser.flush()
@@ -133,8 +137,8 @@ class MotorController:
                 return line
 
         raise TimeoutError("No se recibió estado GRBL válido.")
-    
-    
+
+
 
     def initialize(self, feed: float = 80.0):
         self.send("$X")
@@ -189,7 +193,7 @@ class MotorController:
             raise ValueError(message)
 
     def set_home(self):
-        # Set home lógico en la posición actual. 
+        # Set home lógico en la posición actual.
         # No mueve el motor, solo redefine el origen de coordenadas.
         cmd = "G92"
         if self.axis_map["x"][0] is not None:
@@ -211,7 +215,7 @@ class MotorController:
         self.home = {"x": 0.0, "y": 0.0, "z": 0.0}
         self.save_state()
         self._log_event("set_home", x=0.0, y=0.0, z=0.0)
-        
+
         return response
 
     def go_home(self, feed: float = 80.0):
@@ -253,14 +257,14 @@ class MotorController:
         response = self.send(cmd)
         if wait_idle:
             self.wait_until_idle()
-        
+
         self.position["x"] = target_x
         self.position["y"] = target_y
         self.position["z"] = target_z
 
         self.save_state()
         self._log_event("move_relative", dx=dx, dy=dy, dz=dz, feed=feed, **self.position)
-        
+
         return response
 
 
@@ -289,17 +293,53 @@ class MotorController:
             cmd += f" {axis}{sign * tz:.4f}"
 
         response = self.send(cmd)
-                
+
         if wait_idle:
             self.wait_until_idle()
 
         self.position["x"] = tx
         self.position["y"] = ty
         self.position["z"] = tz
-        
+
         self.save_state()
         self._log_event("move_absolute", x=tx, y=ty, z=tz, feed=feed)
-        
+
+        return response
+
+    def grid_point(self, row: int, col: int):
+        if self.grid_points_by_id is None:
+            raise RuntimeError("No hay grilla cargada. Ejecutar scan_grid o scan_grid_calibrated primero.")
+
+        key = (row, col)
+
+        if key not in self.grid_points_by_id:
+            rows = self.grid_meta["rows"] if self.grid_meta else "?"
+            cols = self.grid_meta["cols"] if self.grid_meta else "?"
+            raise ValueError(f"Punto fuera de grilla: {(row, col)}. Grilla actual: {rows}x{cols}")
+
+        return self.grid_points_by_id[key]
+
+    def move_to_grid_point(self, row: int, col: int, feed: float = 80.0, wait_idle: bool = True) -> str:
+        x, y = self.grid_point(row, col)
+
+        response = self.move_absolute(
+            x=x,
+            y=y,
+            z=self.position["z"],
+            feed=feed,
+            wait_idle=wait_idle,
+        )
+
+        self._log_event(
+            "move_to_grid_point",
+            row=row,
+            col=col,
+            x=x,
+            y=y,
+            z=self.position["z"],
+            feed=feed,
+        )
+
         return response
 
     def jog(self, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0, feed: float = 80.0):
@@ -323,12 +363,7 @@ class MotorController:
 
         cmd += f" F{feed:.2f}"
 
-        print(f"Enviando comando de jogging: {cmd}")
-
-        reponse = self.send(cmd)
-
-        self.ser.write((cmd + "\n").encode())
-        self.ser.flush()
+        response = self.send(cmd)
 
         self.position["x"] = target_x
         self.position["y"] = target_y
@@ -336,7 +371,7 @@ class MotorController:
         self.save_state()
         self._log_event("jog", dx=dx, dy=dy, dz=dz, feed=feed, **self.position)
 
-        return reponse
+        return response
 
     def jog_cancel(self):
         self.ser.write(b"\x85") # Ctrl+U cancela el movimiento de jogging en GRBL
@@ -376,7 +411,7 @@ class MotorController:
                     pts.append((x, y))
 
             return pts
-        
+
         if pattern == "zigzag":
             pts = []
 
@@ -417,8 +452,46 @@ class MotorController:
                 pts.append((x, y))
 
             return pts
-        
+
         raise ValueError(f"Patrón no soportado: {pattern}")
+
+    def _generate_grid_points_by_id(
+        self,
+        rows: int,
+        cols: int,
+        step_x: float,
+        step_y: float,
+        drift_xy: float = 0.0,
+        drift_yx: float = 0.0,
+        centered: bool = False,
+    ):
+        x0 = -((cols - 1) * step_x) / 2.0 if centered else 0.0
+        y0 = -((rows - 1) * step_y) / 2.0 if centered else 0.0
+
+        points_by_id = {}
+
+        for r in range(rows):
+            for c in range(cols):
+                x_base = x0 + c * step_x
+                y_base = y0 + r * step_y
+
+                x = round(x_base + drift_xy * y_base, 3)
+                y = round(y_base + drift_yx * x_base, 3)
+
+                points_by_id[(r, c)] = (x, y)
+
+        return points_by_id
+
+    def _save_grid(self, rows: int, cols: int, points, points_by_id: dict, pattern: str, source: str, **meta):
+        self.grid_points = list(points)
+        self.grid_points_by_id = dict(points_by_id)
+        self.grid_meta = {
+            "rows": rows,
+            "cols": cols,
+            "pattern": pattern,
+            "source": source,
+            **meta,
+        }
 
     def scan_points(
         self,
@@ -570,22 +643,31 @@ class MotorController:
 
             self._log_event("scan_points_end")
 
-    def scan_grid(self, 
-                  rows: int, cols: int, 
-                  step_x: float = 0.1, step_y: float = 0.1, step_z: float = 0.0, 
+    def scan_grid(self,
+                  rows: int, cols: int,
+                  step_x: float = 0.1, step_y: float = 0.1, step_z: float = 0.0,
                   drift_xy: float = 0.0, drift_yx: float = 0.0,
                   feed: float = 80.0,
-                  pattern: str = "zigzag", centered: bool = False, reverse: bool = False, 
-                  wait_mode: str = "none", delay_s: float = 0.0, 
+                  pattern: str = "zigzag", centered: bool = False, reverse: bool = False,
+                  wait_mode: str = "none", delay_s: float = 0.0,
                   on_point: Optional[Callable[[int, float, float], Union[bool, dict]]] = None,
-                  on_fail: str = "retry", 
+                  on_fail: str = "retry",
                   return_home: bool = False
                   ):
-        
-        points = self._generate_grid_points(rows=rows, cols=cols, 
+
+        points = self._generate_grid_points(rows=rows, cols=cols,
                                             step_x=step_x, step_y=step_y,
                                             drift_xy=drift_xy, drift_yx=drift_yx,
                                             pattern=pattern, centered=centered)
+        points_by_id = self._generate_grid_points_by_id(
+            rows=rows,
+            cols=cols,
+            step_x=step_x,
+            step_y=step_y,
+            drift_xy=drift_xy,
+            drift_yx=drift_yx,
+            centered=centered,
+        )
         if reverse:
             points = list(reversed(points))
 
@@ -593,8 +675,24 @@ class MotorController:
         for x, y in points:
             self._check_limits(x, y, self.position["z"])
 
-        self._log_event("scan_grid_start", rows=rows, cols=cols, 
-                        step_x=step_x, step_y=step_y, step_z=step_z, 
+        self._save_grid(
+            rows=rows,
+            cols=cols,
+            points=points,
+            points_by_id=points_by_id,
+            pattern=pattern,
+            source="grid",
+            reverse=reverse,
+            step_x=step_x,
+            step_y=step_y,
+            step_z=step_z,
+            drift_xy=drift_xy,
+            drift_yx=drift_yx,
+            centered=centered,
+        )
+
+        self._log_event("scan_grid_start", rows=rows, cols=cols,
+                        step_x=step_x, step_y=step_y, step_z=step_z,
                         drift_xy=drift_xy, drift_yx=drift_yx, feed=feed,
                         pattern=pattern, centered=centered, reverse=reverse,
                         wait_mode=wait_mode, delay_s=delay_s, on_fail=on_fail)
@@ -683,6 +781,7 @@ class MotorController:
             raise ValueError("pattern debe ser 'raster' o 'zigzag'")
 
         points = []
+        points_by_id = {}
 
         for r in range(rows):
             v = r / (rows - 1)
@@ -706,12 +805,29 @@ class MotorController:
                     + u * v * bottom_right[1]
                 )
 
-                row_points.append((round(x, 3), round(y, 3)))
+                point = (round(x, 3), round(y, 3))
+                row_points.append(point)
+                points_by_id[(r, c)] = point
 
             if pattern == "zigzag" and r % 2 == 1:
                 row_points.reverse()
 
             points.extend(row_points)
+
+        saved_points = list(reversed(points)) if reverse else points
+        self._save_grid(
+            rows=rows,
+            cols=cols,
+            points=saved_points,
+            points_by_id=points_by_id,
+            pattern=pattern,
+            source="calibrated_corners",
+            reverse=reverse,
+            top_left=top_left,
+            top_right=top_right,
+            bottom_left=bottom_left,
+            bottom_right=bottom_right,
+        )
 
         self._log_event(
             "scan_grid_calibrated_start",
@@ -837,7 +953,7 @@ class MotorController:
             points.extend(row_points)
 
         return points
-    
+
     def scan_from_calibration_grid(
         self,
         calibration_grid: dict,
