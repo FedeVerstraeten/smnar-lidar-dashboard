@@ -7,7 +7,7 @@
 
     .autoalign-summary {
         display: grid;
-        grid-template-columns: repeat(5, minmax(120px, 1fr));
+        grid-template-columns: repeat(4, minmax(120px, 1fr));
         gap: .5rem;
     }
 
@@ -204,6 +204,61 @@
         </li>
     </ul>
 </li>
+<!-- Rayleigh-Fit controls -->
+<li class="nav-item has-treeview menu-closed">
+    <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-square-root-alt"></i>
+        <p>Rayleigh-Fit controls<i class="right fas fa-angle-left"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item">
+            <label><b style="color:white">Rayleigh-Fit range [meters]:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="fit_init_input" placeholder="Initial"></div>
+                <div class="col-sm-4 my-1"><input type="text" class="form-control" id="fit_final_input" placeholder="Final"></div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="fit_apply" value="fitting">Apply</button></div>
+            </div>
+            <label><b style="color:white">Wavelength source:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">nm</div></div>
+                        <input type="text" class="form-control" id="wavelength_input" placeholder="Wavelength">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="wavelength_apply" value="wavelength">Apply</button></div>
+            </div>
+            <label><b style="color:white">Surface conditions:</b></label>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">ºC</div></div>
+                        <input type="text" class="form-control" id="temperature_input" placeholder="Temperature">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="temperature_apply" value="temperature">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">hPa</div></div>
+                        <input type="text" class="form-control" id="pressure_input" placeholder="Pressure">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="pressure_apply" value="pressure">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">m</div></div>
+                        <input type="text" class="form-control" id="masl_input" placeholder="MASL">
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="masl_apply" value="masl">Apply</button></div>
+            </div>
+        </li>
+    </ul>
+</li>
 <!-- Laser controls -->
 <li class="nav-item has-treeview menu-closed">
     <a href="#" class="nav-link ">
@@ -357,6 +412,18 @@
             <div class="form-row align-items-center">
                 <div class="col-sm-8 my-1">
                     <div class="input-group">
+                        <div class="input-group-prepend"><div class="input-group-text">Centered grid</div></div>
+                        <select class="form-control" id="scan_centered_input">
+                            <option value="false">OFF</option>
+                            <option value="true">ON</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_centered_apply" value="scan_centered">Apply</button></div>
+            </div>
+            <div class="form-row align-items-center">
+                <div class="col-sm-8 my-1">
+                    <div class="input-group">
                         <div class="input-group-prepend"><div class="input-group-text">Reverse</div></div>
                         <select class="form-control" id="scan_reverse_input">
                             <option value="false">OFF</option>
@@ -388,8 +455,12 @@
                 </div>
                 <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="scan_on_fail_apply" value="scan_on_fail">Apply</button></div>
             </div>
-            <button type="button" class="btn btn-outline-success btn-sm" id="autoalign_start_btn" value="autoalign_start">START AUTOALIGN</button>
+            <div id="scan_setup_feedback" class="small mt-2 text-light" role="status" aria-live="polite">
+                Scan settings ready.
+            </div>
+            <button type="button" class="btn btn-outline-success btn-sm" id="autoalign_start_btn" value="autoalign_start">START</button>
             <button type="button" class="btn btn-outline-danger btn-sm" id="autoalign_stop_btn" value="autoalign_stop">STOP</button>
+            <button type="button" class="btn btn-outline-info btn-sm" id="autoalign_move_best_btn" disabled>MOVE TO BEST</button>
         </li>
     </ul>
 </li>
@@ -405,19 +476,15 @@
                     <span class="value" id="grid_size_value">8 x 8</span>
                 </div>
                 <div class="summary-box">
-                    <span class="label">Current X</span>
-                    <span class="value" id="grid_current_x_value">4.5</span>
+                    <span class="label">Current position (x,y)</span>
+                    <span class="value" id="grid_current_position_value">--</span>
                 </div>
                 <div class="summary-box">
-                    <span class="label">Posición X (left/right)</span>
-                    <span class="value" id="grid_current_y_value">4.5</span>
-                </div>
-                <div class="summary-box">
-                    <span class="label">Posición Y (up/down)</span>
+                    <span class="label">PC max</span>
                     <span class="value" id="pearson_max_value">--</span>
                 </div>
                 <div class="summary-box">
-                    <span class="label">PC location</span>
+                    <span class="label">Best position (x,y)</span>
                     <span class="value" id="pearson_best_location_value">--</span>
                 </div>
             </div>
@@ -526,7 +593,7 @@ function setScanProgress(percent) {
 }
 
 function setScanStatus(status) {
-    var allowedStatuses = ['Idle', 'Running', 'Stopped', 'Complete', 'Error'];
+    var allowedStatuses = ['Idle', 'Starting', 'Running', 'Stopping', 'Moving', 'Stopped', 'Complete', 'Error'];
     var nextStatus = allowedStatuses.indexOf(status) >= 0 ? status : 'Idle';
     var statusEl = document.getElementById('scan_status_value');
     if (statusEl) {
@@ -535,13 +602,10 @@ function setScanStatus(status) {
 }
 
 setSummaryBoxLabel('grid_size_value', 'Grid size');
-setSummaryBoxLabel('grid_current_x_value', 'Current X');
-setSummaryBoxLabel('grid_current_y_value', 'Current Y');
+setSummaryBoxLabel('grid_current_position_value', 'Current position (x,y)');
 setSummaryBoxLabel('pearson_max_value', 'PC max');
-setSummaryBoxLabel('pearson_best_location_value', 'PC location');
+setSummaryBoxLabel('pearson_best_location_value', 'Best position (x,y)');
 document.getElementById('grid_size_value').textContent = measurementGridSize + ' x ' + measurementGridSize;
-document.getElementById('grid_current_x_value').textContent = measurementGridCenter;
-document.getElementById('grid_current_y_value').textContent = measurementGridCenter;
 setScanStatus('Idle');
 setScanProgress(0);
 
@@ -622,7 +686,7 @@ document.addEventListener('click', function(event) {
 </script>
 
 <script>
-var globalconfig = {{ context.globalconfig | safe }};
+var globalconfig = {{ context.globalconfig | tojson }};
 document.getElementById('licel_ip_input').value = globalconfig["ip"];
 document.getElementById('licel_port_input').value = globalconfig["port"];
 document.getElementById('channel_input').value = globalconfig["channel"];
@@ -637,70 +701,43 @@ document.getElementById('rc_limits_init_input').value = globalconfig["rc_limits_
 document.getElementById('rc_limits_final_input').value = globalconfig["rc_limits_final"];
 document.getElementById('raw_limits_init_input').value = globalconfig["raw_limits_init"];
 document.getElementById('raw_limits_final_input').value = globalconfig["raw_limits_final"];
+document.getElementById('fit_init_input').value = globalconfig["fit_init"];
+document.getElementById('fit_final_input').value = globalconfig["fit_final"];
+document.getElementById('wavelength_input').value = globalconfig["wavelength"];
+document.getElementById('temperature_input').value = globalconfig["temperature"];
+document.getElementById('pressure_input').value = globalconfig["pressure"];
+document.getElementById('masl_input').value = globalconfig["masl"];
 document.getElementById('scan_rows_input').value = globalconfig["scan_rows"];
 document.getElementById('scan_cols_input').value = globalconfig["scan_cols"];
 document.getElementById('scan_step_x_input').value = Number(globalconfig["scan_step_x"]).toFixed(3);
 document.getElementById('scan_step_y_input').value = Number(globalconfig["scan_step_y"]).toFixed(3);
 document.getElementById('scan_feed_input').value = globalconfig["scan_feed"];
 document.getElementById('scan_pattern_input').value = globalconfig["scan_pattern"];
+document.getElementById('scan_centered_input').value = String(Boolean(globalconfig["scan_centered"]));
 document.getElementById('scan_reverse_input').value = String(Boolean(globalconfig["scan_reverse"]));
 document.getElementById('scan_delay_input').value = globalconfig["scan_delay"];
 document.getElementById('scan_on_fail_input').value = globalconfig["scan_on_fail"];
 document.getElementById('grid_size_value').textContent = globalconfig["scan_rows"] + ' x ' + globalconfig["scan_cols"];
+var initialGridHomeX = globalconfig["scan_centered"] ? (Number(globalconfig["scan_cols"]) + 1) / 2 : 0;
+var initialGridHomeY = globalconfig["scan_centered"] ? (Number(globalconfig["scan_rows"]) + 1) / 2 : 0;
+document.getElementById('grid_current_position_value').textContent =
+    '(' + initialGridHomeX + ',' + initialGridHomeY + ') = (0.00, 0.00) mm';
 
 var scanFeedInputGroup = document.getElementById('scan_feed_input').closest('.input-group');
 if (scanFeedInputGroup) {
     scanFeedInputGroup.querySelector('.input-group-text').textContent = 'Feed [mm/min]';
 }
 
-function applyScanSetting(buttonId, inputId) {
-    $('#' + buttonId).on('click', function () {
-        $.ajax({
-            url: "/scan_setup",
-            type: "GET",
-            contentType: 'application/json;charset=UTF-8',
-            data: {
-                'selected': document.getElementById(buttonId).value,
-                'input': document.getElementById(inputId).value
-            },
-            dataType:"json",
-            success: function (data) {
-                globalconfig = data;
-                document.getElementById('grid_size_value').textContent = data["scan_rows"] + ' x ' + data["scan_cols"];
-                console.log("SCAN SETUP APPLY", buttonId, data);
-            }
-        });
-    });
+function parsePlotFigure(figureJson) {
+    if (!figureJson) {
+        return {data: [], layout: {}};
+    }
+    return typeof figureJson === 'string' ? JSON.parse(figureJson) : figureJson;
 }
 
-applyScanSetting('scan_rows_apply', 'scan_rows_input');
-applyScanSetting('scan_cols_apply', 'scan_cols_input');
-applyScanSetting('scan_feed_apply', 'scan_feed_input');
-applyScanSetting('scan_pattern_apply', 'scan_pattern_input');
-applyScanSetting('scan_reverse_apply', 'scan_reverse_input');
-applyScanSetting('scan_delay_apply', 'scan_delay_input');
-applyScanSetting('scan_on_fail_apply', 'scan_on_fail_input');
-
-$('#scan_steps_apply').on('click', function () {
-    $.ajax({
-        url: "/scan_setup",
-        type: "GET",
-        contentType: 'application/json;charset=UTF-8',
-        data: {
-            'selected': document.getElementById('scan_steps_apply').value,
-            'input': JSON.stringify([
-                document.getElementById('scan_step_x_input').value,
-                document.getElementById('scan_step_y_input').value
-            ])
-        },
-        dataType:"json",
-        success: function (data) {
-            globalconfig = data;
-            document.getElementById('scan_step_x_input').value = Number(data["scan_step_x"]).toFixed(3);
-            document.getElementById('scan_step_y_input').value = Number(data["scan_step_y"]).toFixed(3);
-            console.log("SCAN STEPS APPLY", data);
-        }
-    });
-});
 </script>
 {% endblock my_content %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/autoalignment.js', v='20260828-4') }}"></script>
+{% endblock page_scripts %}
