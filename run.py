@@ -9,6 +9,7 @@ import configparser
 import datetime
 import serial 
 import threading
+import time
 from contextlib import contextmanager
 from functools import wraps
 
@@ -21,6 +22,7 @@ from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
 from lidarcontroller.motorcontroller import MotorController
+from lidarcontroller.telecovercontroller import TelecoverController
 from lidarcontroller.autoalignment import (
   AutoalignmentAlreadyRunning,
   AutoalignmentMoveUnavailable,
@@ -81,7 +83,25 @@ globalconfig = {
                   "scan_centered" : True,
                   "scan_reverse" : False,
                   "scan_delay" : 0.0,
-                  "scan_on_fail" : "retry"
+                  "scan_on_fail" : "retry",
+                  "telecover_port" : "COM5",
+                  "telecover_baudrate" : 115200,
+                  "telecover_timeout" : 2.0,
+                  "telecover_download_dir" : "telecover",
+                  "telecover_acq_time" : 10,
+                  "telecover_settle_time" : 2.0,
+                  "telecover_sequence" : ["N", "E", "S", "W"],
+                  "telecover_include_darkcurrent" : True,
+                  "telecover_return_to_north_before_darkcurrent" : True,
+                  "telecover_darkcurrent_requires_north" : True,
+                  "telecover_reverse" : False,
+                  "telecover_auto_save" : True,
+                  "telecover_channel" : 0,
+                  "telecover_raw_limits_init" : 0,
+                  "telecover_raw_limits_final" : 30000,
+                  "telecover_require_homing" : True,
+                  "telecover_lift_required_for_rotation" : "UP",
+                  "telecover_lift_required_for_measurement" : "DOWN"
                  }
 
 #----------- INI FILES -----------
@@ -365,6 +385,14 @@ def autoalignment_mode():
 
   return render_template('autoalignment.html', context=context)
 
+@app.route("/telecover")
+def telecover_mode():
+  context = {
+    "plot_telecover_raw": plotly_plot.plotly_empty_signal("raw"),
+    "globalconfig": globalconfig
+  }
+  return render_template("telecover.html", context=context)
+
 @app.route("/acquisition")
 def acquisition_mode():
 
@@ -599,6 +627,195 @@ def licel_controls():
   response = make_response(json.dumps(globalconfig))
   response.content_type = 'application/json'
   return response
+
+def telecover_error_payload(error):
+  return {
+    "device": "telecover",
+    "status": "ERROR",
+    "command": None,
+    "event": "error",
+    "subsystem": "unknown",
+    "disk_position": "UNKNOWN",
+    "target_position": "NONE",
+    "lift": "UNKNOWN",
+    "darkcover": "UNKNOWN",
+    "motion": "ERROR",
+    "homed_lift": False,
+    "homed_disk": False,
+    "sensors": {},
+    "message": str(error),
+    "error": str(error),
+    "last_response": ""
+  }
+
+def open_telecover_controller():
+  serial_telecover = serial.Serial(
+    port=globalconfig["telecover_port"],
+    baudrate=globalconfig["telecover_baudrate"],
+    timeout=globalconfig["telecover_timeout"]
+  )
+  return serial_telecover, TelecoverController(serial_telecover)
+
+def close_telecover_serial(serial_telecover):
+  if serial_telecover is not None and getattr(serial_telecover, "is_open", True):
+    serial_telecover.close()
+
+@app.route("/telecover_status")
+def telecover_status():
+  serial_telecover = None
+  try:
+    serial_telecover, telecover = open_telecover_controller()
+    return jsonify(telecover.status())
+  except Exception as exc:
+    return jsonify(telecover_error_payload(exc))
+  finally:
+    close_telecover_serial(serial_telecover)
+
+@app.route("/telecover_control")
+def telecover_control():
+  action = request.args.get("action", "")
+  serial_telecover = None
+  try:
+    serial_telecover, telecover = open_telecover_controller()
+    actions = {
+      "connect": telecover.status,
+      "home": telecover.full_home,
+      "home_lift": telecover.home_lift,
+      "home_disk": telecover.home_disk,
+      "lift_up": telecover.lift_up,
+      "lift_down": telecover.lift_down,
+      "move_n": lambda: telecover.move_to("N"),
+      "move_e": lambda: telecover.move_to("E"),
+      "move_s": lambda: telecover.move_to("S"),
+      "move_w": lambda: telecover.move_to("W"),
+      "dark_close": telecover.dark_close,
+      "dark_open": telecover.dark_open,
+      "move_dc": telecover.dark_close,
+      "stop": telecover.stop_lift
+    }
+    if action not in actions:
+      raise ValueError("Unsupported telecover action: {}".format(action))
+    return jsonify(actions[action]())
+  except Exception as exc:
+    return jsonify(telecover_error_payload(exc))
+  finally:
+    close_telecover_serial(serial_telecover)
+
+def parse_boolean(value):
+  normalized = str(value).strip().lower()
+  if normalized not in {"true", "false"}:
+    raise ValueError("Expected boolean value.")
+  return normalized == "true"
+
+@app.route("/telecover_setup")
+def telecover_setup():
+  selected = request.args.get("selected", "")
+  input_value = request.args.get("input", "")
+  try:
+    if selected == "telecover_port":
+      value = str(input_value).strip()
+      if not value:
+        raise ValueError("Telecover serial port is required.")
+      globalconfig[selected] = value
+    elif selected == "telecover_download_dir":
+      value = str(input_value).strip()
+      if not value:
+        raise ValueError("Telecover download folder is required.")
+      globalconfig[selected] = value
+    elif selected == "telecover_acq_time":
+      value = int(input_value)
+      if value < 0:
+        raise ValueError("Acquisition time must be >= 0.")
+      globalconfig[selected] = value
+    elif selected == "telecover_settle_time":
+      value = float(input_value)
+      if value < 0:
+        raise ValueError("Settle time must be >= 0.")
+      globalconfig[selected] = value
+    elif selected == "telecover_reverse":
+      globalconfig[selected] = False
+    elif selected == "telecover_auto_save":
+      globalconfig[selected] = parse_boolean(input_value)
+    elif selected == "telecover_channel":
+      value = int(input_value)
+      if value < 0:
+        raise ValueError("Channel must be >= 0.")
+      globalconfig[selected] = value
+    elif selected == "telecover_sequence":
+      sequence = json.loads(input_value)
+      if (
+        not isinstance(sequence, list)
+        or not sequence
+        or any(position not in {"N", "E", "S", "W"} for position in sequence)
+      ):
+        raise ValueError("Invalid telecover sequence.")
+      globalconfig[selected] = sequence
+    else:
+      raise ValueError("Unsupported telecover setting: {}".format(selected))
+    return jsonify(globalconfig)
+  except (TypeError, ValueError, json.JSONDecodeError) as exc:
+    return jsonify({"status": "ERROR", "message": str(exc), "globalconfig": globalconfig})
+
+@app.route("/telecover_acquire_current")
+def telecover_acquire_current():
+  position = request.args.get("position", "UNKNOWN").upper()
+  return jsonify({
+    "status": "OK",
+    "position": position,
+    "raw_trace": [],
+    "metadata": {
+      "acq_time": globalconfig["telecover_acq_time"],
+      "channel": globalconfig["telecover_channel"]
+    }
+  })
+
+@app.route("/telecover_run_sequence")
+def telecover_run_sequence():
+  globalconfig["telecover_sequence"] = ["N", "E", "S", "W"]
+  globalconfig["telecover_reverse"] = False
+  sequence = list(globalconfig["telecover_sequence"])
+  results = []
+  serial_telecover = None
+
+  try:
+    serial_telecover, telecover = open_telecover_controller()
+    telecover.home_lift()
+    telecover.move_to("N")
+    telecover.lift_down()
+    for position in sequence:
+      if position != "N":
+        telecover.move_to(position)
+      time.sleep(globalconfig["telecover_settle_time"])
+      results.append({
+        "position": position,
+        "status": "OK",
+        "raw_trace": []
+      })
+    if globalconfig["telecover_return_to_north_before_darkcurrent"]:
+      telecover.move_to("N")
+    if globalconfig["telecover_include_darkcurrent"]:
+      telecover.dark_close()
+      time.sleep(globalconfig["telecover_settle_time"])
+      results.append({
+        "position": "DC",
+        "status": "OK",
+        "raw_trace": []
+      })
+      telecover.dark_open()
+
+    return jsonify({
+      "status": "OK",
+      "sequence": sequence + (["DC"] if globalconfig["telecover_include_darkcurrent"] else []),
+      "results": results
+    })
+  except Exception as exc:
+    return jsonify({
+      "status": "ERROR",
+      "message": str(exc),
+      "partial_results": results
+    })
+  finally:
+    close_telecover_serial(serial_telecover)
 
 @app.route("/rayleighfit", methods=['GET','POST'])
 def rayleighfit_controls():

@@ -23,6 +23,7 @@ build/
 develop-eggs/
 #dist/
 downloads/
+telecover/
 eggs/
 .eggs/
 lib/

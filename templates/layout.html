@@ -116,6 +116,11 @@ scratch. This page gets rid of all links and provides the needed markup only.
                         <button class="btn {{ 'btn-info' if request.endpoint == 'autoalignment_mode' else 'btn-outline-info' }}" type="button">Autoalignment Mode</button>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('telecover_mode') }}">
+                        <button class="btn {{ 'btn-warning' if request.endpoint == 'telecover_mode' else 'btn-outline-warning' }}" type="button">Telecover Mode</button>
+                    </a>
+                </li>
             </ul>
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
