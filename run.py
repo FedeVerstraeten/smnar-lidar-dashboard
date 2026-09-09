@@ -9,6 +9,7 @@ import configparser
 import datetime
 import serial 
 import threading
+from contextlib import contextmanager
 from functools import wraps
 
 #----------- CUSTOM LIBS -----------
@@ -20,6 +21,11 @@ from lidarcontroller import licelsettings
 from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
 from lidarcontroller.motorcontroller import MotorController
+from lidarcontroller.autoalignment import (
+  AutoalignmentAlreadyRunning,
+  AutoalignmentMoveUnavailable,
+  AutoalignmentService
+)
 
 #----------- FLASK CONFIG -----------
 
@@ -72,6 +78,7 @@ globalconfig = {
                   "scan_step_y" : 1.000,
                   "scan_feed" : 50,
                   "scan_pattern" : "raster",
+                  "scan_centered" : True,
                   "scan_reverse" : False,
                   "scan_delay" : 0.0,
                   "scan_on_fail" : "retry"
@@ -105,7 +112,7 @@ def licel_acquisition_required(route_function):
     global licel_state
 
     action = request.values.get("selected","")
-    if action not in {"start","oneshot"}:
+    if action not in {"start","oneshot","autoalign_start"}:
       return route_function(*args,**kwargs)
 
     with licel_lock:
@@ -128,6 +135,199 @@ def licel_acquisition_required(route_function):
       return result
 
   return guarded_route
+
+#----------- ACQUISITION HELPERS -----------
+
+def get_acquis_settings():
+  tr_list = ""
+  acquis_settings = {}
+
+  for section in acquis_ini.sections():
+    if 'TR' in section:
+      tr_number = section.split('TR')[1]
+      if tr_number.isdigit():
+        tr_list += tr_number + " "
+
+      acquis_settings[tr_number]={
+                                  "Discriminator" : acquis_ini[section]["Discriminator"],
+                                  "Range" : acquis_ini[section]["Range"],
+                                  "WavelengthA" : acquis_ini[section]["WavelengthA"],
+                                  "A-binsA" : acquis_ini[section]["A-binsA"]
+                                  }
+
+  return tr_list.strip(), acquis_settings
+
+
+def acquire_single_licel_trace():
+  tr = globalconfig["channel"]
+  shots_delay = globalconfig["acq_time"]*1000
+
+  lc.selectTR(tr)
+  lc.setInputRange(licelsettings.MILLIVOLT500)
+
+  lc.clearMemory()
+  lc.startAcquisition()
+  lc.msDelay(shots_delay)
+  lc.stopAcquisition()
+
+  requested_bins = globalconfig["max_bins"] + max(0,globalconfig["bin_offset"])
+  return lc.getAnalogSignalmV(tr,requested_bins,"A",licelsettings.MILLIVOLT500)
+
+
+def process_lidar_trace(data_mv):
+  lidar.loadSignal(data_mv)
+  lidar.offsetCorrection(globalconfig["bin_offset"])
+  lidar.rangeCorrection(globalconfig["bias_init"])
+  lidar.smoothSignal(level = globalconfig["smooth_level"])
+
+  lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"])
+  lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"])
+  lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"])
+  lidar.overlapFitting()
+
+  return lidar
+
+
+def acquire_processed_lidar_trace():
+  data_mv = acquire_single_licel_trace()
+  return process_lidar_trace(data_mv)
+
+
+def build_alignment_context():
+  plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
+  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar,globalconfig["rc_limits_init"],globalconfig["rc_limits_final"],globalconfig["wavelength"])
+  plot_lidar_rms = plotly_plot.plotly_empty_signal("rms")
+
+  return {"number_bins": lidar.bin_long_trace,
+          "plot_lidar_signal": plot_lidar_signal,
+          "plot_lidar_range_correction": plot_lidar_range_correction,
+          "plot_lidar_rms": plot_lidar_rms,
+          "shots_delay": globalconfig["acq_time"]*1000,
+          "rms_error" : lidar.rms_err
+         }
+
+
+def acquire_multiple_licel_traces(acquis_settings, tr_list):
+  lc.unselectTR()
+  lc.selectTR(tr_list)
+
+  lc.multipleClearMemory()
+  lc.multipleStartAcquisition()
+  lc.msDelay(globalconfig["acq_time"]*1000)
+  lc.multipleStopAcquisition()
+
+  lidar_data_mv={}
+  for tr in acquis_settings:
+    data_mv = lc.getAnalogSignalmV(tr,int(acquis_settings[tr]["A-binsA"]),"A",licelsettings.MILLIVOLT500)
+    lidar_data_mv[tr]={
+                          "timestamp" : datetime.datetime.now().isoformat(),
+                          "bins"      : acquis_settings[tr]["A-binsA"],
+                          "data_mv"   : data_mv.tolist()
+                        }
+
+  return lidar_data_mv
+
+
+def autoalign_results_to_plots(results):
+  pearson_trace = [{
+                    "x": [item["index"] + 1 for item in results],
+                    "y": [item["pearson"] for item in results],
+                    "mode": "lines+markers",
+                    "name": "Pearson r",
+                    "line": {"color": "#17a2b8"}
+                  }]
+  pearson_layout = {
+                    "autosize": True,
+                    "margin": {"t": 18, "r": 16, "b": 42, "l": 52},
+                    "yaxis": {"title": "r", "range": [-1, 1]},
+                    "xaxis": {"title": "Iteration"}
+                   }
+
+  xs = sorted(list({item["col"] for item in results}))
+  ys = sorted(list({item["row"] for item in results}))
+  values = []
+  for y in ys:
+    row_values = []
+    for x in xs:
+      point = next((item for item in results if item["col"] == x and item["row"] == y), None)
+      row_values.append(point["pearson"] if point else None)
+    values.append(row_values)
+
+  grid_trace = [{
+                 "type": "heatmap",
+                 "x": xs,
+                 "y": ys,
+                 "z": values,
+                 "colorscale": "Viridis",
+                 "zmin": -1,
+                 "zmax": 1,
+                 "hovertemplate": "Column %{x}<br>Row %{y}<br>Pearson r %{z:.3f}<extra></extra>",
+                 "colorbar": {"title": "Pearson r", "len": 0.8}
+                }]
+  grid_layout = {
+                 "margin": {"t": 18, "r": 24, "b": 42, "l": 52},
+                 "xaxis": {"title": "Column", "dtick": 1, "constrain": "domain", "scaleanchor": "y", "scaleratio": 1},
+                 "yaxis": {"title": "Row", "dtick": 1, "autorange": "reversed"},
+                 "autosize": True
+                }
+
+  return {
+          "plot_pearson": json.dumps({"data": pearson_trace, "layout": pearson_layout}),
+          "plot_measurement_grid": json.dumps({"data": grid_trace, "layout": grid_layout})
+         }
+
+
+@contextmanager
+def autoalignment_acquisition_context():
+  global licel_state
+
+  with licel_lock:
+    if not lc.isConnected():
+      raise RuntimeError("Connect Licel before starting autoalignment.")
+
+    licel_state = "acquiring"
+    try:
+      yield
+    finally:
+      licel_state = "connected" if lc.isConnected() else "disconnected"
+
+
+def acquire_autoalignment_point():
+  acquire_processed_lidar_trace()
+  context = build_alignment_context()
+  return {
+          "pearson": float(lidar.alignment_factor),
+          "plots": {
+                    "plot_lidar_signal": context["plot_lidar_signal"],
+                    "plot_lidar_range_correction": context["plot_lidar_range_correction"]
+                   }
+         }
+
+
+def save_autoalignment_results(config, results, best):
+  acquisdata_path = os.path.join(APP_ROOT, 'acquisdata')
+  os.makedirs(acquisdata_path, exist_ok=True)
+  filename = "autoalign_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
+  filepath = os.path.join(acquisdata_path,filename)
+  with open(filepath,'w') as file:
+    file.write(json.dumps({
+                           "globalconfig": config,
+                           "results": results,
+                           "best": best
+                          }))
+  return filename
+
+
+autoalignment_service = AutoalignmentService(
+  serial_factory=lambda config: serial.Serial(
+    port=config["motor_port"], baudrate=115200, timeout=2.0
+  ),
+  motor_factory=lambda serial_connection: MotorController(ser=serial_connection),
+  acquire_point=acquire_autoalignment_point,
+  plots_builder=autoalign_results_to_plots,
+  results_saver=save_autoalignment_results,
+  run_context=autoalignment_acquisition_context,
+)
 
 #----------- END-POINT ROUTES -----------
 
@@ -199,8 +399,6 @@ def licel_acquis_data():
   action_button = request.args['selected']
 
   # basic settings
-  LICEL_IP = globalconfig["ip"]
-  LICEL_PORT = globalconfig["port"]
   SHOTS_DELAY = globalconfig["acq_time"]*1000 # milliseconds
   PERIOD_DELAY = globalconfig["period_time"]*60*1000 # milliseconds
 
@@ -212,54 +410,10 @@ def licel_acquis_data():
     os.mkdir(acquisdata_path)
 
   # select all transient recorder and config parameters
-  tr_list=""
-  acquis_settings={}
+  tr_list, acquis_settings = get_acquis_settings()
 
-  for section in acquis_ini.sections():
-    if 'TR' in section:
-      # Listing TR channel
-      tr_number = section.split('TR')[1]
-      if tr_number.isdigit():
-        tr_list += tr_number + " "
-
-      # Save acquis configuration
-      acquis_settings[tr_number]={
-                                  "Discriminator" : acquis_ini[section]["Discriminator"],
-                                  "Range" : acquis_ini[section]["Range"],
-                                  "WavelengthA" : acquis_ini[section]["WavelengthA"],
-                                  "A-binsA" : acquis_ini[section]["A-binsA"]
-                                  }
   if(action_button =="start" or action_button =="oneshot"):
-    # setting Licel for each channel
-    # for tr in acquis_settings:
-    #   lc.selectTR(tr)
-    #   lc.setDiscriminatorLevel(acquis_settings[tr]["Discriminator"])
-    #   lc.setInputRange(acquis_settings[tr]["Range"])
-
-
-    # unselectTR
-    lc.unselectTR()
-
-    # select TR acording acquis list
-    lc.selectTR(tr_list.strip())
-    
-    # start the acquisition
-    lc.multipleClearMemory()
-    lc.multipleStartAcquisition()
-    lc.msDelay(SHOTS_DELAY)
-    lc.multipleStopAcquisition()
-    
-
-    # acquisition for each active TR
-    lidar_data_mv={}
-    for tr in acquis_settings:
-
-      data_mv = lc.getAnalogSignalmV(tr,int(acquis_settings[tr]["A-binsA"]),"A",licelsettings.MILLIVOLT500)
-      lidar_data_mv[tr]={ 
-                            "timestamp" : datetime.datetime.now().isoformat(),
-                            "bins"      : acquis_settings[tr]["A-binsA"],
-                            "data_mv"   : data_mv.tolist()
-                          }
+    lidar_data_mv = acquire_multiple_licel_traces(acquis_settings, tr_list)
 
     # dump data to local directory in JSON format
     filename = "lidar_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
@@ -291,68 +445,13 @@ def licel_record_data():
   action_button = request.args['selected']
 
   # basic settings
-  LICEL_IP = globalconfig["ip"]
-  LICEL_PORT = globalconfig["port"]
-  BIN_LONG_TRANCE = globalconfig["max_bins"]
   SHOTS_DELAY = globalconfig["acq_time"]*1000 # milliseconds 
-  OFFSET_BINS = globalconfig["bin_offset"]
-  THRESHOLD_METERS = globalconfig["bias_init"] # meters
 
 
   if(action_button =="start" or action_button =="oneshot"):
-
-    # initialization
-    global lc
-    tr=globalconfig["channel"]
-
-    lc.selectTR(tr)
-    lc.setInputRange(licelsettings.MILLIVOLT500)
-   
-    # start the acquisition
-    lc.clearMemory()
-    lc.startAcquisition()
-    lc.msDelay(SHOTS_DELAY)
-    lc.stopAcquisition() 
-
-    # get signall in mV
-    # Include the final plot coordinate and the bins discarded by the offset.
-    # For 0-30000 m at 7.5 m/bin this yields 4001 plotted samples.
-    requested_bins = BIN_LONG_TRANCE + max(0, OFFSET_BINS)
-    data_mv = lc.getAnalogSignalmV(
-      tr,
-      requested_bins,
-      "A",
-      licelsettings.MILLIVOLT500
-    )
-
-    # close socket
-    # lc.closeConnection()
-
-    # range correction
-    lidar.loadSignal(data_mv)
-    lidar.offsetCorrection(OFFSET_BINS)
-    lidar.rangeCorrection(THRESHOLD_METERS)
-    lidar.smoothSignal(level = globalconfig["smooth_level"])
-
-    # Rayleigh-fit
-    lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"])
-    lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"])
-    lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"]) # meters
-    lidar.overlapFitting()
-
-    # plotting
-    plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
-    plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar,globalconfig["rc_limits_init"],globalconfig["rc_limits_final"],globalconfig["wavelength"])
-    plot_lidar_rms = plot_lidar_rms =  plotly_plot.plotly_empty_signal("rms")
-
-    # load dict context
-    context = {"number_bins": lidar.bin_long_trace,
-               "plot_lidar_signal": plot_lidar_signal,
-               "plot_lidar_range_correction": plot_lidar_range_correction,
-               "plot_lidar_rms": plot_lidar_rms,
-               "shots_delay": SHOTS_DELAY,
-               "rms_error" : lidar.rms_err
-              }
+    acquire_processed_lidar_trace()
+    context = build_alignment_context()
+    context["shots_delay"] = SHOTS_DELAY
  
     # run html template
 
@@ -363,6 +462,72 @@ def licel_record_data():
     response = make_response(json.dumps(data))
     response.content_type = 'application/json'
     return response
+
+def start_autoalignment():
+  if not lc.isConnected():
+    return jsonify({
+                    "ok": False,
+                    "status": "Error",
+                    "message": "Connect Licel before starting autoalignment."
+                  }), 409
+
+  try:
+    state = autoalignment_service.start(globalconfig)
+    return jsonify(state), 202
+  except AutoalignmentAlreadyRunning as ex:
+    return jsonify({
+                    "ok": False,
+                    "status": "Running",
+                    "message": str(ex)
+                  }), 409
+
+
+@app.route("/autoalign/start", methods=['POST'])
+def autoalignment_start():
+  return start_autoalignment()
+
+
+@app.route("/autoalign/status", methods=['GET'])
+def autoalignment_status():
+  return jsonify(autoalignment_service.snapshot())
+
+
+@app.route("/autoalign/stop", methods=['POST'])
+def autoalignment_stop():
+  return jsonify(autoalignment_service.stop())
+
+
+@app.route("/autoalign/move-best", methods=['POST'])
+def autoalignment_move_best():
+  try:
+    return jsonify(autoalignment_service.move_to_best())
+  except AutoalignmentMoveUnavailable as ex:
+    return jsonify({
+                    "ok": False,
+                    "status": autoalignment_service.snapshot()["status"],
+                    "message": str(ex)
+                  }), 409
+  except Exception:
+    return jsonify(autoalignment_service.snapshot()), 500
+
+
+@app.route("/autoalign", methods=['GET','POST'])
+def autoalignment_data():
+  """Compatibility endpoint for clients using the original action API."""
+  action_button = request.values.get('selected','')
+
+  if action_button == "autoalign_start":
+    return start_autoalignment()
+  if action_button == "autoalign_stop":
+    return jsonify(autoalignment_service.stop())
+  if action_button == "autoalign_status":
+    return jsonify(autoalignment_service.snapshot())
+
+  return jsonify({
+                  "ok": False,
+                  "status": "Error",
+                  "message": "Invalid autoalignment action."
+                }), 400
 
 @app.route("/licelcontrols", methods=['GET','POST'])
 def licel_controls():
@@ -921,7 +1086,7 @@ def scan_setup_controls():
   if field_selected == "scan_pattern" and data_input in pattern_options:
     globalconfig[field_selected] = data_input
 
-  if field_selected == "scan_reverse" and data_input in ["true", "false", "True", "False"]:
+  if field_selected in ["scan_reverse", "scan_centered"] and data_input in ["true", "false", "True", "False"]:
     globalconfig[field_selected] = data_input.lower() == "true"
 
   if field_selected == "scan_on_fail" and data_input in on_fail_options:

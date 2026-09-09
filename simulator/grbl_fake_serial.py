@@ -119,6 +119,28 @@ def handle_command(cmd):
     return ["ok"]
 
 
+def process_serial_data(data, buffer=b""):
+    """Process raw serial bytes received from the dashboard."""
+    events = []
+
+    for byte in data:
+        if byte == 0x18:
+            events.append(("\x18", handle_command("\x18")))
+            buffer = b""
+            continue
+
+        if byte in (10, 13):
+            command = buffer.decode(errors="ignore").strip()
+            buffer = b""
+            if command:
+                events.append((command, handle_command(command)))
+            continue
+
+        buffer += bytes([byte])
+
+    return buffer, events
+
+
 def main():
     try:
         import pty
@@ -155,23 +177,12 @@ def main():
                 continue
 
             data = os.read(master_fd, 1024)
-            for byte in data:
-                if byte == 0x18:
-                    for line in handle_command("\x18"):
-                        write_line(master_fd, line)
-                    buffer = b""
-                    continue
-
-                if byte in (10, 13):
-                    cmd = buffer.decode(errors="ignore").strip()
-                    buffer = b""
-                    print(f">> {cmd}")
-
-                    for line in handle_command(cmd):
-                        print(f"<< {line}")
-                        write_line(master_fd, line)
-                else:
-                    buffer += bytes([byte])
+            buffer, events = process_serial_data(data, buffer)
+            for command, response_lines in events:
+                print(f">> {command}")
+                for line in response_lines:
+                    print(f"<< {line}")
+                    write_line(master_fd, line)
     except KeyboardInterrupt:
         print("\nCerrando simulador.")
     finally:
