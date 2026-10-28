@@ -45,6 +45,15 @@ IP: 127.0.0.1
 Port: 2055
 ```
 
+## Laser: orden y espera entre comandos
+
+El encendido envia `ST 1`, espera **2 segundos** y envia `SH 1` para abrir el
+shutter. El apagado invierte la secuencia: `SH 0`, espera **2 segundos** y
+`ST 0`. Cada escritura se completa en el puerto (`flush`) antes de continuar.
+La espera es configurable mediante `command_delay` del controlador y no depende
+de la velocidad de respuesta del navegador. Ya existia una espera de un segundo;
+se amplio para dar mas tiempo al equipo entre comandos.
+
 ## Graficos de Alignment Mode
 
 Los tres graficos ajustan automaticamente el eje vertical cuando cambia el zoom

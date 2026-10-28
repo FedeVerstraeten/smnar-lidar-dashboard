@@ -6,7 +6,8 @@ import time
 
 class laserController:
 
-  def __init__(self, port = "COM3", baudrate = 9600, timeout = 5):
+  def __init__(self, port = "COM3", baudrate = 9600, timeout = 5, command_delay = 2.0):
+    self.command_delay = command_delay
     self.serialcom = serial.Serial()
     self.serialcom.port = port
     self.serialcom.baudrate = baudrate
@@ -61,6 +62,7 @@ class laserController:
       raise ValueError("Laser serial port is not connected.")
 
     self.serialcom.write((command + '\r').encode('ascii'))
+    self.serialcom.flush()
 
   def queryCommand(self, command):
     if not self.serialcom.isOpen():
@@ -80,7 +82,7 @@ class laserController:
       print("START Laser")
       self.sendCommand('ST 1')
       print("Laser on")
-      time.sleep(1)
+      time.sleep(self.command_delay)
       self.sendCommand('SH 1')
       print("Shutter opened")
     else:
@@ -91,7 +93,7 @@ class laserController:
       print("STOP Laser")
       self.sendCommand('SH 0')
       print("SHUTTER closed")
-      time.sleep(1)
+      time.sleep(self.command_delay)
       self.sendCommand('ST 0')
       print("Laser off")
     else:

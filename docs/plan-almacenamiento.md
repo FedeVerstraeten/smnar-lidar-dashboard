@@ -171,6 +171,10 @@ sobre integridad, captura, INI y persistencia puede avanzar mientras se definen.
 
 ## Tareas relacionadas y seguimiento
 
+- [x] Laser: verificar `ST 1 -> SH 1` y cierre inverso, completar cada escritura
+  serie y ampliar a dos segundos la pausa entre comandos. Verificado con prueba
+  de secuencia y tiempos del controlador.
+
 Las mejoras independientes que solicite el usuario se registrarán como ítems
 adicionales con su alcance, dependencias y validación. Se conservará este plan
 como referencia del trabajo de almacenamiento y se actualizarán sus estados al

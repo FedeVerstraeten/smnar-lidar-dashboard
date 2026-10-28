@@ -81,6 +81,8 @@ smnar-lidar-dashboard/
 - Ajuste Rayleigh (temperatura, presión, MASL, longitud de onda, rango de ajuste) y suavizado del ruido.
 - Conexión persistente y control serie del láser Continuum Surelite II, con
   estado, encendido, apagado y consulta del contador de disparos.
+- Pausa de dos segundos entre encendido y apertura del shutter del láser, y
+  entre cierre del shutter y apagado, completando cada escritura serie.
 - Control de motores GRBL y flujo de Autoalignment con configuración de grilla,
   pasos, patrón, velocidad y gestión del escaneo.
 - Carga de archivos `acquis.ini` y `globalinfo.ini` desde la UI; guardado de adquisiciones en `acquisdata/` en formato JSON.
