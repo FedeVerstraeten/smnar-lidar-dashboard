@@ -1,3 +1,4 @@
+import copy
 import json
 import time
 import unittest
@@ -112,7 +113,7 @@ class AutoalignmentServiceTest(unittest.TestCase):
             motors.append(motor)
             return motor
 
-        def default_acquire():
+        def default_acquire(_config):
             time.sleep(0.02)
             pearson = next(values)
             return {
@@ -202,7 +203,7 @@ class AutoalignmentServiceTest(unittest.TestCase):
         self.assertFalse(final["running"])
 
     def test_worker_error_is_reported_in_status(self):
-        def failing_acquisition():
+        def failing_acquisition(_config):
             raise RuntimeError("Licel acquisition failed")
 
         service, *_ = self.make_service(acquire_point=failing_acquisition)
@@ -213,6 +214,67 @@ class AutoalignmentServiceTest(unittest.TestCase):
         self.assertEqual(final["status"], "Error")
         self.assertEqual(final["measured_points"], 0)
         self.assertIn("Licel acquisition failed", final["message"])
+
+    def test_full_signals_are_saved_per_point_without_expanding_status_payloads(self):
+        shared_trace = [0.0, 2.0, 3.0]
+
+        def acquire(config):
+            shared_trace[0] += 1
+            return {
+                "pearson": shared_trace[0] / 10,
+                "timestamp": "2026-10-28T15:00:00+00:00",
+                "channel": 2,
+                "bins": 3,
+                "bin_size_m": 7.5,
+                "data_mv": shared_trace,
+                "plots": {"plot_lidar_signal": "plot"},
+            }
+
+        service, _, _, saved = self.make_service(acquire_point=acquire)
+        service.start(SCAN_CONFIG)
+        final = service.wait(2)
+        records = saved[0][1]
+        self.assertEqual(final["status"], "Complete")
+        self.assertEqual([record["data_mv"][0] for record in records], [1, 2, 3, 4])
+        for index, record in enumerate(records):
+            self.assertEqual(record["index"], index)
+            self.assertEqual(record["timestamp"], "2026-10-28T15:00:00+00:00")
+            self.assertEqual(record["bins"], len(record["data_mv"]))
+            self.assertEqual(record["bin_size_m"], 7.5)
+            self.assertNotIn("plots", record)
+            self.assertNotIn("data_mv", final["results"][index])
+        self.assertNotIn("data_mv", final["best"])
+
+    def test_each_acquisition_receives_the_saved_scan_configuration(self):
+        original = dict(SCAN_CONFIG, channel=2, temperature=20, scan_feed=75)
+        seen = []
+
+        def acquire(config):
+            seen.append(copy.deepcopy(config))
+            original.update(channel=9, temperature=40, scan_feed=150)
+            return {"pearson": 0.8, "data_mv": [1, 2]}
+
+        service, _, _, saved = self.make_service(acquire_point=acquire)
+        service.start(original)
+        service.wait(2)
+        self.assertEqual(len(seen), 4)
+        self.assertEqual(saved[0][0]["scan_feed"], 75)
+        for settings in seen:
+            self.assertEqual(settings, saved[0][0])
+            self.assertEqual(settings["channel"], 2)
+            self.assertEqual(settings["temperature"], 20)
+
+    def test_stopped_scan_saves_the_signals_already_measured(self):
+        def acquire(config):
+            service.stop()
+            return {"pearson": 0.8, "data_mv": [1.25, 2.5], "bins": 2}
+
+        service, _, _, saved = self.make_service(acquire_point=acquire)
+        service.start(SCAN_CONFIG)
+        final = service.wait(2)
+        self.assertEqual(final["status"], "Stopped")
+        self.assertEqual(len(saved[0][1]), 1)
+        self.assertEqual(saved[0][1][0]["data_mv"], [1.25, 2.5])
 
     def test_move_to_best_reloads_grid_and_updates_current_position(self):
         service, serial_connections, motors, _ = self.make_service()

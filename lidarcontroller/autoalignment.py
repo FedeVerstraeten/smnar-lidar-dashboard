@@ -208,6 +208,7 @@ class AutoalignmentService:
         motor = None
         returned_home = False
         results = []
+        recorded_results = []
         fatal_acquisition_error = [None]
         rows = config["scan_rows"]
         cols = config["scan_cols"]
@@ -234,7 +235,7 @@ class AutoalignmentService:
                         return {"ok": False, "action": "abort"}
 
                     try:
-                        measurement = self._acquire_point()
+                        measurement = self._acquire_point(config)
                     except Exception as ex:
                         if config["scan_on_fail"] == "abort":
                             fatal_acquisition_error[0] = ex
@@ -262,9 +263,14 @@ class AutoalignmentService:
                         "x": x,
                         "y": y,
                         "pearson": float(measurement["pearson"]),
-                        "timestamp": datetime.datetime.now().isoformat(),
+                        "timestamp": measurement.get("timestamp") or datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     }
                     results.append(result)
+                    # Keep full traces for the file, without resending every trace
+                    # in status polling, best/current positions or Plotly summaries.
+                    recorded = copy.deepcopy({key: value for key, value in measurement.items() if key != "plots"})
+                    recorded.update(result)
+                    recorded_results.append(recorded)
                     best = max(results, key=lambda item: item["pearson"])
                     progress = int(round((len(results) / total_points) * 100))
                     plots = dict(measurement.get("plots", {}))
@@ -317,7 +323,7 @@ class AutoalignmentService:
 
             stopped = self._stop_event.is_set()
             filename = self._results_saver(
-                config, results, self.snapshot()["best"]
+                config, recorded_results, self.snapshot()["best"]
             )
             self._update(
                 status="Stopped" if stopped else "Complete",

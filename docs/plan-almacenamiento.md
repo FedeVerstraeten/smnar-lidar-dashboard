@@ -71,6 +71,10 @@ hardware ni certificación de formatos.
    inválida no destruye ni mezcla la configuración anterior.
 
 4. **[ ] Conservar datos instrumentales y verificar configuración (prioridad alta).**
+   Avance 2026-10-28: Autoalignment conserva las señales en mV antes del offset,
+   sus metadatos y el perfil atmosferico; la adquisicion y el procesamiento usan
+   la configuracion congelada al iniciar el barrido. No se implemento todavia
+   la retencion de cuentas acumuladas ni saturacion.
    Ampliar la captura para retener cuentas acumuladas, disparos efectivos,
    saturación y parámetros aplicados junto a los mV. Revisar la normalización
    `shots_number - 2`, incluidos cero y un disparo; hoy `cycles` puede quedar sin
@@ -81,6 +85,13 @@ hardware ni certificación de formatos.
    reconstruir cuentas a partir de mV para implementar Licel.
 
 5. **[ ] Crear persistencia común y recuperar resultados parciales (prioridad alta).**
+   Avance 2026-10-28: el JSON existente de Autoalignment incorpora las señales
+   por punto y las 25 claves de configuracion seleccionadas por el usuario,
+   excluyendo IP, puertos y otros campos de la interfaz. `smooth_level` queda
+   fuera porque corresponde a la visualizacion de la señal corregida y no
+   modifica la señal raw ni Pearson. Los datos se guardan al
+   finalizar o detener normalmente el barrido; el guardado incremental y la
+   recuperacion ante fallos siguen pendientes.
    Extraer el guardado de `run.py` a un servicio compartido. Incorporar nombres
    únicos, escrituras atómicas, organización por sesión/modo y errores visibles
    de almacenamiento. Guardar cada medición de Alignment y cada punto de

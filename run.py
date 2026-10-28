@@ -5,6 +5,7 @@ import sys
 from flask import Flask, render_template, url_for, flash, redirect, request, make_response, jsonify, abort
 from werkzeug.utils import secure_filename
 import json
+import copy
 import configparser
 import datetime
 import serial 
@@ -183,9 +184,10 @@ def get_acquis_settings():
   return tr_list.strip(), acquis_settings
 
 
-def acquire_single_licel_trace():
-  tr = globalconfig["channel"]
-  shots_delay = globalconfig["acq_time"]*1000
+def acquire_single_licel_trace(config=None):
+  config = globalconfig if config is None else config
+  tr = config["channel"]
+  shots_delay = config["acq_time"]*1000
 
   lc.selectTR(tr)
   lc.setInputRange(licelsettings.MILLIVOLT500)
@@ -195,22 +197,24 @@ def acquire_single_licel_trace():
   lc.msDelay(shots_delay)
   lc.stopAcquisition()
 
-  requested_bins = globalconfig["max_bins"] + max(0,globalconfig["bin_offset"])
+  requested_bins = config["max_bins"] + max(0,config["bin_offset"])
   return lc.getAnalogSignalmV(tr,requested_bins,"A",licelsettings.MILLIVOLT500)
 
 
-def process_lidar_trace(data_mv):
-  lidar.loadSignal(data_mv)
-  lidar.offsetCorrection(globalconfig["bin_offset"])
-  lidar.rangeCorrection(globalconfig["bias_init"])
-  lidar.smoothSignal(level = globalconfig["smooth_level"])
+def process_lidar_trace(data_mv, config=None, signal=None):
+  config = globalconfig if config is None else config
+  signal = lidar if signal is None else signal
+  signal.loadSignal(data_mv)
+  signal.offsetCorrection(config["bin_offset"])
+  signal.rangeCorrection(config["bias_init"])
+  signal.smoothSignal(level = config["smooth_level"])
 
-  lidar.setSurfaceConditions(temperature=globalconfig["temperature"],pressure=globalconfig["pressure"])
-  lidar.molecularProfile(wavelength=globalconfig["wavelength"],masl=globalconfig["masl"])
-  lidar.rayleighFit(globalconfig["fit_init"] ,globalconfig["fit_final"])
-  lidar.overlapFitting()
+  signal.setSurfaceConditions(temperature=config["temperature"],pressure=config["pressure"])
+  signal.molecularProfile(wavelength=config["wavelength"],masl=config["masl"])
+  signal.rayleighFit(config["fit_init"] ,config["fit_final"])
+  signal.overlapFitting()
 
-  return lidar
+  return signal
 
 
 def acquire_processed_lidar_trace():
@@ -218,17 +222,19 @@ def acquire_processed_lidar_trace():
   return process_lidar_trace(data_mv)
 
 
-def build_alignment_context():
-  plot_lidar_signal = plotly_plot.plotly_lidar_signal(lidar,globalconfig["raw_limits_init"],globalconfig["raw_limits_final"])
-  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(lidar,globalconfig["rc_limits_init"],globalconfig["rc_limits_final"],globalconfig["wavelength"])
+def build_alignment_context(config=None, signal=None):
+  config = globalconfig if config is None else config
+  signal = lidar if signal is None else signal
+  plot_lidar_signal = plotly_plot.plotly_lidar_signal(signal,config["raw_limits_init"],config["raw_limits_final"])
+  plot_lidar_range_correction = plotly_plot.plotly_lidar_range_correction(signal,config["rc_limits_init"],config["rc_limits_final"],config["wavelength"])
   plot_lidar_rms = plotly_plot.plotly_empty_signal("rms")
 
-  return {"number_bins": lidar.bin_long_trace,
+  return {"number_bins": signal.bin_long_trace,
           "plot_lidar_signal": plot_lidar_signal,
           "plot_lidar_range_correction": plot_lidar_range_correction,
           "plot_lidar_rms": plot_lidar_rms,
-          "shots_delay": globalconfig["acq_time"]*1000,
-          "rms_error" : lidar.rms_err
+          "shots_delay": config["acq_time"]*1000,
+          "rms_error" : signal.rms_err
          }
 
 
@@ -317,11 +323,33 @@ def autoalignment_acquisition_context():
       licel_state = "connected" if lc.isConnected() else "disconnected"
 
 
-def acquire_autoalignment_point():
-  acquire_processed_lidar_trace()
-  context = build_alignment_context()
+def acquire_autoalignment_point(config):
+  # Use the scan's frozen settings and an independent signal object so later UI
+  # changes cannot change the interpretation of this measurement.
+  signal = lidarSignal()
+  signal.sounding_data = copy.deepcopy(lidar.sounding_data)
+  timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+  data_mv = acquire_single_licel_trace(config)
+  timestamp_end = datetime.datetime.now(datetime.timezone.utc).isoformat()
+  process_lidar_trace(data_mv, config=config, signal=signal)
+  context = build_alignment_context(config=config, signal=signal)
   return {
-          "pearson": float(lidar.alignment_factor),
+          "pearson": float(signal.alignment_factor),
+          "timestamp": timestamp,
+          "timestamp_end": timestamp_end,
+          "channel": config["channel"],
+          "bins": len(data_mv),
+          "bin_size_m": signal.bin_size_m,
+          "data_mv": data_mv.tolist(),
+          "signal_units": "mV",
+          "signal_stage": "before_offset_and_processing",
+          "input_range_mv": 500,
+          "shots": int(lc.shots_number),
+          "bias_mv": float(signal.bias),
+          "rayleigh_fit_factor": float(signal.adj_factor),
+          "rms_error": float(signal.rms_err),
+          "atmospheric_model": "sounding" if all(signal.sounding_data.values()) else "us_standard",
+          "sounding_data": copy.deepcopy(signal.sounding_data),
           "plots": {
                     "plot_lidar_signal": context["plot_lidar_signal"],
                     "plot_lidar_range_correction": context["plot_lidar_range_correction"]
@@ -330,13 +358,21 @@ def acquire_autoalignment_point():
 
 
 def save_autoalignment_results(config, results, best):
+  config_fields = (
+    "channel", "acq_time", "bin_offset", "max_bins", "bias_init", "bias_final",
+    "temperature", "pressure", "masl", "wavelength", "fit_init", "fit_final",
+    "motor_resolution", "motor_feed_rate", "corr_range_init", "corr_range_final",
+    "grid_min_resolution", "scan_rows", "scan_cols", "scan_step_x", "scan_step_y",
+    "scan_feed", "scan_pattern", "scan_centered", "scan_reverse"
+  )
+  measurement_config = {key: config[key] for key in config_fields}
   acquisdata_path = os.path.join(APP_ROOT, 'acquisdata')
   os.makedirs(acquisdata_path, exist_ok=True)
   filename = "autoalign_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
   filepath = os.path.join(acquisdata_path,filename)
   with open(filepath,'w') as file:
     file.write(json.dumps({
-                           "globalconfig": config,
+                           "globalconfig": measurement_config,
                            "results": results,
                            "best": best
                           }))

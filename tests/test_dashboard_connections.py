@@ -212,7 +212,7 @@ class DashboardMotionTest(unittest.TestCase):
         service = AutoalignmentService(
             serial_factory=lambda config: self.fail("Scan reopened serial port"),
             motor_factory=lambda connection: motor,
-            acquire_point=lambda: {},
+            acquire_point=lambda config: {},
             plots_builder=lambda results: {},
             results_saver=lambda *args: "result.json",
             connection_context=dashboard.autoalignment_motor_connection,
@@ -248,7 +248,7 @@ class DashboardMotionTest(unittest.TestCase):
         self.addCleanup(release.set)
         motor = Mock(position={"x": 0.0, "y": 0.0})
 
-        def acquire():
+        def acquire(_config):
             acquired.set()
             if not release.wait(2):
                 raise RuntimeError("Test did not release acquisition")

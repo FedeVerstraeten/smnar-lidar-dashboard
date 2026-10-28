@@ -87,6 +87,9 @@ smnar-lidar-dashboard/
   con controles de conexión/desconexión, estado y validación de operaciones.
 - Control de motores GRBL y flujo de Autoalignment con configuración de grilla,
   pasos, patrón, velocidad y gestión del escaneo.
+- Autoalignment guarda en su JSON las señales originales en mV de cada punto,
+  canal, resolución de 7,5 m/bin, tiempos, Pearson y perfil atmosférico, junto
+  con los parámetros seleccionados de medición y del barrido.
 - Carga de archivos `acquis.ini` y `globalinfo.ini` desde la UI; guardado de adquisiciones en `acquisdata/` en formato JSON.
 - Descarga de radiosondeos (Universidad de Wyoming) o uso del modelo atmosférico estándar de EE.UU. para perfilar la atmósfera.
 - Simuladores locales para Licel, GRBL y Surelite II, alimentados con mediciones

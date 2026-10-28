@@ -48,6 +48,10 @@ class lidarSignal:
                             "pressure" : []
                          }
 
+  @property
+  def bin_size_m(self):
+    return self.__BIN_METERS
+
   def loadSignal(self,signal):
     if len(signal)>0:
       signal = np.insert(signal,0,0) # set zero signal
