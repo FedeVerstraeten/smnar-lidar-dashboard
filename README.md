@@ -58,6 +58,9 @@ smnar-lidar-dashboard/
 - `utils/`: generación de gráficos Plotly y descarga de radiosondeos.
 - `inifiles/`: archivos `acquis.ini` y `globalinfo.ini` cargados desde la UI;
   puede crearse durante la operación.
+- `config-templates/`: [templates INI y guía de carga](config-templates/README.md)
+  basados en los archivos proporcionados, con nombre genérico `LidarSMN` y
+  directorio `acquidata`; revisar sus datos de sitio y equipo antes de usarlos.
 - `acquisdata/`: mediciones JSON generadas por Acquisition Mode; se crea al
   realizar adquisiciones.
 - `sounding/`: radiosondeos descargados desde la interfaz; se crea cuando se
@@ -112,6 +115,10 @@ pip install -r requirements.txt
 - Crear un archivo `.env` con `FLASK_APP`, `FLASK_ENV`, `SECRET_KEY` y,
   opcionalmente, `COMPRESSOR_DEBUG`.
 - Ajustar parámetros de adquisición y alineación desde archivos INI compatibles con Licel.
+  Hay ejemplos en [`config-templates/`](config-templates/README.md): cargarlos
+  desde **Alignment → Load INI files → Load config**, seleccionando ambos
+  archivos, o copiar versiones revisadas como `inifiles/acquis.ini` e
+  `inifiles/globalinfo.ini` antes de iniciar la aplicación.
 
 ### 4. Ejecutar
 ```bash
