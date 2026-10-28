@@ -1,0 +1,16 @@
+<div class="form-group mb-2">
+    <label class="text-white" for="motor_port_input">Motors / Telecover serial port</label>
+    <input type="text" class="form-control" id="motor_port_input"
+           value="{{ context.globalconfig.motor_port }}" placeholder="COM4 or /tmp/motor-sim">
+</div>
+<div class="form-row">
+    <div class="col-6 my-1">
+        <button type="button" class="btn btn-outline-primary btn-sm btn-block" id="motor_connectbtn">CONNECT</button>
+    </div>
+    <div class="col-6 my-1">
+        <button type="button" class="btn btn-outline-secondary btn-sm btn-block" id="motor_disconnectbtn" disabled>DISCONNECT</button>
+    </div>
+    <div class="col-12 my-1">
+        <small id="motor_connection_status" class="text-muted">Motors / Telecover disconnected</small>
+    </div>
+</div>

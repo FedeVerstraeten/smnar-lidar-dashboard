@@ -305,13 +305,7 @@
     </a>
     <ul class="nav nav-treeview">
         <li class="nav-item">
-            <div class="form-row align-items-center">
-                <div class="col-sm-8 my-1">
-                    <div class="input-group"><div class="input-group-prepend"><div class="input-group-text">></div></div>
-                        <input type="text" class="form-control" id="motor_port_input" placeholder="Serial port"></div>
-                </div>
-                <div class="col-sm-2 my-1"><button type="submit" class="btn btn-primary" id="motor_port_apply" value="motor_port">Apply</button></div>
-            </div>
+            {% include "_motor_connection.html" %}
             <div class="form-row align-items-center">
                 <div class="col-sm-8 my-1">
                     <div class="input-group"><div class="input-group-prepend"><div class="input-group-text">Step size</div></div>
@@ -336,17 +330,17 @@
             <label><b style="color:white; padding-right: 15px;">Motor movements:</b></label>
             <div class="form-row align-items-center">
                 <div class="col-sm-10 my-1">
-                    <button type="button" class="btn btn-light" id="motor_left_btn" value="motor_left" title="Left"><i class="fas fa-arrow-left"></i></button>
-                    <button type="button" class="btn btn-light" id="motor_right_btn" value="motor_right" title="Right"><i class="fas fa-arrow-right"></i></button>
-                    <button type="button" class="btn btn-light" id="motor_up_btn" value="motor_up" title="Up"><i class="fas fa-arrow-up"></i></button>
-                    <button type="button" class="btn btn-light" id="motor_down_btn" value="motor_down" title="Down"><i class="fas fa-arrow-down"></i></button>
-                    <button type="button" class="btn btn-danger" id="motor_stop_btn" value="motor_stop" title="Stop"><i class="fas fa-stop"></i></button>
+                    <button type="button" class="btn btn-light" id="motor_left_btn" disabled value="motor_left" title="Left"><i class="fas fa-arrow-left"></i></button>
+                    <button type="button" class="btn btn-light" id="motor_right_btn" disabled value="motor_right" title="Right"><i class="fas fa-arrow-right"></i></button>
+                    <button type="button" class="btn btn-light" id="motor_up_btn" disabled value="motor_up" title="Up"><i class="fas fa-arrow-up"></i></button>
+                    <button type="button" class="btn btn-light" id="motor_down_btn" disabled value="motor_down" title="Down"><i class="fas fa-arrow-down"></i></button>
+                    <button type="button" class="btn btn-danger" id="motor_stop_btn" disabled value="motor_stop" title="Stop"><i class="fas fa-stop"></i></button>
                 </div>
             </div>
             <div class="form-row align-items-center mt-1">
                 <div class="col-sm-10 my-1">
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="motor_gethome_btn" value="motor_gethome"><i class="fas fa-home"></i> To Home</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="motor_sethome_btn" value="motor_sethome"><i class="fas fa-location-arrow"></i> Set Home</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="motor_gethome_btn" disabled value="motor_gethome"><i class="fas fa-home"></i> To Home</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="motor_sethome_btn" disabled value="motor_sethome"><i class="fas fa-location-arrow"></i> Set Home</button>
                 </div>
             </div>
         </li>
@@ -458,7 +452,7 @@
             <div id="scan_setup_feedback" class="small mt-2 text-light" role="status" aria-live="polite">
                 Scan settings ready.
             </div>
-            <button type="button" class="btn btn-outline-success btn-sm" id="autoalign_start_btn" value="autoalign_start">START</button>
+            <button type="button" class="btn btn-outline-success btn-sm" id="autoalign_start_btn" disabled value="autoalign_start">START</button>
             <button type="button" class="btn btn-outline-danger btn-sm" id="autoalign_stop_btn" value="autoalign_stop">STOP</button>
             <button type="button" class="btn btn-outline-info btn-sm" id="autoalign_move_best_btn" disabled>MOVE TO BEST</button>
         </li>
@@ -739,5 +733,5 @@ function parsePlotFigure(figureJson) {
 {% endblock my_content %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', filename='js/autoalignment.js', v='20260828-4') }}"></script>
+<script src="{{ url_for('static', filename='js/autoalignment.js', v='20261028-1') }}"></script>
 {% endblock page_scripts %}

@@ -23,6 +23,9 @@ from lidarcontroller.lidarsignal import lidarSignal
 from lidarcontroller.lasercontroller import laserController
 from lidarcontroller.motorcontroller import MotorController
 from lidarcontroller.telecovercontroller import TelecoverController
+from lidarcontroller.motionconnection import (
+  MotionConnection, MotionConnectionBusy, MotionConnectionError
+)
 from lidarcontroller.autoalignment import (
   AutoalignmentAlreadyRunning,
   AutoalignmentMoveUnavailable,
@@ -84,7 +87,7 @@ globalconfig = {
                   "scan_reverse" : False,
                   "scan_delay" : 0.0,
                   "scan_on_fail" : "retry",
-                  "telecover_port" : "COM5",
+                  "telecover_port" : "COM4",  # Same physical connection as motor_port.
                   "telecover_baudrate" : 115200,
                   "telecover_timeout" : 2.0,
                   "telecover_download_dir" : "telecover",
@@ -103,6 +106,8 @@ globalconfig = {
                   "telecover_lift_required_for_rotation" : "UP",
                   "telecover_lift_required_for_measurement" : "DOWN"
                  }
+
+motion_connection = MotionConnection(port=globalconfig["motor_port"])
 
 #----------- INI FILES -----------
 
@@ -338,6 +343,12 @@ def save_autoalignment_results(config, results, best):
   return filename
 
 
+@contextmanager
+def autoalignment_motor_connection(config):
+  with motion_connection.operation("autoalignment") as connection:
+    yield connection
+
+
 autoalignment_service = AutoalignmentService(
   serial_factory=lambda config: serial.Serial(
     port=config["motor_port"], baudrate=115200, timeout=2.0
@@ -347,6 +358,7 @@ autoalignment_service = AutoalignmentService(
   plots_builder=autoalign_results_to_plots,
   results_saver=save_autoalignment_results,
   run_context=autoalignment_acquisition_context,
+  connection_context=autoalignment_motor_connection,
 )
 
 #----------- END-POINT ROUTES -----------
@@ -492,6 +504,12 @@ def licel_record_data():
     return response
 
 def start_autoalignment():
+  if not motion_connection.is_connected() or motion_connection.snapshot()["busy"]:
+    return jsonify({
+      "ok": False, "status": "Error",
+      "message": "Connect motors/Telecover and wait until the shared connection is free.",
+      "motor_connection": motion_connection.snapshot()
+    }), 409
   if not lc.isConnected():
     return jsonify({
                     "ok": False,
@@ -527,6 +545,11 @@ def autoalignment_stop():
 
 @app.route("/autoalign/move-best", methods=['POST'])
 def autoalignment_move_best():
+  if not motion_connection.is_connected() or motion_connection.snapshot()["busy"]:
+    return jsonify({
+      "ok": False, "message": "Connect motors/Telecover and wait until the shared connection is free.",
+      "motor_connection": motion_connection.snapshot()
+    }), 409
   try:
     return jsonify(autoalignment_service.move_to_best())
   except AutoalignmentMoveUnavailable as ex:
@@ -648,58 +671,109 @@ def telecover_error_payload(error):
     "last_response": ""
   }
 
-def open_telecover_controller():
-  serial_telecover = serial.Serial(
-    port=globalconfig["telecover_port"],
-    baudrate=globalconfig["telecover_baudrate"],
-    timeout=globalconfig["telecover_timeout"]
-  )
-  return serial_telecover, TelecoverController(serial_telecover)
+def motion_error_response(exc, telecover=False):
+  code = 409 if isinstance(exc, MotionConnectionError) else 400 if isinstance(exc, ValueError) else 503 if isinstance(exc, (serial.SerialException, OSError)) else 500
+  status = motion_connection.snapshot(ok=False, message=str(exc))
+  payload = telecover_error_payload(exc) if telecover else dict(status)
+  payload["motor_connection"] = status
+  if hasattr(exc, "partial_results"):
+    payload["partial_results"] = exc.partial_results
+  return jsonify(payload), code
 
-def close_telecover_serial(serial_telecover):
-  if serial_telecover is not None and getattr(serial_telecover, "is_open", True):
-    serial_telecover.close()
+
+def motion_operation(owner):
+  def decorate(view):
+    @wraps(view)
+    def guarded(*args, **kwargs):
+      try:
+        scan = autoalignment_service.snapshot()
+        stopping_motor = owner == "alignment" and request.values.get("selected") == "motor_stop"
+        stopping_telecover = owner == "telecover" and request.values.get("action") == "stop"
+        if stopping_motor and scan["running"]:
+          autoalignment_service.stop()
+          return jsonify(motion_connection.snapshot(message="Autoalignment stop requested."))
+        if stopping_motor or stopping_telecover:
+          command = b"\x85" if stopping_motor else b"TCVDetener\n"
+          if motion_connection.interrupt(owner, command):
+            return jsonify({"status": "OK", "message": "Stop requested.", "motor_connection": motion_connection.snapshot()})
+        if scan["running"] or scan["moving"]:
+          raise MotionConnectionBusy("Autoalignment is using the shared motor/Telecover connection.")
+        with motion_connection.operation(owner) as connection:
+          result = view(connection, *args, **kwargs)
+        response = make_response(result)
+        if response.is_json:
+          status_code = response.status_code
+          payload = response.get_json()
+          payload["motor_connection"] = motion_connection.snapshot()
+          response = jsonify(payload)
+          response.status_code = status_code
+        return response
+      except Exception as exc:
+        return motion_error_response(exc, telecover=owner == "telecover")
+    return guarded
+  return decorate
+
+
+@app.route("/motor_connection", methods=["GET", "POST"])
+def motor_connection_controls():
+  action = request.values.get("selected", "motor_status")
+  try:
+    scan = autoalignment_service.snapshot()
+    if action != "motor_status" and (scan["running"] or scan["moving"]):
+      raise MotionConnectionBusy("Stop autoalignment before changing the shared connection.")
+    if action == "motor_connect":
+      port = motion_connection.validate_port(request.values.get("input", motion_connection.port))
+      if laser.isConnected() and port.casefold() == globalconfig["laser_port"].casefold():
+        raise MotionConnectionBusy("This serial port is already used by the laser.")
+      result = motion_connection.connect(port)
+    elif action == "motor_disconnect":
+      result = motion_connection.disconnect()
+    elif action == "motor_status":
+      result = motion_connection.snapshot()
+    else:
+      raise ValueError("Invalid motor connection action.")
+    return jsonify(result)
+  except Exception as exc:
+    return motion_error_response(exc)
+  finally:
+    globalconfig["motor_port"] = motion_connection.port
+    globalconfig["telecover_port"] = motion_connection.port
+
 
 @app.route("/telecover_status")
-def telecover_status():
-  serial_telecover = None
-  try:
-    serial_telecover, telecover = open_telecover_controller()
-    return jsonify(telecover.status())
-  except Exception as exc:
-    return jsonify(telecover_error_payload(exc))
-  finally:
-    close_telecover_serial(serial_telecover)
+@motion_operation("telecover")
+def telecover_status(connection):
+  telecover = TelecoverController(connection)
+  telecover.status_lift()
+  return jsonify(telecover.status_disk())
+
 
 @app.route("/telecover_control")
-def telecover_control():
+@motion_operation("telecover")
+def telecover_control(connection):
   action = request.args.get("action", "")
-  serial_telecover = None
-  try:
-    serial_telecover, telecover = open_telecover_controller()
-    actions = {
-      "connect": telecover.status,
-      "home": telecover.full_home,
-      "home_lift": telecover.home_lift,
-      "home_disk": telecover.home_disk,
-      "lift_up": telecover.lift_up,
-      "lift_down": telecover.lift_down,
-      "move_n": lambda: telecover.move_to("N"),
-      "move_e": lambda: telecover.move_to("E"),
-      "move_s": lambda: telecover.move_to("S"),
-      "move_w": lambda: telecover.move_to("W"),
-      "dark_close": telecover.dark_close,
-      "dark_open": telecover.dark_open,
-      "move_dc": telecover.dark_close,
-      "stop": telecover.stop_lift
-    }
-    if action not in actions:
-      raise ValueError("Unsupported telecover action: {}".format(action))
-    return jsonify(actions[action]())
-  except Exception as exc:
-    return jsonify(telecover_error_payload(exc))
-  finally:
-    close_telecover_serial(serial_telecover)
+  telecover = TelecoverController(connection)
+  actions = {
+    "home": telecover.full_home,
+    "home_lift": telecover.home_lift,
+    "home_disk": telecover.home_disk,
+    "lift_up": telecover.lift_up,
+    "lift_down": telecover.lift_down,
+    "move_n": lambda: telecover.move_to("N"),
+    "move_e": lambda: telecover.move_to("E"),
+    "move_s": lambda: telecover.move_to("S"),
+    "move_w": lambda: telecover.move_to("W"),
+    "dark_close": telecover.dark_close,
+    "dark_open": telecover.dark_open,
+    "move_dc": telecover.dark_close,
+    "stop": telecover.stop_lift,
+  }
+  if action not in actions:
+    raise ValueError("Unsupported telecover action: {}".format(action))
+  state = actions[action]()
+  if state["status"] in {"ERROR", "TIMEOUT"}:
+    raise RuntimeError(state.get("error") or state.get("message"))
+  return jsonify(state)
 
 def parse_boolean(value):
   normalized = str(value).strip().lower()
@@ -713,10 +787,12 @@ def telecover_setup():
   input_value = request.args.get("input", "")
   try:
     if selected == "telecover_port":
-      value = str(input_value).strip()
-      if not value:
-        raise ValueError("Telecover serial port is required.")
-      globalconfig[selected] = value
+      scan = autoalignment_service.snapshot()
+      if scan["running"] or scan["moving"]:
+        raise MotionConnectionBusy("Stop autoalignment before changing the shared connection.")
+      motion_connection.configure(input_value)
+      globalconfig["motor_port"] = motion_connection.port
+      globalconfig["telecover_port"] = motion_connection.port
     elif selected == "telecover_download_dir":
       value = str(input_value).strip()
       if not value:
@@ -753,8 +829,8 @@ def telecover_setup():
     else:
       raise ValueError("Unsupported telecover setting: {}".format(selected))
     return jsonify(globalconfig)
-  except (TypeError, ValueError, json.JSONDecodeError) as exc:
-    return jsonify({"status": "ERROR", "message": str(exc), "globalconfig": globalconfig})
+  except (TypeError, ValueError, MotionConnectionError) as exc:
+    return motion_error_response(exc, telecover=True)
 
 @app.route("/telecover_acquire_current")
 def telecover_acquire_current():
@@ -770,15 +846,14 @@ def telecover_acquire_current():
   })
 
 @app.route("/telecover_run_sequence")
-def telecover_run_sequence():
+@motion_operation("telecover")
+def telecover_run_sequence(connection):
   globalconfig["telecover_sequence"] = ["N", "E", "S", "W"]
   globalconfig["telecover_reverse"] = False
   sequence = list(globalconfig["telecover_sequence"])
   results = []
-  serial_telecover = None
-
+  telecover = TelecoverController(connection)
   try:
-    serial_telecover, telecover = open_telecover_controller()
     telecover.home_lift()
     telecover.move_to("N")
     telecover.lift_down()
@@ -786,36 +861,23 @@ def telecover_run_sequence():
       if position != "N":
         telecover.move_to(position)
       time.sleep(globalconfig["telecover_settle_time"])
-      results.append({
-        "position": position,
-        "status": "OK",
-        "raw_trace": []
-      })
+      results.append({"position": position, "status": "OK", "raw_trace": []})
     if globalconfig["telecover_return_to_north_before_darkcurrent"]:
       telecover.move_to("N")
     if globalconfig["telecover_include_darkcurrent"]:
       telecover.dark_close()
       time.sleep(globalconfig["telecover_settle_time"])
-      results.append({
-        "position": "DC",
-        "status": "OK",
-        "raw_trace": []
-      })
+      results.append({"position": "DC", "status": "OK", "raw_trace": []})
       telecover.dark_open()
-
     return jsonify({
       "status": "OK",
       "sequence": sequence + (["DC"] if globalconfig["telecover_include_darkcurrent"] else []),
       "results": results
     })
   except Exception as exc:
-    return jsonify({
-      "status": "ERROR",
-      "message": str(exc),
-      "partial_results": results
-    })
-  finally:
-    close_telecover_serial(serial_telecover)
+    exc.partial_results = results
+    raise
+
 
 @app.route("/rayleighfit", methods=['GET','POST'])
 def rayleighfit_controls():
@@ -997,6 +1059,8 @@ def laser_controls():
         globalconfig["laser_port"] = serial_port
 
       if(action_button == "laser_connect"):
+        if motion_connection.is_connected() and globalconfig["laser_port"].casefold() == motion_connection.port.casefold():
+          raise ValueError("This serial port is already used by motors/Telecover.")
         if not globalconfig["laser_port"]:
           return jsonify({
             "ok": False,
@@ -1157,110 +1221,60 @@ def sounding_data():
 
   return render_template('sounding.html',context=context)
 
-@app.route('/motor', methods=['GET','POST'])
+@app.route('/motor', methods=['GET', 'POST'])
 def motor_controls():
-  action_button = request.args['selected']
-  data_input = request.args['input']
-
-  print("Motor control action: " + action_button + ", input: " + data_input)
-
-  # Serial port
-  if(action_button == "motor_port" and data_input):
-    if(data_input != globalconfig["motor_port"]):  
-      globalconfig["motor_port"] = data_input
-
-  # Motor resolution
-  valid_resolutions = ["1","0.1","0.01"]  # mm
-
-  if(action_button == "motor_resolution"):
-    if(data_input in valid_resolutions):
-      globalconfig["motor_resolution"] = float(data_input)
+  action = request.values.get("selected", "")
+  value = request.values.get("input", "").strip()
+  try:
+    if action == "motor_port":
+      scan = autoalignment_service.snapshot()
+      if scan["running"] or scan["moving"]:
+        raise MotionConnectionBusy("Stop autoalignment before changing the shared connection.")
+      motion_connection.configure(value)
+      globalconfig["motor_port"] = motion_connection.port
+      globalconfig["telecover_port"] = motion_connection.port
+    elif action == "motor_resolution":
+      if value not in {"1", "0.1", "0.01"}:
+        raise ValueError("Motor resolution must be 1, 0.1 or 0.01 mm.")
+      globalconfig[action] = float(value)
+    elif action == "motor_steps":
+      if not value.isdigit() or int(value) <= 0:
+        raise ValueError("Motor steps must be a positive integer.")
+      globalconfig[action] = int(value)
+    elif action == "motor_feed_rate":
+      feed = float(value)
+      if not 0 < feed < float("inf"):
+        raise ValueError("Motor feed rate must be positive and finite.")
+      globalconfig[action] = feed
     else:
-      print("Invalid motor resolution input: " + data_input + ". Valid options are: " + ", ".join(valid_resolutions))
- 
-  # Motor step
-  if(action_button == "motor_steps" and data_input.isdigit()):
-    if(int(data_input) > 0):
-      globalconfig["motor_steps"] = int(data_input)
+      return motor_movement()
+    return jsonify(dict(motion_connection.snapshot(), globalconfig=globalconfig))
+  except Exception as exc:
+    return motion_error_response(exc)
+
+
+@motion_operation("alignment")
+def motor_movement(connection):
+  action = request.values.get("selected", "")
+  directions = {"motor_left": (-1, 0), "motor_right": (1, 0), "motor_up": (0, 1), "motor_down": (0, -1)}
+  if action not in set(directions) | {"motor_stop", "motor_gethome", "motor_sethome"}:
+    raise ValueError("Invalid motor action.")
+  motor = MotorController(ser=connection)
+  if action == "motor_stop":
+    motor.jog_cancel()
+  else:
+    feed = globalconfig["motor_feed_rate"]
+    motor.initialize(feed=feed)
+    if action in directions:
+      motor.disable_limits()
+      distance = globalconfig["motor_steps"] * globalconfig["motor_resolution"]
+      dx, dy = directions[action]
+      motor.jog(dx=dx * distance, dy=dy * distance, dz=0.0, feed=feed)
+    elif action == "motor_gethome":
+      motor.go_home(feed=feed)
     else:
-      print("Invalid motor step input: " + data_input + ". Step must be a positive integer.")
-
-  # Motor feed rate
-  if(action_button == "motor_feed_rate" and data_input.replace('.','',1).isdigit()):
-    if float(data_input) > 0:
-      globalconfig["motor_feed_rate"] = float(data_input)
-    else:
-      print("Invalid motor feed rate input: " + data_input + ". Feed rate must be a positive number.")
-
-  # Motor movements
-  # Left -> -X, Right -> +X, Up -> +Y, Down -> -Y
-  if(action_button == "motor_left"):
-    print("Motor move LEFT command received.")
-    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
-    motor = MotorController(ser=serial_motor) 
-    motor.initialize(feed=globalconfig["motor_feed_rate"])
-    motor.disable_limits()  # Disable limit switches for manual jogging
-    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"]
-    motor.jog(dx=-steps_to_mm, dy=0.0, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move X negative for left
-    serial_motor.close()
-
-  if(action_button == "motor_right"):
-    print("Motor move RIGHT command received.")
-    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
-    motor = MotorController(ser=serial_motor)
-    motor.initialize(feed=globalconfig["motor_feed_rate"])
-    motor.disable_limits()  # Disable limit switches for manual jogging
-    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
-    motor.jog(dx=steps_to_mm, dy=0.0, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move X positive for right
-    serial_motor.close()
-
-  if(action_button == "motor_up"):
-    print("Motor move UP command received.")
-    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
-    motor = MotorController(ser=serial_motor)
-    motor.initialize(feed=globalconfig["motor_feed_rate"])
-    motor.disable_limits()  # Disable limit switches for manual jogging
-    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
-    motor.jog(dx=0.0, dy=steps_to_mm  , dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move Y positive for up
-    serial_motor.close()
-
-  if(action_button == "motor_down"):
-    print("Motor move DOWN command received.")
-    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
-    motor = MotorController(ser=serial_motor)
-    motor.initialize(feed=globalconfig["motor_feed_rate"])
-    motor.disable_limits()  # Disable limit switches for manual jogging
-    steps_to_mm = globalconfig["motor_steps"]*globalconfig["motor_resolution"] # Convert steps to mm based on resolution
-    motor.jog(dx=0.0, dy=-steps_to_mm, dz=0.0, feed=globalconfig["motor_feed_rate"])  # Move Y negative for down
-    serial_motor.close()
-
-  if(action_button == "motor_stop"):
-    print("Motor STOP command received.")
-    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
-    motor = MotorController(ser=serial_motor)
-    motor.jog_cancel()  # Send jog cancel command to stop any ongoing movement
-    serial_motor.close()
- 
-  # Motor home
-  if(action_button == "motor_gethome"):
-    print("Motor to HOME.")
-    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
-    motor = MotorController(ser=serial_motor)
-    motor.initialize(feed=100.0)
-    motor.go_home()  # Move to home position (0,0,0)
-    serial_motor.close()
- 
-  if(action_button == "motor_sethome"):
-    print("Motor set HOME position.")
-    serial_motor = serial.Serial(port=globalconfig["motor_port"], baudrate=115200, timeout=2.0)
-    motor = MotorController(ser=serial_motor)
-    motor.initialize(feed=100.0)
-    motor.set_home()  # Set current position as home (0,0,0)
-    serial_motor.close()
- 
-  response = make_response(json.dumps(globalconfig))
-  response.content_type = 'application/json'
-  return response
+      motor.set_home()
+  return jsonify(dict(motion_connection.snapshot(), globalconfig=globalconfig))
 
 @app.route('/scan_setup', methods=['GET','POST'])
 def scan_setup_controls():

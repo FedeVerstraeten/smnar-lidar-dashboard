@@ -135,6 +135,10 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <span id="laser_nav_message">Laser disconnected</span>
                             <span class="device-navbar-led disconnected" id="laser_nav_led" aria-hidden="true"></span>
                         </div>
+                        <div class="device-navbar-status" title="Shared motors / Telecover serial connection">
+                            <span id="motor_nav_message">Motors / Telecover disconnected</span>
+                            <span class="device-navbar-led disconnected" id="motor_nav_led" aria-hidden="true"></span>
+                        </div>
                     </div>
                 </li>
                 <!-- Messages Dropdown Menu -->
@@ -242,10 +246,10 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <script src="{{ url_for('static', filename='js/licelcontrols.js', v='20260614-2') }}"></script>
     <script src="{{ url_for('static', filename='js/rayleighfit.js') }}"></script>
     <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/lasercontrols.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/lasercontrols.js', v='20261028-1') }}"></script>
     <script src="{{ url_for('static', filename='js/sounding.js') }}"></script>
     <script src="{{ url_for('static', filename='js/acquiscontrols.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/motorcontrols.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/motorcontrols.js', v='20261028-1') }}"></script>
     {% block page_scripts %}
     {% endblock page_scripts %}
     

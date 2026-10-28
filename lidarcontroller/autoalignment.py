@@ -1,7 +1,7 @@
 import copy
 import datetime
 import threading
-from contextlib import nullcontext
+from contextlib import contextmanager, ExitStack, nullcontext
 
 
 class AutoalignmentAlreadyRunning(RuntimeError):
@@ -23,6 +23,7 @@ class AutoalignmentService:
         plots_builder,
         results_saver,
         run_context=None,
+        connection_context=None,
     ):
         self._serial_factory = serial_factory
         self._motor_factory = motor_factory
@@ -30,11 +31,24 @@ class AutoalignmentService:
         self._plots_builder = plots_builder
         self._results_saver = results_saver
         self._run_context = run_context or nullcontext
+        self._connection_context = connection_context
         self._lock = threading.RLock()
         self._stop_event = threading.Event()
         self._thread = None
         self._scan_config = None
         self._state = self._initial_state()
+
+    @contextmanager
+    def _connection(self, config):
+        if self._connection_context is not None:
+            with self._connection_context(config) as connection:
+                yield connection
+        else:
+            connection = self._serial_factory(config)
+            try:
+                yield connection
+            finally:
+                connection.close()
 
     @staticmethod
     def _initial_state():
@@ -97,6 +111,8 @@ class AutoalignmentService:
 
     def move_to_best(self):
         serial_motor = None
+        connections = ExitStack()
+        connection_error = (None, None, None)
 
         with self._lock:
             if self._state["running"] or self._state["moving"]:
@@ -118,7 +134,7 @@ class AutoalignmentService:
             self._state["revision"] += 1
 
         try:
-            serial_motor = self._serial_factory(config)
+            serial_motor = connections.enter_context(self._connection(config))
             motor = self._motor_factory(serial_motor)
             motor.initialize(feed=config["scan_feed"])
             motor.disable_limits()
@@ -148,6 +164,7 @@ class AutoalignmentService:
                 message="Motor moved to the best autoalignment position.",
             )
         except Exception as ex:
+            connection_error = (type(ex), ex, ex.__traceback__)
             self._update(
                 ok=False,
                 status="Complete",
@@ -155,12 +172,10 @@ class AutoalignmentService:
             )
             raise
         finally:
-            if serial_motor is not None:
-                try:
-                    serial_motor.close()
-                except Exception:
-                    pass
-            self._update(moving=False)
+            try:
+                connections.__exit__(*connection_error)
+            finally:
+                self._update(moving=False)
 
         return self.snapshot()
 
@@ -188,6 +203,8 @@ class AutoalignmentService:
 
     def _run(self, config):
         serial_motor = None
+        connections = ExitStack()
+        connection_error = (None, None, None)
         motor = None
         returned_home = False
         results = []
@@ -203,7 +220,7 @@ class AutoalignmentService:
 
         try:
             with self._run_context():
-                serial_motor = self._serial_factory(config)
+                serial_motor = connections.enter_context(self._connection(config))
                 motor = self._motor_factory(serial_motor)
                 motor.initialize(feed=config["scan_feed"])
                 motor.disable_limits()
@@ -312,6 +329,7 @@ class AutoalignmentService:
                 filename=filename,
             )
         except Exception as ex:
+            connection_error = (type(ex), ex, ex.__traceback__)
             self._update(
                 ok=False,
                 status="Error",
@@ -328,10 +346,7 @@ class AutoalignmentService:
                         )
                     )
 
-            if serial_motor is not None:
-                try:
-                    serial_motor.close()
-                except Exception:
-                    pass
-
-            self._update(running=False)
+            try:
+                connections.__exit__(*connection_error)
+            finally:
+                self._update(running=False)

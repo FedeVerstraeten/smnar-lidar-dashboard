@@ -116,7 +116,7 @@
         .tc-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 </style>
-<script src="{{ url_for('static', filename='js/telecovercontrols.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/telecovercontrols.js', v='20261028-1') }}" defer></script>
 {% endblock script %}
 
 {% block mode %}
@@ -139,35 +139,21 @@
     <ul class="nav nav-treeview">
         <li class="nav-item tc-control-section">
             <div class="tc-control-title">HARDWARE</div>
-            <div class="form-group mb-2">
-                <label class="text-white mb-1" for="telecover-port">Serial port</label>
-                <div class="input-group input-group-sm">
-                    <input class="form-control" id="telecover-port" type="text"
-                           value="{{ context.globalconfig.telecover_port }}"
-                           placeholder="COM5 or /tmp/telecover-sim">
-                    <div class="input-group-append">
-                        <button class="btn btn-outline-primary" type="button"
-                                onclick="telecoverSetup('telecover_port', document.getElementById('telecover-port').value)">
-                            Apply
-                        </button>
-                    </div>
-                </div>
-            </div>
+            {% include "_motor_connection.html" %}
             <div class="row">
-                <div class="col-6 mb-2"><button class="btn btn-outline-primary btn-sm btn-block" onclick="telecoverAction('connect')">Connect</button></div>
-                <div class="col-6 mb-2"><button class="btn btn-outline-info btn-sm btn-block" onclick="telecoverAction('home')">Full Homing</button></div>
-                <div class="col-6 mb-2"><button class="btn btn-outline-success btn-sm btn-block" onclick="telecoverAction('lift_down')">Telecover ON</button></div>
-                <div class="col-6 mb-2"><button class="btn btn-outline-secondary btn-sm btn-block" onclick="telecoverAction('lift_up')">Telecover OFF</button></div>
+                <div class="col-6 mb-2"><button data-motion-action disabled class="btn btn-outline-info btn-sm btn-block" onclick="telecoverAction('home')">Full Homing</button></div>
+                <div class="col-6 mb-2"><button data-motion-action disabled class="btn btn-outline-success btn-sm btn-block" onclick="telecoverAction('lift_down')">Telecover ON</button></div>
+                <div class="col-6 mb-2"><button data-motion-action disabled class="btn btn-outline-secondary btn-sm btn-block" onclick="telecoverAction('lift_up')">Telecover OFF</button></div>
             </div>
 
             <div class="tc-control-title">POSITION</div>
             <div class="row">
-                <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_n')">Go North</button></div>
-                <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_e')">Go East</button></div>
-                <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_s')">Go South</button></div>
-                <div class="col-6 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_w')">Go West</button></div>
-                <div class="col-12 mb-2"><button class="btn btn-outline-dark btn-sm btn-block bg-secondary" onclick="telecoverAction('dark_close')">Close Darkcurrent / Total Cover</button></div>
-                <div class="col-12 mb-2"><button class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('dark_open')">Open Darkcurrent / Total Cover</button></div>
+                <div class="col-6 mb-2"><button data-motion-action disabled class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_n')">Go North</button></div>
+                <div class="col-6 mb-2"><button data-motion-action disabled class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_e')">Go East</button></div>
+                <div class="col-6 mb-2"><button data-motion-action disabled class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_s')">Go South</button></div>
+                <div class="col-6 mb-2"><button data-motion-action disabled class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('move_w')">Go West</button></div>
+                <div class="col-12 mb-2"><button data-motion-action disabled class="btn btn-outline-dark btn-sm btn-block bg-secondary" onclick="telecoverAction('dark_close')">Close Darkcurrent / Total Cover</button></div>
+                <div class="col-12 mb-2"><button data-motion-action disabled class="btn btn-outline-light btn-sm btn-block" onclick="telecoverAction('dark_open')">Open Darkcurrent / Total Cover</button></div>
             </div>
 
             <div class="tc-control-title">SEQUENCE</div>
@@ -181,8 +167,8 @@
                 <input class="custom-control-input" id="telecover-reverse" type="checkbox" disabled>
                 <label class="custom-control-label text-white" for="telecover-reverse">Reverse order</label>
             </div>
-            <button class="btn btn-outline-success btn-sm btn-block mb-2" onclick="telecoverRunSequence()">Run sequence</button>
-            <button class="btn btn-danger btn-sm btn-block" onclick="telecoverAction('stop')">STOP</button>
+            <button data-motion-action disabled class="btn btn-outline-success btn-sm btn-block mb-2" onclick="telecoverRunSequence()">Run sequence</button>
+            <button data-motion-stop disabled class="btn btn-danger btn-sm btn-block" onclick="telecoverAction('stop')">STOP</button>
         </li>
     </ul>
 </li>

@@ -174,6 +174,10 @@ sobre integridad, captura, INI y persistencia puede avanzar mientras se definen.
 - [x] Laser: verificar `ST 1 -> SH 1` y cierre inverso, completar cada escritura
   serie y ampliar a dos segundos la pausa entre comandos. Verificado con prueba
   de secuencia y tiempos del controlador.
+- [x] Motores/Telecover: incorporar una sola conexion serie persistente,
+  controles y estado compartidos, validaciones y uso de la conexion desde
+  Autoalignment. Verificado con simuladores y pruebas de interfaz, concurrencia,
+  desconexion y errores. La comprobacion con el hardware fisico queda pendiente.
 
 Las mejoras independientes que solicite el usuario se registrarán como ítems
 adicionales con su alcance, dependencias y validación. Se conservará este plan

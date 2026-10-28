@@ -100,17 +100,21 @@ class MotorController:
         except Exception:
             pass
 
-    def send(self, cmd: str):
+    def send(self, cmd: str, timeout_s: float = 2.0):
         """Envía un comando estándar y espera ok/error."""
         self.ser.write((cmd.strip() + "\n").encode())
         self.ser.flush()
-        while True:
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
             r = self._readline()
             if not r:
                 continue
             rl = r.lower()
-            if rl.startswith("ok") or rl.startswith("error"):
+            if rl.startswith("error"):
+                raise RuntimeError("GRBL rejected {}: {}".format(cmd, r))
+            if rl.startswith("ok"):
                 return r
+        raise TimeoutError("No response from motor controller for: {}".format(cmd))
 
     def wake_up(self, wait_s: float = 2.0) -> None:
         self.ser.write(b"\r\n\r\n")

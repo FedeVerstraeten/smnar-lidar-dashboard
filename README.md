@@ -83,6 +83,8 @@ smnar-lidar-dashboard/
   estado, encendido, apagado y consulta del contador de disparos.
 - Pausa de dos segundos entre encendido y apertura del shutter del láser, y
   entre cierre del shutter y apagado, completando cada escritura serie.
+- Conexión serie persistente compartida por motores de alineación y Telecover,
+  con controles de conexión/desconexión, estado y validación de operaciones.
 - Control de motores GRBL y flujo de Autoalignment con configuración de grilla,
   pasos, patrón, velocidad y gestión del escaneo.
 - Carga de archivos `acquis.ini` y `globalinfo.ini` desde la UI; guardado de adquisiciones en `acquisdata/` en formato JSON.

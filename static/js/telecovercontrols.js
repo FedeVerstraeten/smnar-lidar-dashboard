@@ -18,7 +18,11 @@ var telecoverTraceColors = {
 
 function telecoverRequest(url) {
   return fetch(url, {headers: {"Accept": "application/json"}}).then(function(response) {
-    return response.json();
+    return response.json().then(function(data) {
+      if (data.motor_connection) { setMotorConnectionStatus(data); }
+      if (!response.ok) { throw new Error(data.message || data.error || 'Telecover request failed.'); }
+      return data;
+    });
   });
 }
 

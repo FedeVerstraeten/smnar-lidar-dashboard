@@ -25,6 +25,9 @@
   }
 
   function errorMessage(xhr, fallback) {
+    if (xhr.responseJSON && xhr.responseJSON.motor_connection) {
+      setMotorConnectionStatus(xhr.responseJSON);
+    }
     if (xhr.responseJSON && xhr.responseJSON.message) {
       return xhr.responseJSON.message;
     }
@@ -168,10 +171,6 @@
     return scanIsActive(context) || context.moving || context.status === 'Moving';
   }
 
-  function canMoveToBest(context) {
-    return context.status === 'Complete' && context.best && !operationIsActive(context);
-  }
-
   function stopStatusPolling() {
     if (statusTimer) {
       clearTimeout(statusTimer);
@@ -197,9 +196,9 @@
       }
     }
 
-    $('#autoalign_start_btn').prop('disabled', operationIsActive(context));
+    window.autoalignmentState = context;
     $('#autoalign_stop_btn').prop('disabled', !scanIsActive(context));
-    $('#autoalign_move_best_btn').prop('disabled', !canMoveToBest(context));
+    updateMotorActionButtons();
 
     if (operationIsActive(context)) {
       scheduleStatusPoll();
@@ -259,9 +258,9 @@
         handleStatus(context);
       }).fail(function (xhr) {
         setScanStatus('Error');
-        button.prop('disabled', false);
         $('#autoalign_stop_btn').prop('disabled', true);
         feedback(errorMessage(xhr, 'Autoalignment scan failed.'), 'error');
+        updateMotorActionButtons();
       });
     });
 
